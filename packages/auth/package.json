@@ -1,0 +1,24 @@
+{
+  "name": "@envy/auth",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@envy/db": "workspace:*",
+    "@envy/env": "workspace:*",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@envy/config": "workspace:*",
+    "typescript": "^5"
+  }
+}
