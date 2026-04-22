@@ -38,7 +38,6 @@ export function Pricing() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-          {/* Free */}
           <article aria-labelledby="plan-free" className="contents">
             <MotionCard
               initial={{ opacity: 0, y: 30 }}
@@ -81,17 +80,13 @@ export function Pricing() {
                 </ul>
               </CardContent>
               <CardFooter className="border-0 px-8 pb-8 md:px-10 md:pb-10 pt-0">
-                <Button
-                  // onClick={() => setView('login')}
-                  className="bg-transparent border border-ghost-border text-text-primary font-medium rounded-lg px-5 py-2.5 transition-all hover:bg-ghost-bg active:scale-95 w-full"
-                >
+                <Button className="bg-transparent border border-ghost-border text-text-primary font-medium rounded-lg px-5 py-2.5 transition-all hover:bg-ghost-bg active:scale-95 w-full">
                   Start for free
                 </Button>
               </CardFooter>
             </MotionCard>
           </article>
 
-          {/* Pro */}
           <article aria-labelledby="plan-pro" className="contents">
             <MotionCard
               initial={{ opacity: 0, y: 30 }}
@@ -140,17 +135,13 @@ export function Pricing() {
                 </ul>
               </CardContent>
               <CardFooter className="border-0 px-8 pb-8 md:px-10 md:pb-10 pt-0">
-                <Button
-                  // onClick={() => setView('login')}
-                  className="bg-brand text-bg font-semibold rounded-lg px-5 py-2.5 transition-all hover:brightness-110 active:scale-95 w-full"
-                >
+                <Button className="bg-brand text-bg font-semibold rounded-lg px-5 py-2.5 transition-all hover:brightness-110 active:scale-95 w-full">
                   Start Pro trial
                 </Button>
               </CardFooter>
             </MotionCard>
           </article>
 
-          {/* Team */}
           <article aria-labelledby="plan-team" className="contents">
             <MotionCard
               initial={{ opacity: 0, y: 30 }}
@@ -194,10 +185,7 @@ export function Pricing() {
                 </ul>
               </CardContent>
               <CardFooter className="border-0 px-8 pb-8 md:px-10 md:pb-10 pt-0">
-                <Button
-                  // onClick={() => setView('login')}
-                  className="bg-transparent border border-ghost-border text-text-primary font-medium rounded-lg px-5 py-2.5 transition-all hover:bg-ghost-bg active:scale-95 w-full"
-                >
+                <Button className="bg-transparent border border-ghost-border text-text-primary font-medium rounded-lg px-5 py-2.5 transition-all hover:bg-ghost-bg active:scale-95 w-full">
                   Start Team trial
                 </Button>
               </CardFooter>

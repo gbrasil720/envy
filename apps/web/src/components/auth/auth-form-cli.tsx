@@ -1,6 +1,5 @@
 'use client'
 
-// LoginCard continua inline porque o original não era um componente separado
 import { Button } from '@envy/ui/components/button'
 import { Card, CardContent } from '@envy/ui/components/card'
 import {
@@ -117,7 +116,7 @@ export function AuthFormCli({ sessionToken }: Props) {
     trpc.cliAuth.approve.mutationOptions({
       onSuccess: () => setApproved(true),
       onError: (err) => {
-        console.error(err) // adiciona isso
+        console.error(err)
         if (err.data?.code === 'UNAUTHORIZED') setExpired(true)
       }
     })

@@ -28,7 +28,6 @@ export function ProjectAuthorizedCard() {
             >
               <HugeiconsIcon icon={CheckmarkCircle02Icon} size={40} />
             </motion.div>
-            {/* Animated ring */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1.2 }}

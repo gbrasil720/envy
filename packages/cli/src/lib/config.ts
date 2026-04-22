@@ -5,8 +5,8 @@ import {
   writeFileSync
 } from 'node:fs'
 import { join } from 'node:path'
-import { EnvyError, EXIT } from './errors'
 import { CONFIG_FILENAME } from './constants'
+import { EnvyError, EXIT } from './errors'
 
 const MAX_WALK_DEPTH = 5
 
@@ -52,7 +52,6 @@ export function saveConfig(
   appendToGitignore(dir)
 }
 
-// Walks up to MAX_WALK_DEPTH parent directories looking for CONFIG_FILENAME
 function findConfigFile(): string | null {
   let current = process.cwd()
 

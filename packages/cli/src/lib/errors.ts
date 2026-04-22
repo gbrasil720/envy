@@ -29,7 +29,6 @@ export class EnvyError extends Error {
     this.cause = options.cause
   }
 
-  // Converte erros genéricos (tRPC, fetch, etc) em EnvyError
   static from(err: unknown, options: EnvyErrorOptions = {}): EnvyError {
     if (err instanceof EnvyError) return err
 

@@ -1,9 +1,9 @@
 import type { Command } from 'commander'
 import pkg from '../../package.json'
+import { api } from '../lib/api'
 import { requireAuth } from '../lib/auth'
 import { printWelcomeBanner } from '../lib/banner'
 import { output } from '../lib/output'
-import { api } from '../lib/api'
 
 export type WhoamiOptions = Record<string, never>
 

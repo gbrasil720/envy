@@ -1,5 +1,3 @@
-#!/usr/bin/env bun
-
 import { Command } from 'commander'
 import { registerInit } from './commands/init'
 import { registerLogin } from './commands/login'

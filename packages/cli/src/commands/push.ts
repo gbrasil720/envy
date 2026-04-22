@@ -3,11 +3,11 @@ import { join } from 'node:path'
 import checkbox from '@inquirer/checkbox'
 import confirm from '@inquirer/confirm'
 import type { Command } from 'commander'
+import { api } from '../lib/api'
 import { requireAuth } from '../lib/auth'
 import { printWelcomeBanner } from '../lib/banner'
 import { EnvyError, EXIT } from '../lib/errors'
 import { output } from '../lib/output'
-import { api } from '../lib/api'
 
 const GREEN = '\x1b[38;2;61;214;140m'
 const YELLOW = '\x1b[33m'
@@ -102,7 +102,9 @@ async function resolveConflicts(
 
   if (conflicts.length > 0) {
     output.blank()
-    output.warn(`${conflicts.length} conflict(s) detected between selected files`)
+    output.warn(
+      `${conflicts.length} conflict(s) detected between selected files`
+    )
     output.blank()
 
     for (const conflict of conflicts) {
@@ -157,7 +159,8 @@ function printDiff(diff: {
   const parts: string[] = []
   if (added.length) parts.push(`${GREEN_STD}+${added.length} added${RESET}`)
   if (changed.length) parts.push(`${YELLOW}~${changed.length} changed${RESET}`)
-  if (unchanged.length) parts.push(`${GRAY}${unchanged.length} unchanged${RESET}`)
+  if (unchanged.length)
+    parts.push(`${GRAY}${unchanged.length} unchanged${RESET}`)
 
   output.raw(`  ${parts.join('  ')}`)
   output.blank()

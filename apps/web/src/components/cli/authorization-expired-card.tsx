@@ -33,13 +33,7 @@ export function AuthorizationExpiredCard() {
           <span>envy login</span>
         </div>
 
-        <Button
-          onClick={() => {
-            // setTimeLeft(90)
-            // setState('AUTHORIZING')
-          }}
-          className="w-full h-12 bg-surface-2 border border-border rounded-[10px] text-text-primary font-medium hover:bg-ghost-bg transition-all"
-        >
+        <Button className="w-full h-12 bg-surface-2 border border-border rounded-[10px] text-text-primary font-medium hover:bg-ghost-bg transition-all">
           Try again
         </Button>
       </CardContent>

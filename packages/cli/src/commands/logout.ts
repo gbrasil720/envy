@@ -1,7 +1,7 @@
 import type { Command } from 'commander'
+import { api } from '../lib/api'
 import { clearAuth, requireAuth } from '../lib/auth'
 import { output } from '../lib/output'
-import { api } from '../lib/api'
 
 export type LogoutOptions = Record<string, never>
 

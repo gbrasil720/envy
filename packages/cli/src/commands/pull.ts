@@ -4,11 +4,11 @@ import confirm from '@inquirer/confirm'
 import input from '@inquirer/input'
 import select from '@inquirer/select'
 import type { Command } from 'commander'
+import { api } from '../lib/api'
 import { requireAuth } from '../lib/auth'
 import { printWelcomeBanner } from '../lib/banner'
 import { EnvyError, EXIT } from '../lib/errors'
 import { output } from '../lib/output'
-import { api } from '../lib/api'
 import { parseEnvFile } from './push'
 
 const GREEN = '\x1b[38;2;61;214;140m'
@@ -47,7 +47,10 @@ function validateTargetPath(targetFile: string): string {
   const resolvedPath = resolve(targetPath)
   const resolvedCwd = resolve(process.cwd())
 
-  if (!resolvedPath.startsWith(resolvedCwd + sep) && resolvedPath !== resolvedCwd) {
+  if (
+    !resolvedPath.startsWith(resolvedCwd + sep) &&
+    resolvedPath !== resolvedCwd
+  ) {
     throw new EnvyError('Invalid file path', {
       suggestion: 'Use a valid .env filename in the current directory',
       code: 'INVALID_PATH',

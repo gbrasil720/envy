@@ -44,7 +44,6 @@ export function Features() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-          {/* Main Feature: One Command */}
           <FeatureCard
             icon={TerminalIcon}
             title="One command. All your secrets."
@@ -70,7 +69,6 @@ export function Features() {
             </div>
           </FeatureCard>
 
-          {/* Audit Log */}
           <FeatureCard
             icon={WorkHistoryIcon}
             title="Audit log"
@@ -123,7 +121,6 @@ export function Features() {
             </div>
           </FeatureCard>
 
-          {/* Environment Diff */}
           <FeatureCard
             icon={Refresh01Icon}
             title="Environment diff"
@@ -170,7 +167,6 @@ export function Features() {
             </div>
           </FeatureCard>
 
-          {/* AES-256 */}
           <FeatureCard
             icon={LockIcon}
             title="AES-256 Encryption"
@@ -178,7 +174,6 @@ export function Features() {
             className="md:col-span-8"
           >
             <div className="py-4 md:py-8">
-              {/* Mobile: vertical flow */}
               <div className="flex flex-col items-center gap-0 sm:hidden">
                 <div className="flex flex-col items-center gap-2">
                   <div className="size-12 bg-surface-2 border border-border rounded-full flex items-center justify-center text-text-secondary">
@@ -220,7 +215,6 @@ export function Features() {
                   </span>
                 </div>
               </div>
-              {/* sm+: horizontal diagram */}
               <div className="hidden sm:flex flex-row items-center justify-center gap-3 sm:gap-4 md:gap-6">
                 <div className="flex flex-col items-center gap-2">
                   <div className="size-12 bg-surface-2 border border-border rounded-full flex items-center justify-center text-text-secondary">

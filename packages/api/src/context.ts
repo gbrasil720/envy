@@ -5,7 +5,6 @@ export type CreateContextOptions = {
   context: ElysiaContext
 }
 
-// context.ts — só exporta o tipo
 export type Context = {
   db: typeof db
   authHeader: string | null

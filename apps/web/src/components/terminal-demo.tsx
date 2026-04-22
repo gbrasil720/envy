@@ -71,7 +71,7 @@ export function TerminalDemo() {
     }
 
     const current = SCRIPT[step]
-    if (current.type === 'cmd') {
+    if (current?.type === 'cmd') {
       let i = 0
       const interval = setInterval(() => {
         setCurrentLine(current.text.slice(0, i + 1))
@@ -88,7 +88,7 @@ export function TerminalDemo() {
       return () => clearInterval(interval)
     }
     const timeoutId = setTimeout(() => {
-      setLines((prev) => [...prev, current.text])
+      setLines((prev) => [...prev, current?.text ?? ''])
       setStep((s) => s + 1)
     }, 300)
     return () => clearTimeout(timeoutId)
@@ -130,7 +130,7 @@ export function TerminalDemo() {
         )}
         {!currentLine &&
           step < SCRIPT.length &&
-          SCRIPT[step].type === 'cmd' && (
+          SCRIPT[step]?.type === 'cmd' && (
             <div className="text-text-primary">
               $ <span className="animate-pulse">_</span>
             </div>

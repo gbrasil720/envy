@@ -57,7 +57,6 @@ export async function saveAuth(
     created_at: new Date().toISOString()
   }
 
-  // Pass mode directly to writeFileSync for cross-platform compatibility
   writeFileSync(CREDENTIALS_PATH, JSON.stringify(payload, null, 2), {
     encoding: 'utf-8',
     mode: 0o600

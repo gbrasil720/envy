@@ -417,7 +417,7 @@ export function SecretsTable({
                     <TableCell>
                       <div className="flex min-w-0 items-center gap-2">
                         <span className="min-w-0 flex-1 break-all font-mono text-xs text-muted-foreground">
-                          {maskValue(value, shown)}
+                          {maskValue(value, shown ?? false)}
                         </span>
                         <Tooltip>
                           <TooltipTrigger

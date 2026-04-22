@@ -100,7 +100,6 @@ export const output = {
     }
   },
 
-  // Prints the error and throws — process.exit is handled by index.ts
   fatal(err: unknown): never {
     output.stopSpinner()
 
@@ -152,9 +151,7 @@ function formatDate(iso: string): string {
   })
 }
 
-export function isEnvyError(
-  err: unknown
-): err is {
+export function isEnvyError(err: unknown): err is {
   message: string
   suggestion: string
   exitCode: number

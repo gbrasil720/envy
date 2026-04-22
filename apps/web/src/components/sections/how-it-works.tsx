@@ -49,7 +49,6 @@ export function HowItWorks() {
       id="how-it-works"
       className="py-14 sm:py-20 md:py-28 px-4 sm:px-6 border-y border-ghost-divider relative overflow-hidden"
     >
-      {/* Ambient radial glow */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -81,7 +80,6 @@ export function HowItWorks() {
         </div>
 
         <div className="relative">
-          {/* Animated connecting line */}
           <motion.div
             initial={{ scaleX: 0 }}
             animate={isInView ? { scaleX: 1 } : {}}
@@ -113,7 +111,6 @@ export function HowItWorks() {
                 className="bg-surface border border-border rounded-xl transition-all duration-300 hover:border-brand/20 hover:shadow-[0_8px_40px_rgba(0,0,0,0.6)] cursor-default ring-0 gap-0 py-0"
               >
                 <CardContent className="p-8 flex flex-col items-center text-center group">
-                  {/* Step badge with pulse ring */}
                   <div className="relative mb-6">
                     <motion.div
                       animate={
@@ -139,7 +136,6 @@ export function HowItWorks() {
                     </motion.div>
                   </div>
 
-                  {/* Command code block */}
                   <div className="relative overflow-hidden rounded-lg mb-4 w-full">
                     <code className="dark relative z-10 bg-[#0D0D14] border border-white/10 px-4 py-2.5 rounded-lg font-mono text-brand text-sm block transition-all duration-200 group-hover:border-brand/15 group-hover:border-2">
                       <span className="text-text-muted mr-1">$</span> {item.cmd}

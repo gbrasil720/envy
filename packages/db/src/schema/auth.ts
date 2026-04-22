@@ -91,7 +91,7 @@ export const organization = pgTable(
     slug: text('slug').notNull().unique(),
     logo: text('logo'),
     createdAt: timestamp('created_at').notNull(),
-    metadata: jsonb('metadata') // guarda { plan: 'free' | 'pro' | 'team' }
+    metadata: jsonb('metadata')
   },
   (table) => [uniqueIndex('organization_slug_uidx').on(table.slug)]
 )
@@ -157,7 +157,7 @@ export const organizationRelations = relations(
   ({ many, one }) => ({
     members: many(member),
     invitations: many(invitation),
-    project: one(project) // referência reversa — definida no envy.ts
+    project: one(project)
   })
 )
 

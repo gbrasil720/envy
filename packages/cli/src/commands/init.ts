@@ -9,12 +9,12 @@ import confirm from '@inquirer/confirm'
 import input from '@inquirer/input'
 import select from '@inquirer/select'
 import type { Command } from 'commander'
+import { api } from '../lib/api'
 import { requireAuth } from '../lib/auth'
 import { printWelcomeBanner } from '../lib/banner'
 import { CONFIG_FILENAME } from '../lib/constants'
 import { EnvyError, EXIT } from '../lib/errors'
 import { output } from '../lib/output'
-import { api } from '../lib/api'
 
 const theme = {
   prefix: { idle: '\x1b[38;2;61;214;140m?\x1b[0m' },

@@ -58,8 +58,8 @@ export function SecretsStats({
   const lastLog = lastQuery.data?.[0]
   const limit = PLAN_SECRET_LIMIT[projectPlan] ?? PLAN_SECRET_LIMIT.free
   const pct =
-    Number.isFinite(limit) && limit > 0
-      ? Math.min(100, Math.round((secretCount / limit) * 100))
+    Number.isFinite(limit) && limit! > 0
+      ? Math.min(100, Math.round((secretCount / limit!) * 100))
       : 0
 
   if (lastQuery.isLoading) {

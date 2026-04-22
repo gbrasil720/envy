@@ -19,16 +19,12 @@ import { useQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/utils/trpc'
 import { DashboardIcon } from './dashboard-icon'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type Plan = 'free' | 'pro' | 'team'
 
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
-
-// ─── Plan config ──────────────────────────────────────────────────────────────
 
 const PLAN_CONFIG: Record<
   Plan,
@@ -70,8 +66,6 @@ const PLAN_CONFIG: Record<
     badgeClass: 'bg-blue-500/10 text-blue-400 border-0'
   }
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function initials(name: string | null | undefined, email: string | null) {
   if (name?.trim()) {
@@ -124,8 +118,6 @@ function UsageBar({
   )
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export function PreferencesSheet({ open, onOpenChange }: Props) {
   const trpc = useTRPC()
   const meQuery = useQuery(trpc.me.get.queryOptions())
@@ -140,7 +132,6 @@ export function PreferencesSheet({ open, onOpenChange }: Props) {
         side="right"
         className="flex w-full flex-col gap-0 overflow-y-auto p-0 sm:max-w-sm"
       >
-        {/* Header */}
         <SheetHeader className="border-b border-border px-5 py-4">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-sm font-medium">Preferences</SheetTitle>
@@ -161,7 +152,6 @@ export function PreferencesSheet({ open, onOpenChange }: Props) {
           </div>
         ) : !user ? null : (
           <div className="flex flex-col gap-5 p-5">
-            {/* Account */}
             <section className="flex flex-col gap-3">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Account
@@ -185,7 +175,6 @@ export function PreferencesSheet({ open, onOpenChange }: Props) {
               </div>
             </section>
 
-            {/* Plan */}
             <section className="flex flex-col gap-3">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Plan
@@ -248,7 +237,6 @@ export function PreferencesSheet({ open, onOpenChange }: Props) {
               </div>
             </section>
 
-            {/* Member since */}
             <section className="flex flex-col gap-3">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Details
@@ -271,7 +259,6 @@ export function PreferencesSheet({ open, onOpenChange }: Props) {
               </div>
             </section>
 
-            {/* Danger zone */}
             <section className="flex flex-col gap-3">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-destructive/70">
                 Danger zone

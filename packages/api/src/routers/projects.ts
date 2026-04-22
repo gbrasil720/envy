@@ -34,7 +34,6 @@ export const projectsRouter = router({
 
     const orgIds = memberships.map((m) => m.organizationId)
 
-    // plano vem da org onde o usuário é owner
     const ownerMembership = memberships.find((m) => m.role === 'owner')
     const ownerOrg = ownerMembership
       ? await ctx.db.query.organization.findFirst({
@@ -56,7 +55,6 @@ export const projectsRouter = router({
       }
     })
 
-    // todos os projetos recebem o plano da conta, não da org individual
     return projects.map((p) => ({ ...p, plan: accountPlan }))
   }),
 
@@ -158,7 +156,6 @@ export const projectsRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' })
       }
 
-      // verifica se é membro
       const membership = await ctx.db.query.member.findFirst({
         where: and(
           eq(member.organizationId, proj.id),

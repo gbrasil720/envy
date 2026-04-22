@@ -88,7 +88,6 @@ export function SecurityRisks() {
               }}
               className="bg-surface border border-border rounded-2xl overflow-hidden relative group cursor-default transition-shadow duration-300 hover:shadow-[0_8px_40px_rgba(0,0,0,0.6)] ring-0 gap-0 py-0"
             >
-              {/* Security Risk badge with blinking dot */}
               <div className="absolute top-4 right-4 z-10">
                 <span className="px-2.5 py-1 bg-danger/10 text-danger text-[10px] font-bold uppercase tracking-wider border border-danger/20 rounded flex items-center gap-1.5">
                   <span className="relative flex size-1.5">
@@ -100,7 +99,6 @@ export function SecurityRisks() {
               </div>
 
               <CardContent className="p-8 pb-0">
-                {/* Icon with hover danger pulse */}
                 <div className="relative mb-6">
                   <motion.div
                     whileHover={{
@@ -121,12 +119,10 @@ export function SecurityRisks() {
                 </p>
               </CardContent>
 
-              {/* Mock code block with scanning line */}
               <div className="relative mx-4 mb-4 overflow-hidden rounded-lg">
                 <div className="dark bg-[#0D0D14]/90 border border-white/10 p-4 font-mono text-xs text-text-muted">
                   {item.mock}
                 </div>
-                {/* Animated scan line */}
                 <motion.div
                   className="absolute left-0 right-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                   style={{

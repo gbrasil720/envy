@@ -14,7 +14,7 @@ const MotionCard = motion.create(Card)
 
 type Props = {
   sessionToken: string
-  expiresAt: string // ISO string
+  expiresAt: string
   onAuthorize: () => void
   onCancel: () => void
   isAuthorizing: boolean
@@ -31,7 +31,7 @@ export function AuthorizeProjectCard({
   isCancelling,
   error
 }: Props) {
-  const totalMs = 5 * 60 * 1000 // 5 minutos em ms
+  const totalMs = 5 * 60 * 1000 // 5 min
   const [remainingMs, setRemainingMs] = useState(() =>
     Math.max(0, new Date(expiresAt).getTime() - Date.now())
   )

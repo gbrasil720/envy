@@ -84,7 +84,7 @@ async function findOrCreateEnvironment(
     })
     .returning({ id: environment.id })
 
-  return created.id
+  return created?.id ?? ''
 }
 
 export const secretsRouter = router({
@@ -92,7 +92,11 @@ export const secretsRouter = router({
     .input(
       z.object({
         projectId: z.string(),
-        environment: z.string().min(1).max(64).regex(/^[a-z0-9_-]+$/),
+        environment: z
+          .string()
+          .min(1)
+          .max(64)
+          .regex(/^[a-z0-9_-]+$/),
         secrets: z.record(z.string().min(1).max(255), z.string())
       })
     )
@@ -168,7 +172,16 @@ export const secretsRouter = router({
     }),
 
   reveal: protectedProcedure
-    .input(z.object({ projectId: z.string(), environment: z.string().min(1).max(64).regex(/^[a-z0-9_-]+$/) }))
+    .input(
+      z.object({
+        projectId: z.string(),
+        environment: z
+          .string()
+          .min(1)
+          .max(64)
+          .regex(/^[a-z0-9_-]+$/)
+      })
+    )
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
       const masterKeyBase64 = await getProjectMasterKey(
@@ -203,7 +216,6 @@ export const secretsRouter = router({
         }
       })
 
-      // Write audit log BEFORE returning decrypted values (PV-3)
       await ctx.db.insert(auditLog).values({
         id: crypto.randomUUID(),
         projectId: input.projectId,
@@ -244,7 +256,11 @@ export const secretsRouter = router({
     .input(
       z.object({
         projectId: z.string(),
-        environment: z.string().min(1).max(64).regex(/^[a-z0-9_-]+$/),
+        environment: z
+          .string()
+          .min(1)
+          .max(64)
+          .regex(/^[a-z0-9_-]+$/),
         secrets: z.array(
           z.object({
             key: z.string(),
@@ -306,7 +322,11 @@ export const secretsRouter = router({
     .input(
       z.object({
         projectId: z.string(),
-        environment: z.string().min(1).max(64).regex(/^[a-z0-9_-]+$/),
+        environment: z
+          .string()
+          .min(1)
+          .max(64)
+          .regex(/^[a-z0-9_-]+$/),
         key: z.string(),
         value: z.string()
       })
@@ -390,7 +410,11 @@ export const secretsRouter = router({
     .input(
       z.object({
         projectId: z.string(),
-        environment: z.string().min(1).max(64).regex(/^[a-z0-9_-]+$/),
+        environment: z
+          .string()
+          .min(1)
+          .max(64)
+          .regex(/^[a-z0-9_-]+$/),
         key: z.string()
       })
     )

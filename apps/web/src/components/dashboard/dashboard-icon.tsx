@@ -19,7 +19,6 @@ type Props = {
   className?: string
 } & Omit<ComponentProps<typeof HugeiconsIcon>, 'icon' | 'size'>
 
-/** Consistent Hugeicons sizing + shrink for dashboard surfaces. */
 export function DashboardIcon({
   icon,
   size = 'md',

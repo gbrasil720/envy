@@ -9,12 +9,9 @@ import {
 } from 'drizzle-orm/pg-core'
 import { organization, user } from './auth'
 
-// ─── PROJECTS ────────────────────────────────────────────────────────────────
-
 export const project = pgTable(
   'project',
   {
-    // mesmo ID da organization do Better Auth — são a mesma entidade
     id: text('id')
       .primaryKey()
       .references(() => organization.id, { onDelete: 'cascade' }),
@@ -22,13 +19,9 @@ export const project = pgTable(
     name: text('name').notNull(),
     slug: text('slug').notNull().unique(),
 
-    // master key criptografada — AES-256-GCM
     encryptedMk: text('encrypted_mk').notNull(),
     mkIv: text('mk_iv').notNull(),
     mkTag: text('mk_tag').notNull(),
-
-    // plano fica no metadata da organization — não duplicar aqui
-    // billing é gerenciado pelo plugin do DodoPayments no usuário
 
     createdBy: text('created_by')
       .notNull()
@@ -45,8 +38,6 @@ export const project = pgTable(
     index('project_createdBy_idx').on(table.createdBy)
   ]
 )
-
-// ─── ENVIRONMENTS ─────────────────────────────────────────────────────────────
 
 export const environment = pgTable(
   'environment',
@@ -66,8 +57,6 @@ export const environment = pgTable(
     index('environment_projectId_idx').on(table.projectId)
   ]
 )
-
-// ─── SECRETS ──────────────────────────────────────────────────────────────────
 
 export const secret = pgTable(
   'secret',
@@ -107,8 +96,6 @@ export const secret = pgTable(
   ]
 )
 
-// ─── API KEYS ─────────────────────────────────────────────────────────────────
-
 export const apiKey = pgTable(
   'api_key',
   {
@@ -128,8 +115,6 @@ export const apiKey = pgTable(
     index('api_key_keyPrefix_idx').on(table.keyPrefix)
   ]
 )
-
-// ─── AUDIT LOGS ───────────────────────────────────────────────────────────────
 
 export const auditLog = pgTable(
   'audit_log',
@@ -152,8 +137,6 @@ export const auditLog = pgTable(
   ]
 )
 
-// ─── CLI AUTH SESSIONS ────────────────────────────────────────────────────────
-
 export const cliAuthSession = pgTable(
   'cli_auth_session',
   {
@@ -170,8 +153,6 @@ export const cliAuthSession = pgTable(
     index('cli_auth_session_status_idx').on(table.status)
   ]
 )
-
-// ─── RELATIONS ────────────────────────────────────────────────────────────────
 
 export const projectRelations = relations(project, ({ one, many }) => ({
   organization: one(organization, {

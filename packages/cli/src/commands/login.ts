@@ -1,10 +1,10 @@
 import type { Command } from 'commander'
+import { api } from '../lib/api'
 import { saveAuth } from '../lib/auth'
 import { printWelcomeBanner } from '../lib/banner'
 import { API_URL, POLL_INTERVAL_MS, POLL_TIMEOUT_MS } from '../lib/constants'
 import { EnvyError, EXIT } from '../lib/errors'
 import { output } from '../lib/output'
-import { api } from '../lib/api'
 
 async function pollForApiKey(sessionToken: string): Promise<string> {
   const deadline = Date.now() + POLL_TIMEOUT_MS

@@ -18,7 +18,6 @@ export function NotFound() {
   return (
     <MeshBackground className="overflow-x-hidden min-h-screen flex items-center justify-center">
       <div className="relative z-10 max-w-2xl px-6 text-center w-full">
-        {/* Terminal Glitch Top Bar */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -31,7 +30,6 @@ export function NotFound() {
           </span>
         </motion.div>
 
-        {/* 404 Main Title */}
         <motion.h1
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -51,7 +49,6 @@ export function NotFound() {
           />
         </motion.h1>
 
-        {/* Subtitle Message */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -61,7 +58,6 @@ export function NotFound() {
           Environment Variable Not Found
         </motion.p>
 
-        {/* Detail text */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -72,7 +68,6 @@ export function NotFound() {
           encrypted, or never existed in the current layout context.
         </motion.p>
 
-        {/* Actions */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -98,7 +93,6 @@ export function NotFound() {
           </Button>
         </motion.div>
 
-        {/* Console logs */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
