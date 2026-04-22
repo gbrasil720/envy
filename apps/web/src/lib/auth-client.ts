@@ -1,6 +1,8 @@
-import { env } from "@envy/env/web";
-import { createAuthClient } from "better-auth/react";
+import { sentinelClient } from '@better-auth/infra/client'
+import { env } from '@envy/env/web'
+import { createAuthClient } from 'better-auth/react'
 
 export const authClient = createAuthClient({
   baseURL: env.VITE_SERVER_URL,
-});
+  plugins: [sentinelClient()]
+})

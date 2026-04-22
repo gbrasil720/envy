@@ -7,7 +7,6 @@
     "./globals.css": "./src/styles/globals.css",
     "./lib/*": "./src/lib/*.ts",
     "./components/*": "./src/components/*.tsx",
-    "./hooks/*": "./src/hooks/*.ts",
     "./postcss.config": "./postcss.config.mjs"
   },
   "scripts": {
@@ -17,6 +16,7 @@
     "@base-ui/react": "^1.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "lucide-react": "catalog:",
     "next-themes": "catalog:",
     "react": "catalog:",
@@ -31,6 +31,6 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "tailwindcss": "catalog:",
-    "typescript": "^5.9.3"
+    "typescript": "^5"
   }
 }

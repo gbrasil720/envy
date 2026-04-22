@@ -6,10 +6,20 @@
       "sourceType": "github",
       "computedHash": "9ab075b5061be2a5f299c10505667345cc1ec76e8de4120901cfd586643e776f"
     },
+    "copywriting": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "computedHash": "2e83eda2221e97166172a0798e9b0379e34080595e107e2fc0cf580e9b3bbf7b"
+    },
     "elysiajs": {
       "source": "elysiajs/skills",
       "sourceType": "github",
       "computedHash": "1f8cdb3c66e6127bd7e31fd5478bf912d976059896629cc58eec031f9bae0c74"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67"
     },
     "neon-postgres": {
       "source": "neondatabase/agent-skills",
@@ -25,6 +35,16 @@
       "source": "vercel/turborepo",
       "sourceType": "github",
       "computedHash": "8941746a010948d4251798bd9703230b8841ab7efe988a0815022e870368b481"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "computedHash": "0a413bf988d06481f69bb81df2070741c3ba12dd9f1be2706d57f259c905992d"
+    },
+    "using-superpowers": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "e0eced9fbb205c212f420aded0c6f2bf5d5f059254679a8459b4fe72390160be"
     },
     "vercel-composition-patterns": {
       "source": "vercel-labs/agent-skills",

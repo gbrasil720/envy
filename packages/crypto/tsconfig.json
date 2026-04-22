@@ -1,0 +1,4 @@
+{
+  "extends": "@envy/config/tsconfig.base.json",
+  "include": ["src"]
+}

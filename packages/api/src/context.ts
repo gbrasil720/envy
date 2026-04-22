@@ -1,18 +1,15 @@
-import { auth } from "@envy/auth";
-import type { Context as ElysiaContext } from "elysia";
+import type { db } from '@envy/db'
+import type { Context as ElysiaContext } from 'elysia'
 
 export type CreateContextOptions = {
-  context: ElysiaContext;
-};
-
-export async function createContext({ context }: CreateContextOptions) {
-  const session = await auth.api.getSession({
-    headers: context.request.headers,
-  });
-  return {
-    auth: null,
-    session,
-  };
+  context: ElysiaContext
 }
 
-export type Context = Awaited<ReturnType<typeof createContext>>;
+// context.ts — só exporta o tipo
+export type Context = {
+  db: typeof db
+  authHeader: string | null
+  cookieHeader: string | null
+  session: { user: { id: string } } | null
+  apiKeyId?: string | null
+}

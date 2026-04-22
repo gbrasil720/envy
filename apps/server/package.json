@@ -16,6 +16,7 @@
     "@envy/auth": "workspace:*",
     "@envy/db": "workspace:*",
     "@envy/env": "workspace:*",
+    "@envy/crypto": "workspace:*",
     "@hono/trpc-server": "^0.4.0",
     "@trpc/server": "catalog:",
     "better-auth": "catalog:",

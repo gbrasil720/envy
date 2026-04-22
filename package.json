@@ -19,9 +19,11 @@
       "react-dom": "^19.2.3",
       "sonner": "^2.0.5",
       "tailwindcss": "^4.1.18",
+      "commander": "^14.0.3",
       "@trpc/client": "^11.13.4",
       "@types/react": "^19.2.10",
-      "@types/react-dom": "^19.2.3"
+      "@types/react-dom": "^19.2.3",
+      "@better-auth/infra": "^0.2.3"
     }
   },
   "type": "module",

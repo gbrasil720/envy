@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -7,14 +8,14 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(1 0 0);
+  --background: #f5f4f0;
   --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
+  --card: #ffffff;
   --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
+  --popover: #ffffff;
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: #22904e;
+  --primary-foreground: #ffffff;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -39,17 +40,48 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  /* Custom semantic tokens — light palette */
+  --custom-bg: #f5f4f0;
+  --custom-surface: #ffffff;
+  --custom-surface-2: #eceae5;
+  --custom-border-focus: rgba(34, 144, 78, 0.45);
+  --custom-brand: #22904e;
+  --custom-brand-dim: rgba(34, 144, 78, 0.12);
+  --custom-brand-glow: rgba(34, 144, 78, 0.1);
+  --custom-text-primary: #0a0b0e;
+  --custom-text-secondary: #4a4a6a;
+  --custom-text-muted: #8888aa;
+  --custom-success: #22904e;
+  --custom-danger: #c0211f;
+  --custom-warning: #b8740d;
+  --custom-info: #2b5fd9;
+  --custom-shadow-sm: 0 1px 3px rgba(10, 11, 14, 0.08);
+  --custom-shadow-md: 0 8px 24px rgba(10, 11, 14, 0.1);
+  --custom-shadow-brand: 0 0 24px rgba(34, 144, 78, 0.2);
+  /* Ghost tokens — semi-transparent surface/border helpers */
+  --ghost-border: rgba(10, 11, 14, 0.12);
+  --ghost-bg: rgba(10, 11, 14, 0.05);
+  --ghost-bg-hover: rgba(10, 11, 14, 0.08);
+  --ghost-divider: rgba(10, 11, 14, 0.06);
+  /* Mesh background theme vars */
+  --mesh-brand-orb: rgba(34, 144, 78, 0.2);
+  --mesh-info-orb: rgba(43, 95, 217, 0.16);
+  --mesh-brand-orb-dim: rgba(34, 144, 78, 0.12);
+  --mesh-beam-start: rgba(34, 144, 78, 0.15);
+  --mesh-beam-mid: rgba(34, 144, 78, 0.06);
+  --mesh-dot-color: rgba(34, 144, 78, 0.2);
+  --grid-line: rgba(34, 144, 78, 0.12);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
+  --background: #0a0b0e;
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: #111318;
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
+  --popover: #111318;
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.87 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: #3dd68c;
+  --primary-foreground: #0a2e1a;
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -73,10 +105,61 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  /* Custom semantic tokens — dark palette */
+  --custom-bg: #0a0b0e;
+  --custom-surface: #111318;
+  --custom-surface-2: #1a1d26;
+  --custom-border-focus: rgba(61, 214, 140, 0.4);
+  --custom-brand: #3dd68c;
+  --custom-brand-dim: rgba(61, 214, 140, 0.12);
+  --custom-brand-glow: rgba(61, 214, 140, 0.08);
+  --custom-text-primary: #f0f0ff;
+  --custom-text-secondary: #8888aa;
+  --custom-text-muted: #4a4a6a;
+  --custom-success: #3dd68c;
+  --custom-danger: #ff4d4d;
+  --custom-warning: #f5a623;
+  --custom-info: #5b8def;
+  --custom-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --custom-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --custom-shadow-brand: 0 0 24px rgba(61, 214, 140, 0.15);
+  /* Ghost tokens */
+  --ghost-border: rgba(255, 255, 255, 0.1);
+  --ghost-bg: rgba(255, 255, 255, 0.04);
+  --ghost-bg-hover: rgba(255, 255, 255, 0.07);
+  --ghost-divider: rgba(255, 255, 255, 0.05);
+  /* Mesh background theme vars */
+  --mesh-brand-orb: rgba(61, 214, 140, 0.13);
+  --mesh-info-orb: rgba(91, 141, 239, 0.09);
+  --mesh-brand-orb-dim: rgba(61, 214, 140, 0.07);
+  --mesh-beam-start: rgba(61, 214, 140, 0.11);
+  --mesh-beam-mid: rgba(61, 214, 140, 0.04);
+  --mesh-dot-color: rgba(61, 214, 140, 0.14);
+  --grid-line: rgba(61, 214, 140, 0.1);
 }
 
 @theme inline {
-  --font-sans: "Inter Variable", sans-serif;
+  --font-display: "Bricolage Grotesque", sans-serif;
+  --font-sans: "Geist", sans-serif;
+  --font-mono: "Geist Mono", monospace;
+  --color-bg: var(--custom-bg);
+  --color-surface: var(--custom-surface);
+  --color-surface-2: var(--custom-surface-2);
+  --color-border-focus: var(--custom-border-focus);
+  --color-brand: var(--custom-brand);
+  --color-brand-dim: var(--custom-brand-dim);
+  --color-brand-glow: var(--custom-brand-glow);
+  --color-text-primary: var(--custom-text-primary);
+  --color-text-secondary: var(--custom-text-secondary);
+  --color-text-muted: var(--custom-text-muted);
+  --color-success: var(--custom-success);
+  --color-danger: var(--custom-danger);
+  --color-warning: var(--custom-warning);
+  --color-info: var(--custom-info);
+  --color-ghost-border: var(--ghost-border);
+  --color-ghost-bg: var(--ghost-bg);
+  --color-ghost-bg-hover: var(--ghost-bg-hover);
+  --color-ghost-divider: var(--ghost-divider);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -115,6 +198,64 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  --shadow-sm: var(--custom-shadow-sm);
+  --shadow-md: var(--custom-shadow-md);
+  --shadow-brand: var(--custom-shadow-brand);
+
+  @keyframes spin-slow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  --animate-spin-slow: spin-slow 8s linear infinite;
+
+  @keyframes typewriter {
+    from {
+      width: 0;
+    }
+    to {
+      width: 100%;
+    }
+  }
+  --animate-typewriter: typewriter 2s steps(40, end);
+
+  @keyframes blink {
+    50% {
+      opacity: 0;
+    }
+  }
+  --animate-blink: blink 1s step-end infinite;
+
+  /* Mesh background: floating gradient orbs */
+  @keyframes orb-drift-1 {
+    0%, 100% { transform: translate(0px, 0px) scale(1); }
+    33%       { transform: translate(60px, -40px) scale(1.08); }
+    66%       { transform: translate(-30px, 30px) scale(0.94); }
+  }
+  --animate-orb-1: orb-drift-1 18s ease-in-out infinite;
+
+  @keyframes orb-drift-2 {
+    0%, 100% { transform: translate(0px, 0px) scale(1); }
+    40%       { transform: translate(-70px, 50px) scale(1.05); }
+    75%       { transform: translate(40px, -25px) scale(0.97); }
+  }
+  --animate-orb-2: orb-drift-2 22s ease-in-out infinite;
+
+  @keyframes orb-drift-3 {
+    0%, 100% { transform: translate(0px, 0px) scale(1); }
+    30%       { transform: translate(30px, 55px) scale(1.06); }
+    70%       { transform: translate(-40px, -20px) scale(0.93); }
+  }
+  --animate-orb-3: orb-drift-3 16s ease-in-out infinite;
+
+  @keyframes beam-pulse {
+    0%, 100% { opacity: 0.7; }
+    50%       { opacity: 1; }
+  }
+  --animate-beam-pulse: beam-pulse 4s ease-in-out infinite;
 }
 
 @layer base {
@@ -122,9 +263,192 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply font-sans bg-background text-foreground;
+    @apply bg-bg text-text-primary font-sans antialiased selection:bg-brand/30;
+    position: relative;
+    overflow-x: clip;
   }
   html {
     @apply font-sans;
+    overflow-x: clip;
+  }
+
+  /* Display font headings: optical-size axis at max + tight tracking for impact */
+  .font-display {
+    font-optical-sizing: auto;
+    letter-spacing: -0.025em;
+  }
+
+  .grid-bg {
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .bg-grid-40 {
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .bg-radial-glow {
+    background: radial-gradient(
+      600px circle at center,
+      rgba(61, 214, 140, 0.04),
+      transparent 100%
+    );
+  }
+
+  .glow-mesh {
+    background: radial-gradient(
+      circle at 50% 0%,
+      rgba(61, 214, 140, 0.12),
+      transparent 70%
+    );
+  }
+
+  /* ─── Mesh Background ─────────────────────────────────────────────────── */
+
+  /* Animated gradient orbs — viewport-locked so they're always visible
+     regardless of page length. GPU-composited via transform only. */
+  .mesh-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    will-change: transform;
+    pointer-events: none;
+  }
+
+  /* Orb 1: brand green, top-left anchor */
+  .mesh-orb-1 {
+    width: 860px;
+    height: 860px;
+    top: -260px;
+    left: -220px;
+    background: radial-gradient(
+      circle,
+      var(--mesh-brand-orb) 0%,
+      transparent 68%
+    );
+    animation: var(--animate-orb-1);
+  }
+
+  /* Orb 2: info blue, bottom-right anchor */
+  .mesh-orb-2 {
+    width: 700px;
+    height: 700px;
+    bottom: -180px;
+    right: -140px;
+    background: radial-gradient(
+      circle,
+      var(--mesh-info-orb) 0%,
+      transparent 68%
+    );
+    animation: var(--animate-orb-2);
+  }
+
+  /* Orb 3: brand green dimmer, center-right */
+  .mesh-orb-3 {
+    width: 520px;
+    height: 520px;
+    top: 35%;
+    left: 52%;
+    background: radial-gradient(
+      circle,
+      var(--mesh-brand-orb-dim) 0%,
+      transparent 68%
+    );
+    animation: var(--animate-orb-3);
+  }
+
+  /* Dot grid — Resend-style radial dots with edge fade mask */
+  .mesh-dot-grid {
+    background-image: radial-gradient(
+      circle,
+      var(--mesh-dot-color) 1px,
+      transparent 1px
+    );
+    background-size: 28px 28px;
+    /* Full-viewport coverage with gentle lateral fade — no top cutoff */
+    mask-image: radial-gradient(
+      ellipse 85% 95% at 50% 50%,
+      black 30%,
+      transparent 100%
+    );
+  }
+
+  /* Film grain / noise texture overlay — adds tactile depth at near-zero opacity */
+  .mesh-noise {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.028;
+    mix-blend-mode: overlay;
+  }
+
+  /* Top beam — brand glow radiating from center-top edge */
+  .mesh-beam {
+    height: 480px;
+    background: radial-gradient(
+      ellipse 75% 340px at 50% -20px,
+      var(--mesh-beam-start) 0%,
+      var(--mesh-beam-mid) 40%,
+      transparent 70%
+    );
+    animation: var(--animate-beam-pulse);
+  }
+
+  /* Respect reduced-motion: freeze orbs and beam */
+  @media (prefers-reduced-motion: reduce) {
+    .mesh-orb,
+    .mesh-beam {
+      animation: none;
+    }
   }
 }
+
+@layer components {
+  .btn-primary {
+    @apply bg-brand text-bg font-semibold rounded-lg px-5 py-2.5 transition-all hover:brightness-110 active:scale-95;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent border border-ghost-border text-text-primary font-medium rounded-lg px-5 py-2.5 transition-all hover:bg-ghost-bg active:scale-95;
+  }
+
+  .btn-danger {
+    @apply bg-transparent border border-danger text-danger font-medium rounded-lg px-5 py-2.5 transition-all hover:bg-danger/5 active:scale-95;
+  }
+
+  .input-base {
+    @apply bg-surface-2 border border-border rounded-lg px-3.5 py-2.5 font-mono text-sm text-text-primary transition-all focus:border-border-focus focus:shadow-brand outline-none;
+  }
+
+  .card-base {
+    @apply bg-surface border border-border rounded-lg p-6;
+  }
+
+  .badge-success {
+    @apply bg-brand-dim text-brand rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider;
+  }
+
+  .badge-danger {
+    @apply bg-danger/12 text-danger rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider;
+  }
+
+  .badge-warning {
+    @apply bg-warning/12 text-warning rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-surface-2;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-ghost-border rounded-full hover:bg-ghost-bg-hover transition-colors;
+}
+

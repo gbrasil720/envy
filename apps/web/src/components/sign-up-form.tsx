@@ -1,58 +1,64 @@
-import { Button } from "@envy/ui/components/button";
-import { Input } from "@envy/ui/components/input";
-import { Label } from "@envy/ui/components/label";
-import { useForm } from "@tanstack/react-form";
-import { useNavigate } from "@tanstack/react-router";
-import { toast } from "sonner";
-import z from "zod";
+'use client'
 
-import { authClient } from "@/lib/auth-client";
+import { Button } from '@envy/ui/components/button'
+import { Input } from '@envy/ui/components/input'
+import { Label } from '@envy/ui/components/label'
+import { useForm } from '@tanstack/react-form'
+import { useNavigate } from '@tanstack/react-router'
+import { toast } from 'sonner'
+import z from 'zod'
 
-import Loader from "./loader";
+import { authClient } from '@/lib/auth-client'
 
-export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () => void }) {
+import Loader from './loader'
+
+export default function SignUpForm({
+  onSwitchToSignIn
+}: {
+  onSwitchToSignIn: () => void
+}) {
   const navigate = useNavigate({
-    from: "/",
-  });
-  const { isPending } = authClient.useSession();
+    from: '/'
+  })
+  const { isPending } = authClient.useSession()
 
   const form = useForm({
     defaultValues: {
-      email: "",
-      password: "",
-      name: "",
+      email: '',
+      password: '',
+      name: ''
     },
     onSubmit: async ({ value }) => {
       await authClient.signUp.email(
         {
           email: value.email,
           password: value.password,
-          name: value.name,
+          name: value.name
         },
         {
           onSuccess: () => {
             navigate({
-              to: "/dashboard",
-            });
-            toast.success("Sign up successful");
+              to: '/dashboard'
+            })
+            toast.success('Sign up successful')
           },
           onError: (error) => {
-            toast.error(error.error.message || error.error.statusText);
-          },
-        },
-      );
+            toast.error(error.error.message || error.error.statusText)
+          }
+        }
+      )
     },
     validators: {
       onSubmit: z.object({
-        name: z.string().min(2, "Name must be at least 2 characters"),
-        email: z.email("Invalid email address"),
-        password: z.string().min(8, "Password must be at least 8 characters"),
-      }),
-    },
-  });
+        name: z.string().min(2, 'Name must be at least 2 characters'),
+        email: z.email('Invalid email address'),
+        password: z.string().min(8, 'Password must be at least 8 characters')
+      })
+    }
+  })
 
   if (isPending) {
-    return <Loader />;
+    return <Loader />
   }
 
   return (
@@ -61,9 +67,9 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () 
 
       <form
         onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          form.handleSubmit();
+          e.preventDefault()
+          e.stopPropagation()
+          form.handleSubmit()
         }}
         className="space-y-4"
       >
@@ -136,11 +142,18 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () 
         </div>
 
         <form.Subscribe
-          selector={(state) => ({ canSubmit: state.canSubmit, isSubmitting: state.isSubmitting })}
+          selector={(state) => ({
+            canSubmit: state.canSubmit,
+            isSubmitting: state.isSubmitting
+          })}
         >
           {({ canSubmit, isSubmitting }) => (
-            <Button type="submit" className="w-full" disabled={!canSubmit || isSubmitting}>
-              {isSubmitting ? "Submitting..." : "Sign Up"}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={!canSubmit || isSubmitting}
+            >
+              {isSubmitting ? 'Submitting...' : 'Sign Up'}
             </Button>
           )}
         </form.Subscribe>
@@ -156,5 +169,5 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () 
         </Button>
       </div>
     </div>
-  );
+  )
 }

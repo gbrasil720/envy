@@ -1,4 +1,6 @@
-import { Button } from "@envy/ui/components/button";
+'use client'
+
+import { Button } from '@envy/ui/components/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,19 +8,19 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@envy/ui/components/dropdown-menu";
-import { Skeleton } from "@envy/ui/components/skeleton";
-import { Link, useNavigate } from "@tanstack/react-router";
+  DropdownMenuTrigger
+} from '@envy/ui/components/dropdown-menu'
+import { Skeleton } from '@envy/ui/components/skeleton'
+import { Link, useNavigate } from '@tanstack/react-router'
 
-import { authClient } from "@/lib/auth-client";
+import { authClient } from '@/lib/auth-client'
 
 export default function UserMenu() {
-  const navigate = useNavigate();
-  const { data: session, isPending } = authClient.useSession();
+  const navigate = useNavigate()
+  const { data: session, isPending } = authClient.useSession()
 
   if (isPending) {
-    return <Skeleton className="h-9 w-24" />;
+    return <Skeleton className="h-9 w-24" />
   }
 
   if (!session) {
@@ -26,7 +28,7 @@ export default function UserMenu() {
       <Link to="/login">
         <Button variant="outline">Sign In</Button>
       </Link>
-    );
+    )
   }
 
   return (
@@ -46,11 +48,11 @@ export default function UserMenu() {
                 fetchOptions: {
                   onSuccess: () => {
                     navigate({
-                      to: "/",
-                    });
-                  },
-                },
-              });
+                      to: '/'
+                    })
+                  }
+                }
+              })
             }}
           >
             Sign Out
@@ -58,5 +60,5 @@ export default function UserMenu() {
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
-  );
+  )
 }
