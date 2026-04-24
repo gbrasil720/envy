@@ -23,6 +23,7 @@ export const env = createEnv({
     CORS_ORIGIN: z.string(),
     GITHUB_CLIENT_ID: z.string(),
     GITHUB_CLIENT_SECRET: z.string(),
+    TRUSTED_ORIGINS: z.string().optional(),
     NODE_ENV: z
       .enum(['development', 'production', 'test'])
       .default('development')

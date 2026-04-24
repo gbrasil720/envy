@@ -22,7 +22,11 @@ export function createAuth() {
         redirectUri: `${env.BETTER_AUTH_URL}/api/auth/callback/github`
       }
     },
-    trustedOrigins: [env.CORS_ORIGIN, env.BETTER_AUTH_URL],
+    trustedOrigins: [
+      env.CORS_ORIGIN,
+      env.BETTER_AUTH_URL,
+      ...(env.TRUSTED_ORIGINS?.split(',') ?? [])
+    ],
     emailAndPassword: {
       enabled: true
     },
