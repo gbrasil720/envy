@@ -39,3 +39,5 @@ export default defineConfig({
     port: 3001
   }
 })
+
+console.log('BUILD ENV:', process.env)
