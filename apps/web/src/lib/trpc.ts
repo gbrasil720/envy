@@ -1,5 +1,4 @@
 import type { AppRouter } from '@envy/api/routers/index'
-// import { env } from '@envy/env/web'
 import { createTRPCClient, httpBatchLink } from '@trpc/client'
 import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query'
 import { queryClient } from '@/router'

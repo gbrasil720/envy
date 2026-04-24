@@ -1,5 +1,4 @@
 import type { AppRouter } from '@envy/api/routers/index'
-// import { env } from '@envy/env/web'
 
 import './index.css'
 import {
