@@ -6,6 +6,11 @@ import { defineConfig } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_SERVER_URL': JSON.stringify(
+      process.env.VITE_SERVER_URL
+    )
+  },
   plugins: [
     tsconfigPaths(),
     tailwindcss(),
