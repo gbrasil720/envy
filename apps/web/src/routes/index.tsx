@@ -27,11 +27,6 @@ export const Route = createFileRoute('/')({
   component: HomeComponent
 })
 
-console.log('ENV DEBUG:', {
-  importMeta: import.meta.env,
-  processEnv: process.env.VITE_SERVER_URL
-})
-
 function HomeComponent() {
   return (
     <motion.div

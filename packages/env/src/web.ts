@@ -3,7 +3,8 @@ import { z } from 'zod'
 
 export const env = createEnv({
   clientPrefix: 'VITE_',
-  client: {
+  client: {},
+  shared: {
     VITE_SERVER_URL: z.url()
   },
   runtimeEnv: {
