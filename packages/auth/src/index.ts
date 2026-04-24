@@ -36,7 +36,8 @@ export function createAuth() {
       defaultCookieAttributes: {
         sameSite: 'none',
         secure: true,
-        httpOnly: true
+        httpOnly: true,
+        domain: '.useenvy.dev'
       }
     },
     plugins: [organization(), dash(), openAPI()]
