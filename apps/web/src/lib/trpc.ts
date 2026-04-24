@@ -3,11 +3,12 @@ import { env } from '@envy/env/web'
 import { createTRPCClient, httpBatchLink } from '@trpc/client'
 import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query'
 import { queryClient } from '@/router'
+import { SERVER_URL } from './env'
 
 export const trpcClient = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
-      url: env.VITE_SERVER_URL ?? 'http://localhost:3000/trpc',
+      url: SERVER_URL ?? 'http://localhost:3000/trpc',
       fetch: (url, options) =>
         fetch(url, { ...options, credentials: 'include' })
     })

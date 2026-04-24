@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 
 import Loader from './components/loader'
 import { NotFound } from './components/not-found'
+import { SERVER_URL } from './lib/env'
 import { routeTree } from './routeTree.gen'
 import { TRPCProvider } from './utils/trpc'
 
@@ -34,7 +35,7 @@ export const queryClient = new QueryClient({
 const trpcClient = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
-      url: `${env.VITE_SERVER_URL}/trpc`,
+      url: `${SERVER_URL}/trpc`,
       fetch(url, options) {
         return fetch(url, {
           ...options,
