@@ -7,8 +7,7 @@ export const env = createEnv({
     VITE_SERVER_URL: z.url()
   },
   runtimeEnv: {
-    VITE_SERVER_URL:
-      import.meta.env.VITE_SERVER_URL ?? process.env.VITE_SERVER_URL
+    VITE_SERVER_URL: process.env.VITE_SERVER_URL
   },
   emptyStringAsUndefined: true
 })
