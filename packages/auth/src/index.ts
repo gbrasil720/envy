@@ -18,7 +18,8 @@ export function createAuth() {
     socialProviders: {
       github: {
         clientId: env.GITHUB_CLIENT_ID as string,
-        clientSecret: env.GITHUB_CLIENT_SECRET as string
+        clientSecret: env.GITHUB_CLIENT_SECRET as string,
+        redirectUri: `${env.BETTER_AUTH_URL}/api/auth/callback/github`
       }
     },
     trustedOrigins: [env.CORS_ORIGIN, env.BETTER_AUTH_URL],
