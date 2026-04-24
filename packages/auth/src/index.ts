@@ -21,7 +21,7 @@ export function createAuth() {
         clientSecret: env.GITHUB_CLIENT_SECRET as string
       }
     },
-    trustedOrigins: [env.CORS_ORIGIN || env.BETTER_AUTH_URL],
+    trustedOrigins: [env.CORS_ORIGIN, env.BETTER_AUTH_URL],
     emailAndPassword: {
       enabled: true
     },
