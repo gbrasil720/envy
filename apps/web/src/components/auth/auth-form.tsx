@@ -80,10 +80,12 @@ export function AuthForm() {
         >
           <div className="flex flex-col items-center mb-8">
             <div className="w-8 h-8 text-brand mb-3">
-              <div className="w-8 h-8 bg-brand rounded-lg flex items-center justify-center">
-                <span className="text-bg font-mono font-bold text-lg">
-                  {'{}'}
-                </span>
+              <div className="w-8 h-8 bg-[#111] rounded-lg flex items-center justify-center">
+                <img
+                  src="/logo-no-bg.png"
+                  alt="Envy"
+                  className="w-14 h-14 object-cover"
+                />
               </div>
             </div>
             <h1 className="font-display font-bold text-[22px] text-text-primary tracking-tight">

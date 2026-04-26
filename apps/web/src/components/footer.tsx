@@ -9,10 +9,12 @@ export function Footer() {
         <div className="grid md:grid-cols-4 gap-12 mb-16">
           <div className="col-span-2">
             <div className="flex items-center gap-2 mb-6">
-              <div className="w-8 h-8 bg-brand rounded-lg flex items-center justify-center">
-                <span className="text-bg font-mono font-bold text-xl">
-                  {'{}'}
-                </span>
+              <div className="w-8 h-8 bg-[#111] rounded-lg flex items-center justify-center">
+                <img
+                  src="/logo-no-bg.png"
+                  alt="Envy"
+                  className="w-14 h-14 object-cover"
+                />
               </div>
               <span className="text-xl font-display font-bold tracking-tight">
                 envy

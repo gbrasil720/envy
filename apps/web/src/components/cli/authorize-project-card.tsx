@@ -72,28 +72,11 @@ export function AuthorizeProjectCard({
           </div>
           <div className="text-text-muted font-display text-xl">→</div>
           <div className="w-12 h-12 bg-brand/10 border border-brand/20 rounded-xl flex items-center justify-center text-brand">
-            <svg
-              viewBox="0 0 32 32"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-6 h-6"
-            >
-              <rect
-                x="6"
-                y="6"
-                width="20"
-                height="20"
-                rx="4"
-                stroke="currentColor"
-                strokeWidth="2.5"
-              />
-              <path
-                d="M12 12L20 20M20 12L12 20"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              />
-            </svg>
+            <img
+              src="/logo-no-bg.png"
+              alt="CLI"
+              className="w-14 h-14 object-cover"
+            />
           </div>
         </div>
 

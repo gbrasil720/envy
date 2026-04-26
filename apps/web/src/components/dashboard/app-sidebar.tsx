@@ -102,9 +102,11 @@ export function AppSidebar({
     <aside className="flex min-w-[240px] max-w-[240px] flex-col border-r border-border bg-card/60 backdrop-blur-xl">
       <div className="border-b border-border p-2.5">
         <div className="mb-3 flex items-center gap-2 px-1">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-brand/15 font-display text-sm font-semibold text-brand">
-            e
-          </div>
+          <img
+            src="/logo-no-bg.png"
+            alt="Envy"
+            className="w-10 h-10 object-cover"
+          />
           <div className="min-w-0">
             <p className="truncate font-display text-sm font-semibold tracking-tight">
               envy

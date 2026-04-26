@@ -16,7 +16,7 @@ import {
   PlusSignIcon
 } from '@hugeicons/core-free-icons'
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { AppSidebar } from '@/components/dashboard/app-sidebar'
 import { AppTopbar } from '@/components/dashboard/app-topbar'
@@ -34,9 +34,21 @@ import { ProjectSettings } from '@/components/dashboard/project-settings'
 import { SecretsTable } from '@/components/dashboard/secrets-table'
 import { MeshBackground } from '@/components/mesh-background'
 import { useRecentProjects } from '@/hooks/useRecentProjects'
+import { authClient } from '@/lib/auth-client'
 import { useTRPC } from '@/utils/trpc'
 
 export const Route = createFileRoute('/dashboard')({
+  beforeLoad: async () => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const { data: session } = await authClient.getSession()
+
+    if (!session) {
+      throw redirect({ to: '/login' })
+    }
+  },
   component: DashboardPage,
   validateSearch: (search: Record<string, unknown>) => ({
     project: (search.project as string) ?? '',

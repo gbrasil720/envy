@@ -38,26 +38,33 @@ export function ProjectAuthorizedCard() {
         </div>
 
         <h1 className="font-display font-bold text-[28px] text-text-primary mb-2">
-          CLI authorized!
+          You're logged in!
         </h1>
         <p className="text-text-secondary text-[15px] mb-8">
-          Your terminal is now connected to{' '}
-          <span className="text-text-primary font-medium">my-saas</span>. You
-          can close this tab.
+          CLI connected to your account. You can close this tab and return to
+          your terminal.
         </p>
 
         <div className="bg-brand/5 border border-brand/10 rounded-xl p-6 mb-8 text-left">
           <p className="text-brand text-sm font-medium mb-3">
-            The CLI received your credentials and is ready to use.
+            Start using the CLI:
           </p>
-          <div className="bg-bg/50 rounded-lg p-3 font-mono text-[13px] text-text-secondary flex flex-wrap items-center gap-2">
-            <span className="text-brand">$</span>
-            <span className="break-words min-w-0">
-              envy pull{' '}
-              <span className="text-text-muted">
-                # run this to sync your secrets
-              </span>
-            </span>
+          <div className="flex flex-col gap-2">
+            {[
+              { cmd: 'envy projects', comment: '# list your projects' },
+              { cmd: 'envy pull', comment: '# sync secrets to .env' },
+              { cmd: 'envy push', comment: '# push local secrets' }
+            ].map(({ cmd, comment }) => (
+              <div
+                key={cmd}
+                className="bg-bg/50 rounded-lg p-3 font-mono text-[13px] text-text-secondary flex flex-wrap items-center gap-2"
+              >
+                <span className="text-brand">$</span>
+                <span className="wrap-break-word min-w-0">
+                  {cmd} <span className="text-text-muted">{comment}</span>
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 

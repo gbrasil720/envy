@@ -17,9 +17,14 @@ export function createAuth() {
     }),
     socialProviders: {
       github: {
-        clientId: env.GITHUB_CLIENT_ID as string,
-        clientSecret: env.GITHUB_CLIENT_SECRET as string,
-        redirectUri: `${env.BETTER_AUTH_URL}/api/auth/callback/github`
+        clientId:
+          env.NODE_ENV === 'development'
+            ? (env.GITHUB_CLIENT_ID_DEV as string).trim()
+            : (env.GITHUB_CLIENT_ID as string).trim(),
+        clientSecret:
+          env.NODE_ENV === 'development'
+            ? (env.GITHUB_CLIENT_SECRET_DEV as string).trim()
+            : (env.GITHUB_CLIENT_SECRET as string).trim()
       }
     },
     trustedOrigins: [
@@ -32,12 +37,15 @@ export function createAuth() {
     },
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
+    account: {
+      storeStateStrategy: 'cookie'
+    },
     advanced: {
       defaultCookieAttributes: {
-        sameSite: 'none',
-        secure: true,
+        sameSite: env.NODE_ENV === 'development' ? 'lax' : 'none',
+        secure: env.NODE_ENV !== 'development',
         httpOnly: true,
-        domain: '.useenvy.dev'
+        domain: env.NODE_ENV === 'development' ? undefined : '.useenvy.dev'
       }
     },
     plugins: [organization(), dash(), openAPI()]
