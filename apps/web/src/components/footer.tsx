@@ -38,12 +38,18 @@ export function Footer() {
             <h4 className="font-bold mb-6">Product</h4>
             <ul className="space-y-4 text-sm text-text-secondary">
               <li>
-                <a href="/#features" className="hover:text-brand transition-colors">
+                <a
+                  href="/#features"
+                  className="hover:text-brand transition-colors"
+                >
                   Features
                 </a>
               </li>
               <li>
-                <a href="/#pricing" className="hover:text-brand transition-colors">
+                <a
+                  href="/#pricing"
+                  className="hover:text-brand transition-colors"
+                >
                   Pricing
                 </a>
               </li>

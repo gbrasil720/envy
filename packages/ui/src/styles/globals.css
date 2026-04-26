@@ -451,4 +451,3 @@
 ::-webkit-scrollbar-thumb {
   @apply bg-ghost-border rounded-full hover:bg-ghost-bg-hover transition-colors;
 }
-
