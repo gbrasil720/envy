@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/a11y/useAnchorContent: <explanation> */
 'use client'
 
 import { Button } from '@envy/ui/components/button'
@@ -7,9 +8,12 @@ import {
   Menu01Icon
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
+import { Link } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { ModeToggle } from './theme-toggle'
+
+const GITHUB_URL = 'https://github.com/envyapp/envy'
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -51,7 +55,7 @@ export function Navbar() {
       className={`fixed top-0 left-0 right-0 z-50 max-w-full transition-all duration-300 pt-[calc(env(safe-area-inset-top)+16px)] sm:pt-[calc(env(safe-area-inset-top)+20px)] ${isScrolled ? 'border-b border-ghost-divider/90 bg-bg/45 pb-3 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-2xl backdrop-saturate-150 dark:bg-bg/40 dark:shadow-[0_8px_40px_rgba(0,0,0,0.35)] sm:pb-4' : 'bg-transparent pb-5 sm:pb-6'}`}
     >
       <div className="mx-auto flex w-full min-w-0 max-w-7xl items-center justify-between px-4 sm:px-6 md:grid md:grid-cols-3">
-        <div className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2">
           <div className="w-8 h-8 bg-[#111] rounded-lg flex items-center justify-center">
             <img
               src="/logo-no-bg.png"
@@ -62,7 +66,7 @@ export function Navbar() {
           <span className="text-xl font-display font-bold tracking-tight">
             envy
           </span>
-        </div>
+        </Link>
 
         <div className="hidden md:flex items-center justify-center gap-8">
           {[
@@ -83,13 +87,19 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-4 justify-end">
           <ModeToggle />
           <Button
+            render={
+              <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" />
+            }
             variant="link"
             className="decoration-0 flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors hover:bg-none cursor-pointer"
           >
             <HugeiconsIcon icon={GithubIcon} size={18} />
             GitHub
           </Button>
-          <Button className="text-sm bg-brand text-bg font-semibold rounded-lg p-5 transition-all hover:brightness-110 active:scale-95 cursor-pointer">
+          <Button
+            render={<Link to="/login" />}
+            className="text-sm bg-brand text-bg font-semibold rounded-lg p-5 transition-all hover:brightness-110 active:scale-95 cursor-pointer"
+          >
             Get started free
           </Button>
         </div>
@@ -147,10 +157,26 @@ export function Navbar() {
                 </a>
               ))}
               <div className="flex flex-col gap-4 mt-8">
-                <Button className="text-base sm:text-xl py-3 sm:py-4 bg-brand text-bg font-semibold rounded-lg transition-all hover:brightness-110 active:scale-95">
+                <Button
+                  render={
+                    <Link
+                      to="/login"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    />
+                  }
+                  className="text-base sm:text-xl py-3 sm:py-4 bg-brand text-bg font-semibold rounded-lg transition-all hover:brightness-110 active:scale-95"
+                >
                   Get started free
                 </Button>
                 <Button
+                  render={
+                    <a
+                      href={GITHUB_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    />
+                  }
                   variant="outline"
                   className="text-base sm:text-xl py-3 sm:py-4 flex items-center justify-center gap-2 border-ghost-border bg-transparent text-text-primary font-medium rounded-lg transition-all hover:bg-ghost-bg active:scale-95"
                 >

@@ -7,7 +7,7 @@ import {
   TerminalIcon
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { motion } from 'motion/react'
 import { Footer } from '@/components/footer'
 import { LeakCounter } from '@/components/leak-counter'
@@ -79,7 +79,10 @@ function HomeComponent() {
               transition={{ delay: 0.3 }}
               className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-4 mb-8 w-full sm:w-auto max-w-full min-w-0"
             >
-              <Button className="cursor-pointer bg-brand text-bg font-display font-bold rounded-xl transition-all hover:brightness-110 active:scale-[0.97] px-8 py-[18px] md:py-[20px] text-[16px] md:text-[17px] tracking-tight flex items-center justify-center gap-2.5 group shadow-[0_0_0_1px_rgba(61,214,140,0.2),0_6px_24px_rgba(61,214,140,0.1)]">
+              <Button
+                render={<Link to="/login" />}
+                className="cursor-pointer bg-brand text-bg font-display font-bold rounded-xl transition-all hover:brightness-110 active:scale-[0.97] px-8 py-[18px] md:py-[20px] text-[16px] md:text-[17px] tracking-tight flex items-center justify-center gap-2.5 group shadow-[0_0_0_1px_rgba(61,214,140,0.2),0_6px_24px_rgba(61,214,140,0.1)]"
+              >
                 Get your free account
                 <HugeiconsIcon
                   icon={ArrowRight01Icon}
@@ -87,7 +90,12 @@ function HomeComponent() {
                   className="group-hover:translate-x-1 transition-transform"
                 />
               </Button>
-              <Button className="cursor-pointer bg-ghost-bg border border-ghost-border text-text-primary font-medium rounded-xl transition-all hover:bg-ghost-bg-hover hover:border-border active:scale-[0.97] px-8 py-[18px] md:py-[20px] text-[16px] md:text-[17px] flex items-center justify-center gap-2.5">
+              <Button
+                onClick={() => {
+                  window.location.href = '#how-it-works'
+                }}
+                className="cursor-pointer bg-ghost-bg border border-ghost-border text-text-primary font-medium rounded-xl transition-all hover:bg-ghost-bg-hover hover:border-border active:scale-[0.97] px-8 py-[18px] md:py-[20px] text-[16px] md:text-[17px] flex items-center justify-center gap-2.5"
+              >
                 <HugeiconsIcon
                   icon={TerminalIcon}
                   size={18}

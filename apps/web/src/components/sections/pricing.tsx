@@ -2,6 +2,7 @@ import { Button } from '@envy/ui/components/button'
 import { Card, CardContent, CardFooter } from '@envy/ui/components/card'
 import { Tick01Icon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
+import { Link } from '@tanstack/react-router'
 import { motion, useInView } from 'motion/react'
 import { useRef } from 'react'
 
@@ -80,7 +81,10 @@ export function Pricing() {
                 </ul>
               </CardContent>
               <CardFooter className="border-0 px-8 pb-8 md:px-10 md:pb-10 pt-0">
-                <Button className="bg-transparent border border-ghost-border text-text-primary font-medium rounded-lg px-5 py-2.5 transition-all hover:bg-ghost-bg active:scale-95 w-full">
+                <Button
+                  render={<Link to="/login" />}
+                  className="bg-transparent border border-ghost-border text-text-primary font-medium rounded-lg px-5 py-2.5 transition-all hover:border-border hover:bg-ghost-bg hover:text-bg active:scale-95 w-full"
+                >
                   Start for free
                 </Button>
               </CardFooter>
@@ -135,7 +139,10 @@ export function Pricing() {
                 </ul>
               </CardContent>
               <CardFooter className="border-0 px-8 pb-8 md:px-10 md:pb-10 pt-0">
-                <Button className="bg-brand text-bg font-semibold rounded-lg px-5 py-2.5 transition-all hover:brightness-110 active:scale-95 w-full">
+                <Button
+                  render={<Link to="/login" />}
+                  className="bg-brand text-bg font-semibold rounded-lg px-5 py-2.5 transition-all hover:brightness-110 active:scale-95 w-full"
+                >
                   Start Pro trial
                 </Button>
               </CardFooter>
@@ -185,7 +192,10 @@ export function Pricing() {
                 </ul>
               </CardContent>
               <CardFooter className="border-0 px-8 pb-8 md:px-10 md:pb-10 pt-0">
-                <Button className="bg-transparent border border-ghost-border text-text-primary font-medium rounded-lg px-5 py-2.5 transition-all hover:bg-ghost-bg active:scale-95 w-full">
+                <Button
+                  render={<Link to="/login" />}
+                  className="bg-transparent border border-ghost-border text-text-primary font-medium rounded-lg px-5 py-2.5 transition-all hover:border-border hover:bg-ghost-bg hover:text-bg active:scale-95 w-full"
+                >
                   Start Team trial
                 </Button>
               </CardFooter>

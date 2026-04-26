@@ -5,6 +5,8 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { motion, useInView } from 'motion/react'
 import { useRef } from 'react'
 
+const GITHUB_URL = 'https://github.com/envyapp/envy'
+
 const MotionCard = motion.create(Card)
 
 export function OpenSource() {
@@ -60,11 +62,30 @@ export function OpenSource() {
                   transition={{ delay: 0.4, duration: 0.45 }}
                   className="flex flex-col sm:flex-row flex-wrap gap-4"
                 >
-                  <Button className="w-full sm:w-auto bg-brand text-bg font-semibold rounded-lg p-5 transition-all hover:brightness-110 active:scale-95 flex items-center justify-center gap-2">
+                  <Button
+                    render={
+                      <a
+                        href={GITHUB_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      />
+                    }
+                    className="w-full sm:w-auto bg-brand text-bg font-semibold rounded-lg p-5 transition-all hover:brightness-110 active:scale-95 flex items-center justify-center gap-2"
+                  >
                     <HugeiconsIcon icon={GithubIcon} size={20} />
                     Star on GitHub
                   </Button>
-                  <Button className="w-full sm:w-auto bg-transparent border border-ghost-border text-text-primary font-medium rounded-lg p-5 transition-all hover:bg-ghost-bg active:scale-95 flex items-center justify-center gap-2">
+                  <Button
+                    render={
+                      <a
+                        href={GITHUB_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-bg hover:bg-brand"
+                      />
+                    }
+                    className="w-full sm:w-auto bg-transparent border border-ghost-border text-text-primary font-medium rounded-lg p-5 transition-all hover:bg-ghost-bg active:scale-95 flex items-center justify-center gap-2"
+                  >
                     <HugeiconsIcon icon={CodeIcon} size={20} />
                     Read the source
                   </Button>

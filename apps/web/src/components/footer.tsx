@@ -2,13 +2,15 @@ import { Shield01Icon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Link } from '@tanstack/react-router'
 
+const GITHUB_URL = 'https://github.com/envyapp/envy'
+
 export function Footer() {
   return (
     <footer className="py-20 px-6 border-t border-white/5">
       <div className="max-w-7xl mx-auto">
         <div className="grid md:grid-cols-4 gap-12 mb-16">
           <div className="col-span-2">
-            <div className="flex items-center gap-2 mb-6">
+            <Link to="/" className="flex items-center gap-2 mb-6 w-fit">
               <div className="w-8 h-8 bg-[#111] rounded-lg flex items-center justify-center">
                 <img
                   src="/logo-no-bg.png"
@@ -19,7 +21,7 @@ export function Footer() {
               <span className="text-xl font-display font-bold tracking-tight">
                 envy
               </span>
-            </div>
+            </Link>
             <p className="text-text-secondary max-w-xs leading-relaxed">
               Your secrets. In sync. Always. The modern way to manage
               environment variables for teams.
@@ -36,24 +38,34 @@ export function Footer() {
             <h4 className="font-bold mb-6">Product</h4>
             <ul className="space-y-4 text-sm text-text-secondary">
               <li>
-                <Link to="/" className="hover:text-brand transition-colors">
+                <a href="/#features" className="hover:text-brand transition-colors">
                   Features
-                </Link>
+                </a>
               </li>
               <li>
-                <Link to="/" className="hover:text-brand transition-colors">
+                <a href="/#pricing" className="hover:text-brand transition-colors">
                   Pricing
-                </Link>
+                </a>
               </li>
               <li>
-                <Link to="/" className="hover:text-brand transition-colors">
+                <a
+                  href={`${GITHUB_URL}/releases`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-brand transition-colors"
+                >
                   Changelog
-                </Link>
+                </a>
               </li>
               <li>
-                <Link to="/" className="hover:text-brand transition-colors">
+                <a
+                  href={`${GITHUB_URL}/issues`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-brand transition-colors"
+                >
                   Roadmap
-                </Link>
+                </a>
               </li>
             </ul>
           </div>
@@ -62,24 +74,44 @@ export function Footer() {
             <h4 className="font-bold mb-6">Company</h4>
             <ul className="space-y-4 text-sm text-text-secondary">
               <li>
-                <Link to="/" className="hover:text-brand transition-colors">
+                <a
+                  href={`${GITHUB_URL}#readme`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-brand transition-colors"
+                >
                   About
-                </Link>
+                </a>
               </li>
               <li>
-                <Link to="/" className="hover:text-brand transition-colors">
+                <a
+                  href={`${GITHUB_URL}/discussions`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-brand transition-colors"
+                >
                   Blog
-                </Link>
+                </a>
               </li>
               <li>
-                <Link to="/" className="hover:text-brand transition-colors">
+                <a
+                  href="https://twitter.com/envyapp"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-brand transition-colors"
+                >
                   Twitter
-                </Link>
+                </a>
               </li>
               <li>
-                <Link to="/" className="hover:text-brand transition-colors">
+                <a
+                  href={GITHUB_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-brand transition-colors"
+                >
                   GitHub
-                </Link>
+                </a>
               </li>
             </ul>
           </div>
@@ -88,12 +120,22 @@ export function Footer() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-8 border-t border-white/5 text-xs text-text-muted">
           <p>© 2026 Envy. Built with ☕ and paranoia about secret leaks.</p>
           <div className="flex items-center gap-8">
-            <Link to="/" className="hover:text-text-primary transition-colors">
+            <a
+              href={`${GITHUB_URL}/blob/main/PRIVACY.md`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-text-primary transition-colors"
+            >
               Privacy Policy
-            </Link>
-            <Link to="/" className="hover:text-text-primary transition-colors">
+            </a>
+            <a
+              href={`${GITHUB_URL}/blob/main/TERMS.md`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-text-primary transition-colors"
+            >
               Terms of Service
-            </Link>
+            </a>
           </div>
         </div>
       </div>
