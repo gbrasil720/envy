@@ -20,7 +20,9 @@ export const user = pgTable('user', {
   updatedAt: timestamp('updated_at')
     .defaultNow()
     .$onUpdate(() => new Date())
-    .notNull()
+    .notNull(),
+  onboardingCompletedAt: timestamp('onboarding_completed_at'),
+  onboardingSkippedAt: timestamp('onboarding_skipped_at')
 })
 
 export const session = pgTable(

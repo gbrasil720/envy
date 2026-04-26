@@ -1,12 +1,12 @@
 import { and, count, eq } from '@envy/db'
-import { member } from '@envy/db/schema/auth'
+import { member, user } from '@envy/db/schema/auth'
 import { project, secret } from '@envy/db/schema/envy'
 import { TRPCError } from '@trpc/server'
 import { protectedProcedure, router } from '..'
 
 export const meRouter = router({
   get: protectedProcedure.query(async ({ ctx }) => {
-    const user = await ctx.db.query.user.findFirst({
+    const currentUser = await ctx.db.query.user.findFirst({
       where: (users, { eq }) => eq(users.id, ctx.session.user.id),
       columns: {
         id: true,
@@ -14,27 +14,19 @@ export const meRouter = router({
         email: true,
         image: true,
         createdAt: true,
-        emailVerified: true
+        emailVerified: true,
+        onboardingCompletedAt: true,
+        onboardingSkippedAt: true
       }
     })
 
-    if (!user) {
+    if (!currentUser) {
       throw new TRPCError({
         code: 'NOT_FOUND',
         message: 'User not found',
         cause: 'User not found'
       })
     }
-
-    const projects = await ctx.db.query.project.findMany({
-      where: (p, { eq }) => eq(p.createdBy, ctx.session.user.id),
-      columns: { id: true },
-      with: {
-        organization: {
-          columns: { metadata: true }
-        }
-      }
-    })
 
     const secretCount = await ctx.db
       .select({ value: count() })
@@ -59,6 +51,42 @@ export const meRouter = router({
       'free'
     const projectCount = ownedProjects.length
 
-    return { ...user, plan, projectCount, secretCount }
+    return { ...currentUser, plan, projectCount, secretCount }
+  }),
+
+  completeOnboarding: protectedProcedure.mutation(async ({ ctx }) => {
+    const [updated] = await ctx.db
+      .update(user)
+      .set({ onboardingCompletedAt: new Date() })
+      .where(eq(user.id, ctx.session.user.id))
+      .returning({
+        id: user.id,
+        onboardingCompletedAt: user.onboardingCompletedAt,
+        onboardingSkippedAt: user.onboardingSkippedAt
+      })
+
+    if (!updated) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' })
+    }
+
+    return updated
+  }),
+
+  skipOnboarding: protectedProcedure.mutation(async ({ ctx }) => {
+    const [updated] = await ctx.db
+      .update(user)
+      .set({ onboardingSkippedAt: new Date() })
+      .where(eq(user.id, ctx.session.user.id))
+      .returning({
+        id: user.id,
+        onboardingCompletedAt: user.onboardingCompletedAt,
+        onboardingSkippedAt: user.onboardingSkippedAt
+      })
+
+    if (!updated) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' })
+    }
+
+    return updated
   })
 })

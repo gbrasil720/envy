@@ -38,7 +38,7 @@ import { authClient } from '@/lib/auth-client'
 import { useTRPC } from '@/utils/trpc'
 
 export const Route = createFileRoute('/dashboard')({
-  beforeLoad: async () => {
+  beforeLoad: async ({ context }) => {
     if (typeof window === 'undefined') {
       return
     }
@@ -47,6 +47,14 @@ export const Route = createFileRoute('/dashboard')({
 
     if (!session) {
       throw redirect({ to: '/login' })
+    }
+
+    const me = await context.queryClient.fetchQuery(
+      context.trpc.me.get.queryOptions()
+    )
+
+    if (!me.onboardingCompletedAt && !me.onboardingSkippedAt) {
+      throw redirect({ to: '/onboarding' })
     }
   },
   component: DashboardPage,
