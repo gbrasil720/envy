@@ -52,7 +52,10 @@ export function AppTopbar({ currentProject, section, onOpenCommand }: Props) {
                     dashboardPlanBadgeClass(currentProject.plan)
                   )}
                 >
-                  {currentProject.plan}
+                  {currentProject.plan === 'free'
+                    ? 'Free'
+                    : currentProject.plan.charAt(0).toUpperCase() +
+                      currentProject.plan.slice(1)}
                 </Badge>
               </BreadcrumbItem>
             </BreadcrumbList>

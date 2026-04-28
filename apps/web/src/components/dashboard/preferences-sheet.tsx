@@ -11,13 +11,15 @@ import { Skeleton } from '@envy/ui/components/skeleton'
 import {
   Cancel01Icon,
   CrownIcon,
-  FolderLibraryIcon,
   StarIcon,
   UserIcon
 } from '@hugeicons/core-free-icons'
 import { useQuery } from '@tanstack/react-query'
+import { initials } from '@/utils/initials'
 import { useTRPC } from '@/utils/trpc'
 import { DashboardIcon } from './dashboard-icon'
+import { ThemeSwitcher } from './theme-switcher'
+import { UsageBar } from './usage-bar'
 
 type Plan = 'free' | 'pro' | 'team'
 
@@ -65,57 +67,6 @@ const PLAN_CONFIG: Record<
     color: 'text-blue-400',
     badgeClass: 'bg-blue-500/10 text-blue-400 border-0'
   }
-}
-
-function initials(name: string | null | undefined, email: string | null) {
-  if (name?.trim()) {
-    const parts = name.trim().split(/\s+/)
-    if (parts.length >= 2) {
-      return `${parts[0]?.[0] ?? ''}${parts[1]?.[0] ?? ''}`.toUpperCase()
-    }
-    return name.slice(0, 2).toUpperCase()
-  }
-  if (email) return email.slice(0, 2).toUpperCase()
-  return '??'
-}
-
-function UsageBar({
-  label,
-  used,
-  limit
-}: {
-  label: string
-  used: number
-  limit: number | null
-}) {
-  const isUnlimited = limit === null
-  const pct = isUnlimited ? 0 : Math.min((used / limit) * 100, 100)
-  const isNearLimit = !isUnlimited && pct >= 80
-
-  return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-muted-foreground">{label}</span>
-        <span className={isNearLimit ? 'text-amber-400' : 'text-foreground'}>
-          {isUnlimited ? (
-            <span className="text-brand">Unlimited</span>
-          ) : (
-            `${used} / ${limit}`
-          )}
-        </span>
-      </div>
-      {!isUnlimited && (
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className={`h-full rounded-full transition-all ${
-              isNearLimit ? 'bg-amber-400' : 'bg-brand'
-            }`}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-      )}
-    </div>
-  )
 }
 
 export function PreferencesSheet({ open, onOpenChange }: Props) {
@@ -256,6 +207,15 @@ export function PreferencesSheet({ open, onOpenChange }: Props) {
                   <span className="text-muted-foreground">Auth provider</span>
                   <span>GitHub</span>
                 </div>
+              </div>
+            </section>
+
+            <section className="flex flex-col gap-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Appearance
+              </p>
+              <div className="rounded-xl border border-border bg-muted/20 p-3">
+                <ThemeSwitcher />
               </div>
             </section>
 

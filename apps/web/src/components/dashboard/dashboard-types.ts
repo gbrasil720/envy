@@ -6,4 +6,6 @@ export type DashboardProject = {
   slug: string
   plan: string
   environments?: { name: string }[]
+  secretsCount?: number
+  lastSyncedAt?: string | null
 }

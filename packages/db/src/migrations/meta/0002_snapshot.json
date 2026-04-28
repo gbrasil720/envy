@@ -1,6 +1,6 @@
 {
-  "id": "5ca8371f-b0d9-4c99-8a55-0b72d1e799ec",
-  "prevId": "80bbf70f-caca-42b3-84a1-3d0270f46521",
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "prevId": "5ca8371f-b0d9-4c99-8a55-0b72d1e799ec",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -548,6 +548,18 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "onboarding_completed_at": {
+          "name": "onboarding_completed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "onboarding_skipped_at": {
+          "name": "onboarding_skipped_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},

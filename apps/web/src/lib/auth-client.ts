@@ -6,5 +6,3 @@ export const authClient = createAuthClient({
   baseURL: SERVER_URL,
   plugins: [sentinelClient()]
 })
-
-console.log(SERVER_URL)
