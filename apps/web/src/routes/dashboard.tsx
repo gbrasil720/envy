@@ -52,6 +52,12 @@ function formatRelativeTime(date: string | null | undefined): string {
 }
 
 export const Route = createFileRoute('/dashboard')({
+  head: () => ({
+    meta: [
+      { title: 'Dashboard — Envy' },
+      { name: 'robots', content: 'noindex, nofollow' }
+    ]
+  }),
   beforeLoad: async ({ context }) => {
     if (typeof window === 'undefined') {
       return

@@ -27,6 +27,12 @@ function toSlug(val: string) {
 }
 
 export const Route = createFileRoute('/onboarding')({
+  head: () => ({
+    meta: [
+      { title: 'Get Started — Envy' },
+      { name: 'robots', content: 'noindex, nofollow' }
+    ]
+  }),
   beforeLoad: async ({ context }) => {
     if (typeof window === 'undefined') return
 
