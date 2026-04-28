@@ -12,8 +12,7 @@ export function createAuth() {
   return betterAuth({
     database: drizzleAdapter(db, {
       provider: 'pg',
-
-      schema: schema
+      schema
     }),
     socialProviders: {
       github: {
