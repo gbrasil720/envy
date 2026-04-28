@@ -1,7 +1,7 @@
 import { encrypt, exportKey, generateKey } from '@envy/crypto'
-import { and, eq } from '@envy/db'
+import { and, count, eq, inArray, sql } from '@envy/db'
 import { member, organization } from '@envy/db/schema/auth'
-import { environment, project } from '@envy/db/schema/envy'
+import { auditLog, environment, project, secret } from '@envy/db/schema/envy'
 import { env } from '@envy/env/server'
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
@@ -55,7 +55,39 @@ export const projectsRouter = router({
       }
     })
 
-    return projects.map((p) => ({ ...p, plan: accountPlan }))
+    if (projects.length === 0) return []
+
+    const projectIds = projects.map((p) => p.id)
+
+    const secretCounts = await ctx.db
+      .select({ projectId: secret.projectId, total: count() })
+      .from(secret)
+      .where(inArray(secret.projectId, projectIds))
+      .groupBy(secret.projectId)
+
+    const secretCountMap = new Map(
+      secretCounts.map((s) => [s.projectId, s.total])
+    )
+
+    const lastActivityRows = await ctx.db
+      .select({
+        projectId: auditLog.projectId,
+        lastAt: sql<string>`max(${auditLog.createdAt})`
+      })
+      .from(auditLog)
+      .where(inArray(auditLog.projectId, projectIds))
+      .groupBy(auditLog.projectId)
+
+    const lastActivityMap = new Map(
+      lastActivityRows.map((r) => [r.projectId, r.lastAt ?? null])
+    )
+
+    return projects.map((p) => ({
+      ...p,
+      plan: accountPlan,
+      secretsCount: secretCountMap.get(p.id) ?? 0,
+      lastSyncedAt: lastActivityMap.get(p.id) ?? null
+    }))
   }),
 
   create: protectedProcedure
