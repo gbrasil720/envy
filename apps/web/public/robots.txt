@@ -1,3 +1,11 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /dashboard
+Disallow: /onboarding
+Disallow: /cli-auth
+Disallow: /auth/
+Disallow: /sandbox
+Disallow: /api/
+
+Sitemap: https://useenvy.dev/sitemap.xml
