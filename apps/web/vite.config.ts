@@ -31,6 +31,7 @@ export default defineConfig({
     }
   },
   server: {
-    port: 3001
+    port: 3001,
+    allowedHosts: ['nintendo-hyperlink-undamaged.ngrok-free.dev']
   }
 })
