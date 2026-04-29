@@ -4,6 +4,12 @@ import { AuthorizeProjectCard } from '@/components/cli/authorize-project-card'
 import { ProjectAuthorizedCard } from '@/components/cli/project-authorized-card'
 
 export const Route = createFileRoute('/sandbox')({
+  head: () => ({
+    meta: [
+      { title: 'Sandbox — Envy' },
+      { name: 'robots', content: 'noindex, nofollow' }
+    ]
+  }),
   component: RouteComponent
 })
 

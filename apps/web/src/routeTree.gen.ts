@@ -15,7 +15,14 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CliAuthRouteImport } from './routes/cli-auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardProjectSlugRouteImport } from './routes/dashboard/$projectSlug'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as DashboardProjectSlugIndexRouteImport } from './routes/dashboard/$projectSlug/index'
+import { Route as DashboardProjectSlugSettingsRouteImport } from './routes/dashboard/$projectSlug/settings'
+import { Route as DashboardProjectSlugSecretsRouteImport } from './routes/dashboard/$projectSlug/secrets'
+import { Route as DashboardProjectSlugMembersRouteImport } from './routes/dashboard/$projectSlug/members'
+import { Route as DashboardProjectSlugAuditRouteImport } from './routes/dashboard/$projectSlug/audit'
 
 const SandboxRoute = SandboxRouteImport.update({
   id: '/sandbox',
@@ -47,39 +54,98 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardProjectSlugRoute = DashboardProjectSlugRouteImport.update({
+  id: '/$projectSlug',
+  path: '/$projectSlug',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardProjectSlugIndexRoute =
+  DashboardProjectSlugIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DashboardProjectSlugRoute,
+  } as any)
+const DashboardProjectSlugSettingsRoute =
+  DashboardProjectSlugSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => DashboardProjectSlugRoute,
+  } as any)
+const DashboardProjectSlugSecretsRoute =
+  DashboardProjectSlugSecretsRouteImport.update({
+    id: '/secrets',
+    path: '/secrets',
+    getParentRoute: () => DashboardProjectSlugRoute,
+  } as any)
+const DashboardProjectSlugMembersRoute =
+  DashboardProjectSlugMembersRouteImport.update({
+    id: '/members',
+    path: '/members',
+    getParentRoute: () => DashboardProjectSlugRoute,
+  } as any)
+const DashboardProjectSlugAuditRoute =
+  DashboardProjectSlugAuditRouteImport.update({
+    id: '/audit',
+    path: '/audit',
+    getParentRoute: () => DashboardProjectSlugRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/cli-auth': typeof CliAuthRoute
-  '/dashboard': typeof DashboardRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/sandbox': typeof SandboxRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/dashboard/$projectSlug': typeof DashboardProjectSlugRouteWithChildren
+  '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/$projectSlug/audit': typeof DashboardProjectSlugAuditRoute
+  '/dashboard/$projectSlug/members': typeof DashboardProjectSlugMembersRoute
+  '/dashboard/$projectSlug/secrets': typeof DashboardProjectSlugSecretsRoute
+  '/dashboard/$projectSlug/settings': typeof DashboardProjectSlugSettingsRoute
+  '/dashboard/$projectSlug/': typeof DashboardProjectSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cli-auth': typeof CliAuthRoute
-  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/sandbox': typeof SandboxRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/dashboard': typeof DashboardIndexRoute
+  '/dashboard/$projectSlug/audit': typeof DashboardProjectSlugAuditRoute
+  '/dashboard/$projectSlug/members': typeof DashboardProjectSlugMembersRoute
+  '/dashboard/$projectSlug/secrets': typeof DashboardProjectSlugSecretsRoute
+  '/dashboard/$projectSlug/settings': typeof DashboardProjectSlugSettingsRoute
+  '/dashboard/$projectSlug': typeof DashboardProjectSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/cli-auth': typeof CliAuthRoute
-  '/dashboard': typeof DashboardRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/sandbox': typeof SandboxRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/dashboard/$projectSlug': typeof DashboardProjectSlugRouteWithChildren
+  '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/$projectSlug/audit': typeof DashboardProjectSlugAuditRoute
+  '/dashboard/$projectSlug/members': typeof DashboardProjectSlugMembersRoute
+  '/dashboard/$projectSlug/secrets': typeof DashboardProjectSlugSecretsRoute
+  '/dashboard/$projectSlug/settings': typeof DashboardProjectSlugSettingsRoute
+  '/dashboard/$projectSlug/': typeof DashboardProjectSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,15 +157,27 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/sandbox'
     | '/auth/callback'
+    | '/dashboard/$projectSlug'
+    | '/dashboard/'
+    | '/dashboard/$projectSlug/audit'
+    | '/dashboard/$projectSlug/members'
+    | '/dashboard/$projectSlug/secrets'
+    | '/dashboard/$projectSlug/settings'
+    | '/dashboard/$projectSlug/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/cli-auth'
-    | '/dashboard'
     | '/login'
     | '/onboarding'
     | '/sandbox'
     | '/auth/callback'
+    | '/dashboard'
+    | '/dashboard/$projectSlug/audit'
+    | '/dashboard/$projectSlug/members'
+    | '/dashboard/$projectSlug/secrets'
+    | '/dashboard/$projectSlug/settings'
+    | '/dashboard/$projectSlug'
   id:
     | '__root__'
     | '/'
@@ -109,12 +187,19 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/sandbox'
     | '/auth/callback'
+    | '/dashboard/$projectSlug'
+    | '/dashboard/'
+    | '/dashboard/$projectSlug/audit'
+    | '/dashboard/$projectSlug/members'
+    | '/dashboard/$projectSlug/secrets'
+    | '/dashboard/$projectSlug/settings'
+    | '/dashboard/$projectSlug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CliAuthRoute: typeof CliAuthRoute
-  DashboardRoute: typeof DashboardRoute
+  DashboardRoute: typeof DashboardRouteWithChildren
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   SandboxRoute: typeof SandboxRoute
@@ -165,6 +250,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/$projectSlug': {
+      id: '/dashboard/$projectSlug'
+      path: '/$projectSlug'
+      fullPath: '/dashboard/$projectSlug'
+      preLoaderRoute: typeof DashboardProjectSlugRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/auth/callback': {
       id: '/auth/callback'
       path: '/auth/callback'
@@ -172,13 +271,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/$projectSlug/': {
+      id: '/dashboard/$projectSlug/'
+      path: '/'
+      fullPath: '/dashboard/$projectSlug/'
+      preLoaderRoute: typeof DashboardProjectSlugIndexRouteImport
+      parentRoute: typeof DashboardProjectSlugRoute
+    }
+    '/dashboard/$projectSlug/settings': {
+      id: '/dashboard/$projectSlug/settings'
+      path: '/settings'
+      fullPath: '/dashboard/$projectSlug/settings'
+      preLoaderRoute: typeof DashboardProjectSlugSettingsRouteImport
+      parentRoute: typeof DashboardProjectSlugRoute
+    }
+    '/dashboard/$projectSlug/secrets': {
+      id: '/dashboard/$projectSlug/secrets'
+      path: '/secrets'
+      fullPath: '/dashboard/$projectSlug/secrets'
+      preLoaderRoute: typeof DashboardProjectSlugSecretsRouteImport
+      parentRoute: typeof DashboardProjectSlugRoute
+    }
+    '/dashboard/$projectSlug/members': {
+      id: '/dashboard/$projectSlug/members'
+      path: '/members'
+      fullPath: '/dashboard/$projectSlug/members'
+      preLoaderRoute: typeof DashboardProjectSlugMembersRouteImport
+      parentRoute: typeof DashboardProjectSlugRoute
+    }
+    '/dashboard/$projectSlug/audit': {
+      id: '/dashboard/$projectSlug/audit'
+      path: '/audit'
+      fullPath: '/dashboard/$projectSlug/audit'
+      preLoaderRoute: typeof DashboardProjectSlugAuditRouteImport
+      parentRoute: typeof DashboardProjectSlugRoute
+    }
   }
 }
+
+interface DashboardProjectSlugRouteChildren {
+  DashboardProjectSlugAuditRoute: typeof DashboardProjectSlugAuditRoute
+  DashboardProjectSlugMembersRoute: typeof DashboardProjectSlugMembersRoute
+  DashboardProjectSlugSecretsRoute: typeof DashboardProjectSlugSecretsRoute
+  DashboardProjectSlugSettingsRoute: typeof DashboardProjectSlugSettingsRoute
+  DashboardProjectSlugIndexRoute: typeof DashboardProjectSlugIndexRoute
+}
+
+const DashboardProjectSlugRouteChildren: DashboardProjectSlugRouteChildren = {
+  DashboardProjectSlugAuditRoute: DashboardProjectSlugAuditRoute,
+  DashboardProjectSlugMembersRoute: DashboardProjectSlugMembersRoute,
+  DashboardProjectSlugSecretsRoute: DashboardProjectSlugSecretsRoute,
+  DashboardProjectSlugSettingsRoute: DashboardProjectSlugSettingsRoute,
+  DashboardProjectSlugIndexRoute: DashboardProjectSlugIndexRoute,
+}
+
+const DashboardProjectSlugRouteWithChildren =
+  DashboardProjectSlugRoute._addFileChildren(DashboardProjectSlugRouteChildren)
+
+interface DashboardRouteChildren {
+  DashboardProjectSlugRoute: typeof DashboardProjectSlugRouteWithChildren
+  DashboardIndexRoute: typeof DashboardIndexRoute
+}
+
+const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardProjectSlugRoute: DashboardProjectSlugRouteWithChildren,
+  DashboardIndexRoute: DashboardIndexRoute,
+}
+
+const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
+  DashboardRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CliAuthRoute: CliAuthRoute,
-  DashboardRoute: DashboardRoute,
+  DashboardRoute: DashboardRouteWithChildren,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   SandboxRoute: SandboxRoute,

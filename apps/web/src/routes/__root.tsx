@@ -32,7 +32,15 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         content: 'width=device-width, initial-scale=1, viewport-fit=cover'
       },
       {
-        title: 'envy'
+        name: 'theme-color',
+        content: '#3DD68C'
+      },
+      {
+        property: 'og:site_name',
+        content: 'Envy'
+      },
+      {
+        title: 'Envy — Secrets Manager for Developers'
       }
     ],
     links: [
@@ -52,6 +60,10 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
       {
         rel: 'icon',
         href: '/favicon.ico'
+      },
+      {
+        rel: 'apple-touch-icon',
+        href: '/apple-touch-icon.png'
       }
     ],
     scripts: [
