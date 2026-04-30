@@ -8,17 +8,18 @@ import {
   GithubIcon
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
-
+import { toast } from 'sonner'
 import { authClient } from '@/lib/auth-client'
+import { AccessDeniedCard } from './access-denied-card'
 
 const MotionCard = motion.create(Card)
 
 export function AuthForm() {
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | undefined>('')
+  const { error } = useSearch({ from: '/login' })
   const navigate = useNavigate()
 
   const handleGithubLogin = async () => {
@@ -27,16 +28,21 @@ export function AuthForm() {
     authClient.signIn
       .social({
         provider: 'github',
-        callbackURL: `${window.location.origin}/dashboard`
+        callbackURL: `${window.location.origin}/dashboard`,
+        errorCallbackURL: `${window.location.origin}/login?error=not_approved`
       })
       .then((data) => {
         if (data.error) {
-          setError(data.error.message)
+          toast.error(data.error.message)
         }
       })
       .finally(() => {
         setIsLoading(false)
       })
+  }
+
+  if (error === 'not_approved') {
+    return <AccessDeniedCard />
   }
 
   return (
@@ -65,7 +71,6 @@ export function AuthForm() {
                 </div>
                 <Button
                   variant="ghost"
-                  onClick={() => setError('')}
                   className="text-danger/60 hover:text-danger transition-colors shrink-0"
                 >
                   <HugeiconsIcon icon={Cancel01Icon} size={14} />
