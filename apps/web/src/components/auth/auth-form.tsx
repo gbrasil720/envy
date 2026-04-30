@@ -100,10 +100,11 @@ export function AuthForm() {
 
           <div className="mb-8">
             <h2 className="font-display font-bold text-[26px] md:text-[32px] text-text-primary mb-2 tracking-tight leading-tight">
-              Welcome back.
+              Open the vault.
             </h2>
             <p className="font-sans text-[15px] text-text-secondary leading-relaxed">
-              Authenticate with GitHub to access your secrets.
+              GitHub is the only way in — and only approved accounts get
+              through.
             </p>
           </div>
 
