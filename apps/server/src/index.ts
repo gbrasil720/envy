@@ -8,6 +8,7 @@ import { apiKey } from '@envy/db/schema/index'
 import { env } from '@envy/env/server'
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
 import { Elysia } from 'elysia'
+import { waitlistRoutes } from './routes/waitlist'
 
 const app = new Elysia()
   .use(
@@ -24,10 +25,20 @@ const app = new Elysia()
       credentials: true
     })
   )
+  .use(waitlistRoutes)
   .all('/api/auth/*', async (context) => {
     const { request, status } = context
     if (['POST', 'GET'].includes(request.method)) {
-      return auth.handler(request)
+      const response = await auth.handler(request)
+
+      if (request.url.includes('/callback/') && response.status >= 400) {
+        return Response.redirect(
+          `${env.CORS_ORIGIN}/login?error=not_approved`,
+          302
+        )
+      }
+
+      return response
     }
     return status(405)
   })

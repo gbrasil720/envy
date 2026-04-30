@@ -13,13 +13,14 @@
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate --verbose"
   },
   "dependencies": {
     "@envy/env": "workspace:*",
     "@neondatabase/serverless": "^1.0.2",
     "dotenv": "catalog:",
     "drizzle-orm": "^0.45.1",
+    "postgres": "^3.4.9",
     "zod": "catalog:"
   },
   "devDependencies": {

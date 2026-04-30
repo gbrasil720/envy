@@ -1,8 +1,9 @@
 import { dash } from '@better-auth/infra'
-import { createDb } from '@envy/db'
+import { and, createDb, eq } from '@envy/db'
 import * as schema from '@envy/db/schema/auth'
+import * as envySchema from '@envy/db/schema/envy'
 import { env } from '@envy/env/server'
-import { betterAuth } from 'better-auth'
+import { APIError, betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { openAPI, organization } from 'better-auth/plugins'
 
@@ -33,6 +34,42 @@ export function createAuth() {
     ],
     emailAndPassword: {
       enabled: true
+    },
+    databaseHooks: {
+      session: {
+        create: {
+          before: async (session) => {
+            const dbUser = await db.query.user.findFirst({
+              where: (u, { eq }) => eq(u.id, session.userId)
+            })
+
+            if (!dbUser?.email) {
+              // throw new Error('No email associated with this account')
+              throw new APIError('FORBIDDEN', {
+                message: 'No email associated with this account'
+              })
+            }
+
+            const [entry] = await db
+              .select()
+              .from(envySchema.waitlist)
+              .where(
+                and(
+                  eq(envySchema.waitlist.email, dbUser.email),
+                  eq(envySchema.waitlist.status, 'approved')
+                )
+              )
+              .limit(1)
+
+            if (!entry) {
+              // throw new Error('This email is not approved for early access')
+              throw new APIError('FORBIDDEN', {
+                message: 'This email is not approved for early access'
+              })
+            }
+          }
+        }
+      }
     },
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
