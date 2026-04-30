@@ -47,7 +47,7 @@ export function HowItWorks() {
     <section
       ref={sectionRef}
       id="how-it-works"
-      className="py-14 sm:py-20 md:py-28 px-4 sm:px-6 border-y border-ghost-divider relative overflow-hidden"
+      className="py-14 sm:py-20 md:py-28 px-4 sm:px-6 border-y border-ghost-divider relative overflow-hidden scroll-mt-20"
     >
       <div
         className="absolute inset-0 pointer-events-none"
@@ -137,7 +137,7 @@ export function HowItWorks() {
                   </div>
 
                   <div className="relative overflow-hidden rounded-lg mb-4 w-full">
-                    <code className="dark relative z-10 bg-[#0D0D14] border border-white/10 px-4 py-2.5 rounded-lg font-mono text-brand text-sm block transition-all duration-200 group-hover:border-brand/15 group-hover:border-2">
+                    <code className="relative z-10 bg-surface-2 dark:bg-[#0D0D14] border border-border dark:border-white/10 px-4 py-2.5 rounded-lg font-mono text-brand text-sm block transition-all duration-200 group-hover:border-brand/15 group-hover:border-2">
                       <span className="text-text-muted mr-1">$</span> {item.cmd}
                     </code>
                     <motion.div

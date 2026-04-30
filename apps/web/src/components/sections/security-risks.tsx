@@ -120,7 +120,7 @@ export function SecurityRisks() {
               </CardContent>
 
               <div className="relative mx-4 mb-4 overflow-hidden rounded-lg">
-                <div className="dark bg-[#0D0D14]/90 border border-white/10 p-4 font-mono text-xs text-text-muted">
+                <div className="bg-surface-2 dark:bg-[#0D0D14]/90 border border-border dark:border-white/10 p-4 font-mono text-xs text-text-muted">
                   {item.mock}
                 </div>
                 <motion.div
