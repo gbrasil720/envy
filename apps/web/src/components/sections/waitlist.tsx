@@ -10,7 +10,8 @@ export function Waitlist() {
   return (
     <section
       ref={sectionRef}
-      className="py-14 sm:py-20 md:py-28 px-4 sm:px-6 relative overflow-hidden"
+      id="waitlist"
+      className="py-14 sm:py-20 md:py-28 px-4 sm:px-6 relative overflow-hidden scroll-mt-16"
     >
       <motion.div
         animate={

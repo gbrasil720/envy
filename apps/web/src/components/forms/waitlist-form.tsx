@@ -1,3 +1,4 @@
+import { env } from '@envy/env/web'
 import { Input } from '@envy/ui/components/input'
 import {
   ArrowRight01Icon,
@@ -8,6 +9,7 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react'
 import { motion } from 'motion/react'
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 export function WaitlistForm() {
   const [email, setEmail] = useState('')
@@ -15,13 +17,25 @@ export function WaitlistForm() {
     'idle'
   )
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email) return
+
     setStatus('submitting')
-    setTimeout(() => {
+    try {
+      await fetch(`${env.VITE_SERVER_URL}/waitlist`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      })
+    } catch (error) {
+      toast.error('Failed to join the waitlist')
+      setStatus('idle')
+    } finally {
       setStatus('success')
-    }, 1500)
+    }
   }
 
   if (status === 'success') {
@@ -66,6 +80,7 @@ export function WaitlistForm() {
         <button
           type="submit"
           disabled={status === 'submitting'}
+          onClick={handleSubmit}
           className="w-full sm:w-auto sm:self-stretch shrink-0 bg-brand text-bg px-8 py-3.5 sm:py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-70 relative z-10 shadow-lg shadow-brand/20"
         >
           {status === 'submitting' ? (

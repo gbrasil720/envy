@@ -154,6 +154,21 @@ export const cliAuthSession = pgTable(
   ]
 )
 
+export const waitlist = pgTable(
+  'waitlist',
+  {
+    id: text('id').primaryKey(),
+    email: text('email').notNull().unique(),
+    status: text('status').notNull().default('pending'), // 'pending' | 'approved'
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    approvedAt: timestamp('approved_at')
+  },
+  (table) => [
+    uniqueIndex('waitlist_email_uidx').on(table.email),
+    index('waitlist_status_idx').on(table.status)
+  ]
+)
+
 export const projectRelations = relations(project, ({ one, many }) => ({
   organization: one(organization, {
     fields: [project.id],
