@@ -12,6 +12,7 @@ import {
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query'
 import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import { NotFound } from '@/components/not-found'
 import { ThemeProvider } from '@/components/theme-provider'
 import appCss from '../index.css?url'
@@ -96,6 +97,7 @@ function RootDocument() {
         <TanStackRouterDevtools position="bottom-left" />
         <ReactQueryDevtools position="bottom" buttonPosition="bottom-right" />
         <Analytics />
+        <SpeedInsights />
         <Scripts />
       </body>
     </html>
