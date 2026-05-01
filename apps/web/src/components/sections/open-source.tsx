@@ -5,7 +5,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { motion, useInView } from 'motion/react'
 import { useRef } from 'react'
 
-const GITHUB_URL = 'https://github.com/envyapp/envy'
+const GITHUB_URL = 'https://github.com/gbrasil720/envy'
 
 const MotionCard = motion.create(Card)
 
@@ -99,14 +99,14 @@ export function OpenSource() {
                   duration: 0.5,
                   ease: [0.25, 0.46, 0.45, 0.94]
                 }}
-                className="dark bg-[#0D0D14] border border-white/10 rounded-2xl p-4 sm:p-6 font-mono text-xs sm:text-sm shadow-2xl overflow-x-auto"
+                className="bg-surface-2 dark:bg-[#0D0D14] border border-border dark:border-white/10 rounded-2xl p-4 sm:p-6 font-mono text-xs sm:text-sm shadow-2xl overflow-x-auto"
               >
                 <div className="flex items-center gap-2 mb-4 border-b border-ghost-divider pb-4">
                   <div className="w-3 h-3 rounded-full bg-red-500/50" />
                   <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
                   <div className="w-3 h-3 rounded-full bg-green-500/50" />
                   <span className="ml-2 text-text-muted text-xs">
-                    envy-cli / security / aes.ts
+                    cli / src / encrypt.ts
                   </span>
                 </div>
                 <div className="space-y-1">

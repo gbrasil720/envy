@@ -19,7 +19,7 @@ export function Features() {
     <section
       ref={sectionRef}
       id="features"
-      className="py-14 sm:py-20 md:py-28 px-4 sm:px-6"
+      className="py-14 sm:py-20 md:py-28 px-4 sm:px-6 scroll-mt-20"
     >
       <div className="max-w-7xl w-full min-w-0 mx-auto">
         <div className="text-center mb-16">
@@ -51,7 +51,7 @@ export function Features() {
             badge="Universal Compatibility"
             className="md:col-span-8"
           >
-            <div className="dark bg-[#0D0D14] p-6 rounded-xl border border-white/10 font-mono text-xs overflow-hidden">
+            <div className="bg-surface-2 dark:bg-[#0D0D14] p-6 rounded-xl border border-border dark:border-white/10 font-mono text-xs overflow-hidden">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-brand">▶</span>
                 <span className="text-text-primary max-w-full overflow-hidden whitespace-nowrap animate-typewriter inline-block">

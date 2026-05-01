@@ -1,8 +1,9 @@
 import { Shield01Icon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Link } from '@tanstack/react-router'
+import { scrollToSection } from '@/lib/smooth-scroll'
 
-const GITHUB_URL = 'https://github.com/envyapp/envy'
+const GITHUB_URL = 'https://github.com/gbrasil720/envy'
 
 export function Footer() {
   return (
@@ -40,6 +41,7 @@ export function Footer() {
               <li>
                 <a
                   href="/#features"
+                  onClick={(e) => { if (window.location.pathname === '/') { e.preventDefault(); scrollToSection('features') } }}
                   className="hover:text-brand transition-colors"
                 >
                   Features
@@ -48,29 +50,10 @@ export function Footer() {
               <li>
                 <a
                   href="/#pricing"
+                  onClick={(e) => { if (window.location.pathname === '/') { e.preventDefault(); scrollToSection('pricing') } }}
                   className="hover:text-brand transition-colors"
                 >
                   Pricing
-                </a>
-              </li>
-              <li>
-                <a
-                  href={`${GITHUB_URL}/releases`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-brand transition-colors"
-                >
-                  Changelog
-                </a>
-              </li>
-              <li>
-                <a
-                  href={`${GITHUB_URL}/issues`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-brand transition-colors"
-                >
-                  Roadmap
                 </a>
               </li>
             </ul>
@@ -91,17 +74,7 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href={`${GITHUB_URL}/discussions`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-brand transition-colors"
-                >
-                  Blog
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://twitter.com/envyapp"
+                  href="https://x.com/brasilgui0"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-brand transition-colors"

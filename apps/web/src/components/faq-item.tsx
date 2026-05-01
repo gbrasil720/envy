@@ -41,7 +41,7 @@ export function FAQItem({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <p className="min-w-0 pb-6 text-text-secondary leading-relaxed wrap-break-word">
+            <p className="min-w-0 text-sm pb-6 text-text-secondary leading-relaxed wrap-break-word">
               {answer}
             </p>
           </motion.div>
