@@ -79,7 +79,10 @@ export function Navbar() {
             <a
               key={link.name}
               href={`#${link.id}`}
-              onClick={(e) => { e.preventDefault(); scrollToSection(link.id) }}
+              onClick={(e) => {
+                e.preventDefault()
+                scrollToSection(link.id)
+              }}
               className={`text-sm font-medium transition-all duration-200 pb-1 border-b-2 ${activeSection === link.id ? 'text-brand border-brand' : 'text-text-secondary border-transparent hover:text-text-primary'}`}
             >
               {link.name}
@@ -101,7 +104,15 @@ export function Navbar() {
           </Button>
           {WAITLIST_MODE ? (
             <Button
-              render={<a href="#waitlist" onClick={(e) => { e.preventDefault(); scrollToSection('waitlist') }} />}
+              render={
+                <a
+                  href="#waitlist"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    scrollToSection('waitlist')
+                  }}
+                />
+              }
               className="text-sm bg-brand text-bg font-semibold rounded-lg p-5 transition-all hover:brightness-110 active:scale-95 cursor-pointer"
             >
               Join the waitlist
@@ -164,7 +175,11 @@ export function Navbar() {
                   key={link.name}
                   href={`#${link.id}`}
                   className="text-3xl sm:text-4xl font-display font-bold text-text-primary hover:text-brand transition-colors"
-                  onClick={(e) => { e.preventDefault(); setIsMobileMenuOpen(false); scrollToSection(link.id) }}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setIsMobileMenuOpen(false)
+                    scrollToSection(link.id)
+                  }}
                 >
                   {link.name}
                 </a>
@@ -175,7 +190,11 @@ export function Navbar() {
                     render={
                       <a
                         href="#waitlist"
-                        onClick={(e) => { e.preventDefault(); setIsMobileMenuOpen(false); scrollToSection('waitlist') }}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          setIsMobileMenuOpen(false)
+                          scrollToSection('waitlist')
+                        }}
                       />
                     }
                     className="text-base sm:text-xl py-3 sm:py-4 bg-brand text-bg font-semibold rounded-lg transition-all hover:brightness-110 active:scale-95"

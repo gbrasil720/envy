@@ -4,7 +4,7 @@ import { Tick01Icon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Link } from '@tanstack/react-router'
 import { motion, useInView } from 'motion/react'
-import { useState, useRef } from 'react'
+import { useRef, useState } from 'react'
 import { WAITLIST_MODE } from '@/lib/env'
 import { scrollToSection } from '@/lib/smooth-scroll'
 
@@ -131,7 +131,15 @@ function PricingWaitlist({ isInView }: { isInView: boolean }) {
             Join the waitlist to lock in early-access pricing.
           </p>
           <Button
-            render={<a href="#waitlist" onClick={(e) => { e.preventDefault(); scrollToSection('waitlist') }} />}
+            render={
+              <a
+                href="#waitlist"
+                onClick={(e) => {
+                  e.preventDefault()
+                  scrollToSection('waitlist')
+                }}
+              />
+            }
             className="bg-brand text-bg font-semibold rounded-lg px-5 py-2.5 transition-all hover:brightness-110 active:scale-95 w-full text-center"
           >
             Join the waitlist

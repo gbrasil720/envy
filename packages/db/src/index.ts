@@ -1,13 +1,23 @@
 // packages/db/src/index.ts
-import * as schema from './schema'
+
+import { env } from '@envy/env/server'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
-import { env } from '@envy/env/server'
+import * as schema from './schema'
 
 export {
-  and, asc, count, desc, eq,
-  inArray, isNotNull, isNull,
-  ne, not, or, sql
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  ne,
+  not,
+  or,
+  sql
 } from 'drizzle-orm'
 
 export function createDb() {

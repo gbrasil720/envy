@@ -41,7 +41,12 @@ export function Footer() {
               <li>
                 <a
                   href="/#features"
-                  onClick={(e) => { if (window.location.pathname === '/') { e.preventDefault(); scrollToSection('features') } }}
+                  onClick={(e) => {
+                    if (window.location.pathname === '/') {
+                      e.preventDefault()
+                      scrollToSection('features')
+                    }
+                  }}
                   className="hover:text-brand transition-colors"
                 >
                   Features
@@ -50,7 +55,12 @@ export function Footer() {
               <li>
                 <a
                   href="/#pricing"
-                  onClick={(e) => { if (window.location.pathname === '/') { e.preventDefault(); scrollToSection('pricing') } }}
+                  onClick={(e) => {
+                    if (window.location.pathname === '/') {
+                      e.preventDefault()
+                      scrollToSection('pricing')
+                    }
+                  }}
                   className="hover:text-brand transition-colors"
                 >
                   Pricing
