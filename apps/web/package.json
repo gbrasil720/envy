@@ -27,6 +27,7 @@
     "@trpc/tanstack-react-query": "^11.13.4",
     "@unpic/react": "^1.0.2",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
     "lucide-react": "catalog:",
