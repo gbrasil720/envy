@@ -1,4 +1,4 @@
-/** biome-ignore-all lint/a11y/useAnchorContent: <explanation> */
+/** biome-ignore-all lint/a11y/useAnchorContent: <> */
 'use client'
 
 import { Button } from '@envy/ui/components/button'
@@ -11,9 +11,11 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Link } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
+import { WAITLIST_MODE } from '@/lib/env'
+import { scrollToSection } from '@/lib/smooth-scroll'
 import { ModeToggle } from './theme-toggle'
 
-const GITHUB_URL = 'https://github.com/envyapp/envy'
+const GITHUB_URL = 'https://github.com/gbrasil720/envy'
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -77,6 +79,7 @@ export function Navbar() {
             <a
               key={link.name}
               href={`#${link.id}`}
+              onClick={(e) => { e.preventDefault(); scrollToSection(link.id) }}
               className={`text-sm font-medium transition-all duration-200 pb-1 border-b-2 ${activeSection === link.id ? 'text-brand border-brand' : 'text-text-secondary border-transparent hover:text-text-primary'}`}
             >
               {link.name}
@@ -96,15 +99,25 @@ export function Navbar() {
             <HugeiconsIcon icon={GithubIcon} size={18} />
             GitHub
           </Button>
-          <Button
-            render={<Link to="/login" />}
-            className="text-sm bg-brand text-bg font-semibold rounded-lg p-5 transition-all hover:brightness-110 active:scale-95 cursor-pointer"
-          >
-            Get started free
-          </Button>
+          {WAITLIST_MODE ? (
+            <Button
+              render={<a href="#waitlist" onClick={(e) => { e.preventDefault(); scrollToSection('waitlist') }} />}
+              className="text-sm bg-brand text-bg font-semibold rounded-lg p-5 transition-all hover:brightness-110 active:scale-95 cursor-pointer"
+            >
+              Join the waitlist
+            </Button>
+          ) : (
+            <Button
+              render={<Link to="/login" />}
+              className="text-sm bg-brand text-bg font-semibold rounded-lg p-5 transition-all hover:brightness-110 active:scale-95 cursor-pointer"
+            >
+              Get started free
+            </Button>
+          )}
         </div>
 
-        <div className="md:hidden flex justify-end">
+        <div className="md:hidden flex items-center gap-2 justify-end">
+          <ModeToggle />
           <Button
             type="button"
             variant="link"
@@ -151,23 +164,37 @@ export function Navbar() {
                   key={link.name}
                   href={`#${link.id}`}
                   className="text-3xl sm:text-4xl font-display font-bold text-text-primary hover:text-brand transition-colors"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={(e) => { e.preventDefault(); setIsMobileMenuOpen(false); scrollToSection(link.id) }}
                 >
                   {link.name}
                 </a>
               ))}
               <div className="flex flex-col gap-4 mt-8">
-                <Button
-                  render={
-                    <Link
-                      to="/login"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    />
-                  }
-                  className="text-base sm:text-xl py-3 sm:py-4 bg-brand text-bg font-semibold rounded-lg transition-all hover:brightness-110 active:scale-95"
-                >
-                  Get started free
-                </Button>
+                {WAITLIST_MODE ? (
+                  <Button
+                    render={
+                      <a
+                        href="#waitlist"
+                        onClick={(e) => { e.preventDefault(); setIsMobileMenuOpen(false); scrollToSection('waitlist') }}
+                      />
+                    }
+                    className="text-base sm:text-xl py-3 sm:py-4 bg-brand text-bg font-semibold rounded-lg transition-all hover:brightness-110 active:scale-95"
+                  >
+                    Join the waitlist
+                  </Button>
+                ) : (
+                  <Button
+                    render={
+                      <Link
+                        to="/login"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      />
+                    }
+                    className="text-base sm:text-xl py-3 sm:py-4 bg-brand text-bg font-semibold rounded-lg transition-all hover:brightness-110 active:scale-95"
+                  >
+                    Get started free
+                  </Button>
+                )}
                 <Button
                   render={
                     <a

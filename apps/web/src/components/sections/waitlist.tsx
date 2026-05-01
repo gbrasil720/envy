@@ -11,7 +11,7 @@ export function Waitlist() {
     <section
       ref={sectionRef}
       id="waitlist"
-      className="py-14 sm:py-20 md:py-28 px-4 sm:px-6 relative overflow-hidden scroll-mt-16"
+      className="py-14 sm:py-20 md:py-28 px-4 sm:px-6 relative overflow-hidden scroll-mt-20"
     >
       <motion.div
         animate={
@@ -72,8 +72,8 @@ export function Waitlist() {
             transition={{ delay: 0.5, duration: 0.5 }}
             className="text-base sm:text-xl md:text-2xl text-text-secondary mb-8 md:mb-12 max-w-2xl mx-auto leading-relaxed"
           >
-            2,400+ developers already made the switch. No more pasting keys in
-            chat, no more "hey, what's the staging DATABASE_URL?".
+            Secrets don't belong in Slack threads or forwarded emails. Join the
+            list — be first in when we open the doors.
           </motion.p>
 
           <motion.div
