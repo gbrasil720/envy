@@ -111,11 +111,16 @@ function DashboardLayout() {
       settings: '/dashboard/$projectSlug/settings'
     }
     // biome-ignore lint/suspicious/noExplicitAny: dynamic section route
-    navigate({ to: routes[s] as any, params: { projectSlug: currentProject.slug } as any })
+    navigate({
+      to: routes[s] as any,
+      params: { projectSlug: currentProject.slug } as any
+    })
   }
 
   return (
-    <DashboardActionsContext value={{ openNewProject: () => setNewProjectOpen(true) }}>
+    <DashboardActionsContext
+      value={{ openNewProject: () => setNewProjectOpen(true) }}
+    >
       <MeshBackground
         className="flex h-screen overflow-hidden"
         intensity="strong"

@@ -161,7 +161,15 @@ function HomeComponent() {
               >
                 {WAITLIST_MODE ? (
                   <Button
-                    render={<a href="#waitlist" onClick={(e) => { e.preventDefault(); scrollToSection('waitlist') }} />}
+                    render={
+                      <a
+                        href="#waitlist"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          scrollToSection('waitlist')
+                        }}
+                      />
+                    }
                     className="cursor-pointer bg-brand text-bg font-display font-bold rounded-xl transition-all hover:brightness-110 active:scale-[0.97] px-8 py-[18px] md:py-[20px] text-[16px] md:text-[17px] tracking-tight flex items-center justify-center gap-2.5 group shadow-[0_0_0_1px_rgba(61,214,140,0.2),0_6px_24px_rgba(61,214,140,0.1)]"
                   >
                     Join the waitlist

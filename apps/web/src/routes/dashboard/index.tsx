@@ -106,11 +106,7 @@ function ProjectListPage() {
             Select a project to manage its secrets and settings.
           </p>
         </div>
-        <Button
-          size="sm"
-          className="shrink-0 gap-1.5"
-          onClick={openNewProject}
-        >
+        <Button size="sm" className="shrink-0 gap-1.5" onClick={openNewProject}>
           <DashboardIcon
             icon={PlusSignIcon}
             size="sm"
