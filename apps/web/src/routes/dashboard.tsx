@@ -66,6 +66,7 @@ function DashboardLayout() {
   const { pathname } = useLocation()
   const [newProjectOpen, setNewProjectOpen] = useState(false)
   const [commandOpen, setCommandOpen] = useState(false)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   const projectsQuery = useQuery(trpc.projects.list.queryOptions())
   const currentProject =
@@ -111,11 +112,16 @@ function DashboardLayout() {
       settings: '/dashboard/$projectSlug/settings'
     }
     // biome-ignore lint/suspicious/noExplicitAny: dynamic section route
-    navigate({ to: routes[s] as any, params: { projectSlug: currentProject.slug } as any })
+    navigate({
+      to: routes[s] as any,
+      params: { projectSlug: currentProject.slug } as any
+    })
   }
 
   return (
-    <DashboardActionsContext value={{ openNewProject: () => setNewProjectOpen(true) }}>
+    <DashboardActionsContext
+      value={{ openNewProject: () => setNewProjectOpen(true) }}
+    >
       <MeshBackground
         className="flex h-screen overflow-hidden"
         intensity="strong"
@@ -126,6 +132,8 @@ function DashboardLayout() {
           onSectionChange={handleSectionChange}
           onSelectProject={handleSelectProject}
           onNewProject={() => setNewProjectOpen(true)}
+          mobileOpen={mobileSidebarOpen}
+          onMobileClose={() => setMobileSidebarOpen(false)}
         />
 
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -133,6 +141,7 @@ function DashboardLayout() {
             currentProject={currentProject}
             section={section}
             onOpenCommand={() => setCommandOpen(true)}
+            onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
           />
 
           <main className="flex-1 overflow-y-auto p-4 md:p-5">

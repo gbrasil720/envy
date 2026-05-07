@@ -26,6 +26,7 @@ import { PreferencesSheet } from './preferences-sheet'
 
 type Props = {
   planLabel: string
+  compact?: boolean
 }
 
 function initials(name: string | null | undefined, email: string | null) {
@@ -40,14 +41,18 @@ function initials(name: string | null | undefined, email: string | null) {
   return '??'
 }
 
-export function UserCard({ planLabel }: Props) {
+export function UserCard({ planLabel, compact = false }: Props) {
   const trpc = useTRPC()
   const navigate = useNavigate()
   const meQuery = useQuery(trpc.me.get.queryOptions())
   const [preferencesOpen, setPreferencesOpen] = useState(false)
 
   if (meQuery.isLoading) {
-    return (
+    return compact ? (
+      <div className="flex justify-center px-2 py-2">
+        <Skeleton className="size-8 rounded-full" />
+      </div>
+    ) : (
       <div className="flex items-center gap-2.5 px-2.5 py-2">
         <Skeleton className="size-8 rounded-full" />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -72,7 +77,14 @@ export function UserCard({ planLabel }: Props) {
           render={
             <Button
               variant="ghost"
-              className="h-auto w-full justify-start gap-2.5 px-2.5 py-2 font-normal"
+              aria-label={
+                compact ? `Account menu for ${user.name ?? 'user'}` : undefined
+              }
+              className={
+                compact
+                  ? 'h-auto w-full justify-center p-1.5 font-normal'
+                  : 'h-auto w-full justify-start gap-2.5 px-2.5 py-2 font-normal'
+              }
             />
           }
         >
@@ -82,14 +94,16 @@ export function UserCard({ planLabel }: Props) {
               {initials(user.name, user.email)}
             </AvatarFallback>
           </Avatar>
-          <div className="min-w-0 flex-1 text-left">
-            <p className="truncate text-xs font-medium">
-              {user.name ?? 'Account'}
-            </p>
-            <p className="truncate text-[10px] text-muted-foreground">
-              {planLabel}
-            </p>
-          </div>
+          {!compact && (
+            <div className="min-w-0 flex-1 text-left">
+              <p className="truncate text-xs font-medium">
+                {user.name ?? 'Account'}
+              </p>
+              <p className="truncate text-[10px] text-muted-foreground">
+                {planLabel}
+              </p>
+            </div>
+          )}
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="start" side="top">
           <DropdownMenuGroup>
