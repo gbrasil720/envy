@@ -12,6 +12,12 @@ import { useEffect, useState } from 'react'
 
 const MotionCard = motion.create(Card)
 
+type User = {
+  name?: string | null
+  email: string
+  image?: string | null
+}
+
 type Props = {
   sessionToken: string
   expiresAt: string
@@ -20,6 +26,7 @@ type Props = {
   isAuthorizing: boolean
   isCancelling: boolean
   error?: string
+  user?: User
 }
 
 export function AuthorizeProjectCard({
@@ -29,7 +36,8 @@ export function AuthorizeProjectCard({
   onCancel,
   isAuthorizing,
   isCancelling,
-  error
+  error,
+  user
 }: Props) {
   const totalMs = 5 * 60 * 1000 // 5 min
   const [remainingMs, setRemainingMs] = useState(() =>
@@ -88,6 +96,46 @@ export function AuthorizeProjectCard({
             A CLI session is requesting access to your Envy account.
           </p>
         </div>
+
+        {user && (
+          <div className="flex items-center gap-3 bg-surface-2 border border-ghost-divider rounded-[10px] p-3.5 mb-6">
+            <div
+              className="shrink-0 size-9 rounded-full bg-brand/10 border border-brand/20 flex items-center justify-center overflow-hidden"
+              aria-hidden="true"
+            >
+              {user.image ? (
+                <img
+                  src={user.image}
+                  alt=""
+                  className="size-full object-cover"
+                />
+              ) : (
+                <span className="text-brand text-[13px] font-bold font-mono select-none">
+                  {(user.name ?? user.email).charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] text-text-muted uppercase tracking-widest mb-0.5">
+                Authorizing as
+              </p>
+              {user.name ? (
+                <>
+                  <p className="text-text-primary text-[13px] font-medium truncate leading-tight">
+                    {user.name}
+                  </p>
+                  <p className="text-text-muted text-[12px] truncate leading-tight">
+                    {user.email}
+                  </p>
+                </>
+              ) : (
+                <p className="text-text-primary text-[13px] font-medium truncate leading-tight">
+                  {user.email}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="bg-surface-2 border border-ghost-divider rounded-[10px] p-4 mb-8 space-y-3">
           <div className="flex justify-between items-center text-[12px]">

@@ -168,6 +168,7 @@ export function AuthFormCli({ sessionToken }: Props) {
             isAuthorizing={approve.isPending}
             isCancelling={cancel.isPending}
             error={approve.error?.message}
+            user={sessionData.user}
           />
         )}
       </AnimatePresence>
