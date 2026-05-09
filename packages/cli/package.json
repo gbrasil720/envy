@@ -1,7 +1,17 @@
 {
   "name": "useenvy",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "type": "module",
+  "description": "Secrets and environment variable management for developers",
+  "homepage": "https://useenvy.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gbrasil720/envy"
+  },
+  "bugs": {
+    "url": "https://github.com/gbrasil720/envy/issues"
+  },
+  "license": "MIT",
   "bin": {
     "envy": "./dist/cli.js"
   },
