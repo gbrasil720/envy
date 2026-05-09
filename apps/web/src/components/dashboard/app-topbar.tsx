@@ -13,7 +13,7 @@ import {
   TooltipTrigger
 } from '@envy/ui/components/tooltip'
 import { cn } from '@envy/ui/lib/utils'
-import { ArrowUpRight01Icon } from '@hugeicons/core-free-icons'
+import { ArrowUpRight01Icon, Menu01Icon } from '@hugeicons/core-free-icons'
 import { dashboardPlanBadgeClass } from './dashboard-classes'
 import { DashboardIcon } from './dashboard-icon'
 import type { DashboardProject, DashboardSection } from './dashboard-types'
@@ -29,12 +29,27 @@ type Props = {
   currentProject: DashboardProject | null
   section: DashboardSection
   onOpenCommand: () => void
+  onOpenMobileSidebar: () => void
 }
 
-export function AppTopbar({ currentProject, section, onOpenCommand }: Props) {
+export function AppTopbar({
+  currentProject,
+  section,
+  onOpenCommand,
+  onOpenMobileSidebar
+}: Props) {
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border bg-card/60 backdrop-blur-xl px-4 md:px-5">
-      <div className="flex min-w-0 flex-1 items-center gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="shrink-0 md:hidden"
+          onClick={onOpenMobileSidebar}
+          aria-label="Open navigation menu"
+        >
+          <DashboardIcon icon={Menu01Icon} size="md" />
+        </Button>
         {currentProject ? (
           <Breadcrumb>
             <BreadcrumbList>
@@ -90,7 +105,7 @@ export function AppTopbar({ currentProject, section, onOpenCommand }: Props) {
           href="https://docs.useenvy.dev/cli"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 font-mono text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="hidden items-center gap-1 rounded-md px-2 py-1.5 font-mono text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:inline-flex"
           title="CLI documentation (opens in new tab)"
         >
           envy --help
