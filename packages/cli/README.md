@@ -1,468 +1,540 @@
 # Envy CLI
 
-Command-line tool for managing secrets across environments. Authenticate once, push and pull secrets from your project.
+The official command-line interface for [Envy](https://useenvy.dev) — sync `.env` secrets between your machine and your team without ever pasting them in Slack again.
+
+```
+envy init     # link this directory to a project
+envy push     # upload your local .env to the cloud
+envy pull     # pull the latest secrets to your machine
+```
 
 ---
 
 ## Installation
 
 ```bash
-npm install -g @envy/cli
-# or
-bun install -g @envy/cli
-# or with npx (no install needed)
-npx @envy/cli <command>
+# npm
+npm install -g envy-cli
+
+# bun
+bun add -g envy-cli
+
+# pnpm
+pnpm add -g envy-cli
+
+# one-off (no install)
+npx envy-cli <command>
 ```
 
-The binary is installed as `envy` in your PATH.
+The binary is installed as `envy` in your `PATH`.
 
-**Requirements**: Node.js 18+ or Bun 1.3.0+
-
----
-
-## Commands
-
-All commands are interactive (use prompts for secrets, environments, etc). Pipe JSON to `--json` flag for automation.
-
-| Command | Signature | Description |
-|---|---|---|
-| `init` | `envy init [--create]` | Link this directory to an Envy project |
-| `login` | `envy login` | Authenticate with your Envy account |
-| `logout` | `envy logout` | Revoke your CLI token and remove credentials |
-| `pull` | `envy pull [--env <env>]` | Download secrets to a .env file |
-| `push` | `envy push [--env <env>]` | Upload secrets from .env files |
-| `whoami` | `envy whoami` | Show your authenticated user profile |
-
----
-
-## Global Flags
-
-```bash
-envy [command] --help       # Show help for a command
-envy --version              # Show CLI version
-```
-
----
-
-## Commands Reference
-
-### `envy login`
-
-Authenticate the CLI with your Envy account. Opens your browser for OAuth2 flow.
-
-```bash
-envy login
-```
-
-**What it does**:
-1. Generates a 5-minute session token
-2. Opens your browser to `https://useenvy.dev/cli-auth?session=<token>`
-3. Polls the server for authorization
-4. On success, saves credentials to `~/.envy/credentials.json` (mode `0600`)
-
-**Output**:
-```
- Envy v0.0.1
-Opening browser for authentication...
-If it didn't open, visit: https://useenvy.dev/cli-auth?session=abc-123-def
-Waiting for authorization...
-
- Authenticated as Guilherme Brasil (gui@useenvy.dev)
-```
-
-**Exit codes**:
-- `0` — Success
-- `2` — Login cancelled or expired
-
----
-
-### `envy logout`
-
-Revoke your CLI token and delete local credentials.
-
-```bash
-envy logout
-```
-
-**Requirements**: Must be authenticated (`envy login` first).
-
-**Output**:
-```
- Logged out successfully
-Credentials removed from ~/.envy/credentials.json
-Run "envy login" to authenticate again
-```
-
-**Exit codes**:
-- `0` — Success
-- `2` — Not authenticated
-
----
-
-### `envy whoami`
-
-Show the current authenticated user and CLI version.
-
-```bash
-envy whoami
-```
-
-**Requirements**: Must be authenticated.
-
-**Output**:
-```
- Envy v0.0.1
-
-───────────────────────────
- User     Guilherme Brasil
- Email    gui@useenvy.dev
- Version  v0.0.1
-───────────────────────────
-```
-
-**Exit codes**:
-- `0` — Success
-- `2` — Not authenticated
-
----
-
-### `envy init [--create]`
-
-Link this directory to an Envy project. Creates `.envy.json` config file.
-
-```bash
-# Select an existing project
-envy init
-
-# Create a new project
-envy init --create
-```
-
-**Requirements**: Must be authenticated.
-
-**Flags**:
-- `--create` — Create a new project instead of selecting one
-
-**Interactive prompts**:
-1. If `--create`: Project name
-2. If not `--create`: Select from your projects
-3. Select default environment (development, staging, production)
-
-**Creates**:
-- `.envy.json` in current directory (added to `.gitignore`)
-
-**Output**:
-```
- Envy v0.0.1
-
-──────────────────────────────
- Project     my-saas
- Slug        my-saas
- Environment production
-──────────────────────────────
-
- Directory linked to Envy
-Run "envy pull" to sync your secrets
-```
-
-**Exit codes**:
-- `0` — Success
-- `1` — Usage error
-- `2` — Not authenticated
-
----
-
-### `envy pull [--env <environment>]`
-
-Download secrets from Envy to a local `.env` file.
-
-```bash
-# Use default environment from .envy.json
-envy pull
-
-# Override environment
-envy pull --env staging
-```
-
-**Requirements**:
-- Must be authenticated (`envy login`)
-- Directory must be linked to a project (`envy init`)
-
-**Flags**:
-- `--env <environment>` — Source environment (overrides .envy.json default)
-
-**Interactive prompts**:
-1. If multiple `.env*` files exist: Choose target file or create new
-2. If target file exists with local-only keys: Keep local-only or overwrite?
-
-**Output**:
-```
- Envy v0.0.1
-Fetching secrets from "production"...
-
-──────────────────────────────────
- Project     my-saas
- Environment production
- Secrets     12 pulled
- File        .env.local
-──────────────────────────────────
-
- Secrets pulled successfully
-Run "envy push" to sync changes back
-```
-
-**Exit codes**:
-- `0` — Success
-- `1` — Usage error (no project linked, no env files found, etc)
-- `2` — Not authenticated
-
----
-
-### `envy push [--env <environment>]`
-
-Upload secrets from local `.env` files to Envy.
-
-```bash
-# Use default environment from .envy.json
-envy push
-
-# Override environment
-envy push --env staging
-```
-
-**Requirements**:
-- Must be authenticated
-- Directory must be linked to a project
-- At least one `.env*` file must exist
-
-**Flags**:
-- `--env <environment>` — Target environment (overrides .envy.json default)
-
-**Interactive prompts**:
-1. If multiple `.env*` files exist: Select which to push (checkbox)
-2. If keys exist in multiple files with different values: Resolve conflicts (one per key)
-3. Confirm changes before pushing
-
-**Diff format**:
-```
-  + DATABASE_URL                 added
-  ~ STRIPE_SECRET                changed
-    OPENAI_API_KEY               unchanged
-
-  +3 added  ~1 changed  2 unchanged
-```
-
-**Output**:
-```
- Envy v0.0.1
-Using .env.local
-
-  Changes to "production":
-
-  + DATABASE_URL                 added
-  ~ STRIPE_SECRET                changed
-    OPENAI_API_KEY               unchanged
-
-  +2 added  ~1 changed  1 unchanged
-
-────────────────────────────────────
- Project     my-saas
- Environment production
- Pushed      3 secret(s)
- Files       .env.local
-────────────────────────────────────
-
- Secrets pushed successfully
-Run "envy pull" to sync to another machine
-```
-
-**Exit codes**:
-- `0` — Success
-- `1` — Usage error (no env files, no project linked, etc)
-- `2` — Not authenticated
-
----
-
-## Configuration Files
-
-### `.envy.json` (project config)
-
-Created by `envy init`. Tells the CLI which project and environment to use.
-
-```json
-{
-  "project_id": "abc-123-def",
-  "project_slug": "my-saas",
-  "environment": "production"
-}
-```
-
-**Location**: Root of your project (same directory as `.gitignore`)
-**Gitignore**: Automatically added to `.gitignore`
-
-### `~/.envy/credentials.json` (local credentials)
-
-Created by `envy login`. Stores your API token.
-
-```json
-{
-  "token": "envy_abc123def456...",
-  "user": "Guilherme Brasil",
-  "api_url": "https://useenvy.dev"
-}
-```
-
-**Location**: `~/.envy/` (home directory, hidden)
-**Permissions**: `0600` (read/write for owner only)
-**Never commit**: This file should never be checked into version control
-
----
-
-## Environment Variables
-
-The CLI respects these environment variables for configuration:
-
-| Variable | Purpose | Default |
-|---|---|---|
-| `ENVY_API_URL` | Override API server URL | `https://useenvy.dev` |
-
-**Example** (for self-hosted or local development):
-
-```bash
-export ENVY_API_URL=http://localhost:3000
-envy login
-```
+**Requirements**: Node.js 18+ (or any runtime that ships a built-in `fetch`, e.g. Bun 1.3+).
 
 ---
 
 ## Quickstart
 
-### Step 1: Authenticate
+```bash
+# 1. Authenticate (opens your browser)
+envy login
+
+# 2. Link this directory to a project
+envy init
+
+# 3. Pull your team's secrets to .env.local
+envy pull
+
+# 4. Edit .env.local locally, then sync your changes back
+envy push
+```
+
+That's the whole loop. The rest of this document is reference material.
+
+---
+
+## Commands
+
+| Command | Signature | Description |
+|---|---|---|
+| [`login`](#envy-login) | `envy login` | Authenticate the CLI with your Envy account |
+| [`logout`](#envy-logout) | `envy logout` | Revoke the CLI token and remove local credentials |
+| [`whoami`](#envy-whoami) | `envy whoami` | Show the currently authenticated user |
+| [`projects`](#envy-projects) | `envy projects [--create]` | List your projects, or create a new one |
+| [`init`](#envy-init) | `envy init [--create]` | Link the current directory to a project (creates `.envy.json`) |
+| [`push`](#envy-push) | `envy push [--env <name>]` | Upload `.env*` secrets to Envy with a diff preview |
+| [`pull`](#envy-pull) | `envy pull [--env <name>]` | Download secrets from Envy into a local `.env*` file |
+| [`open`](#envy-open) | `envy open` | Open the project's dashboard in your browser |
+
+Run `envy --help` or `envy <command> --help` for short usage on any command.
+
+---
+
+## Command reference
+
+### `envy login`
+
+Authenticates the CLI through a browser flow.
 
 ```bash
 envy login
 ```
 
-Your browser opens. Click "Approve" to generate a CLI token.
+**Flow**
 
-### Step 2: Link Your Project
+1. The CLI opens `https://useenvy.dev/cli-auth?session=<token>` in your default browser.
+2. You confirm the request from your dashboard.
+3. The CLI polls the server until it sees `authorized` (5 minute timeout).
+4. The resulting API key is written to `~/.envy/credentials.json` with mode `0600`.
+
+**Exit codes**
+
+| Code | Meaning |
+|---|---|
+| `0` | Success |
+| `2` | Login cancelled or session expired |
+| `3` | Network error reaching the API |
+
+---
+
+### `envy logout`
+
+Revokes the CLI token on the server and deletes `~/.envy/credentials.json`.
 
 ```bash
+envy logout
+```
+
+**Requirements**: must be authenticated.
+
+**Exit codes**
+
+| Code | Meaning |
+|---|---|
+| `0` | Success |
+| `2` | Not authenticated |
+
+---
+
+### `envy whoami`
+
+Prints the current authenticated user and CLI version.
+
+```bash
+envy whoami
+```
+
+**Requirements**: must be authenticated.
+
+**Sample output**
+
+```
+┌──────────────────────────────────┐
+│  User     Guilherme Brasil       │
+│  Email    gui@useenvy.dev        │
+│  Version  v0.1.0                 │
+└──────────────────────────────────┘
+```
+
+---
+
+### `envy projects`
+
+Lists your projects. With `--create`, prompts for a name and creates a new project (without linking the current directory).
+
+```bash
+# list
+envy projects
+
+# create
+envy projects --create
+```
+
+**Flags**
+
+| Flag | Description |
+|---|---|
+| `--create` | Prompt for a name and create a new project |
+
+**Sample output**
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  envy-test           development  3 secrets  1d ago     │
+│  meu-projeto         development  1 secret   9d ago     │
+│  teste-criar-cli     —            0 secrets  never      │
+└─────────────────────────────────────────────────────────┘
+
+✓ 3 projects
+Run "envy init" to link a directory  ·  "envy projects --create" to add a project
+```
+
+> **Tip**: `envy init --create` does both — creates a new project *and* links the current directory to it in one step.
+
+---
+
+### `envy init`
+
+Links the current directory to an Envy project by writing `.envy.json`. If a `.gitignore` exists, `.envy.json` is added automatically.
+
+```bash
+# select an existing project
 envy init
+
+# create a new project and link it here
+envy init --create
 ```
 
-Select your project and default environment.
+**Flags**
 
-### Step 3: Sync Secrets
+| Flag | Description |
+|---|---|
+| `--create` | Create a new project instead of selecting an existing one |
+
+**Interactive prompts**
+
+1. If `.envy.json` already exists — confirm overwrite.
+2. With `--create` — project name. Without — pick from your projects.
+3. Default environment for the directory (`development`, `staging`, `production`).
+
+**Result**
+
+Writes `.envy.json` (see [Configuration files](#configuration-files)).
+
+**Exit codes**
+
+| Code | Meaning |
+|---|---|
+| `0` | Success |
+| `1` | Usage error (no projects in account, etc.) |
+| `2` | Not authenticated |
+
+---
+
+### `envy push`
+
+Uploads selected `.env*` files to the configured project + environment, after showing a diff and asking for confirmation.
 
 ```bash
-envy pull
+# push to the environment recorded in .envy.json
+envy push
+
+# override the target environment
+envy push --env production
 ```
 
-Secrets download to `.env.local` (or your choice).
+**Flags**
+
+| Flag | Description |
+|---|---|
+| `--env <name>` | Target environment. Overrides the value in `.envy.json`. |
+
+**Behaviour**
+
+1. Scans the working directory for files matching `.env`, `.env.local`, `.env.<anything>`.
+2. If multiple are found, prompts you to pick which to push (multi-select).
+3. Parses each selected file. If the same key appears in multiple files with different values, prompts you to pick the winning value per key.
+4. Hashes secrets locally and asks the server which keys are **added**, **changed**, or **unchanged** — no plaintext is sent for the diff.
+5. Renders a colour-coded diff and asks for confirmation.
+6. On confirm, encrypts the changed/added secrets client-side with the project's master key and uploads them.
+
+**Sample output**
+
+```
+✔ Select files to push: .env, .env.local
+
+  Changes to "production":
+
+┌────────────────────────────────────────────────┐
+│  + DATABASE_URL                                │
+│  ~ STRIPE_SECRET                               │
+│    OPENAI_API_KEY                              │
+└────────────────────────────────────────────────┘
+
+  +1 added  ~1 changed  1 unchanged
+
+✔ Push changes to "production"? Yes
+
+┌──────────────────────────────────┐
+│  Project      my-saas            │
+│  Environment  production         │
+│  Pushed       2 secret(s)        │
+│  Files        .env, .env.local   │
+└──────────────────────────────────┘
+
+✓ Secrets pushed successfully
+Run "envy pull" to sync to another machine
+```
+
+**Exit codes**
+
+| Code | Meaning |
+|---|---|
+| `0` | Success (or nothing to push) |
+| `1` | Usage error (no project linked, no `.env` files found, etc.) |
+| `2` | Not authenticated |
+| `5` | Server returned an unexpected response |
+
+---
+
+### `envy pull`
+
+Decrypts secrets from the configured project + environment and writes them to a local `.env*` file.
+
+```bash
+# pull from the environment recorded in .envy.json
+envy pull
+
+# override the source environment
+envy pull --env staging
+```
+
+**Flags**
+
+| Flag | Description |
+|---|---|
+| `--env <name>` | Source environment. Overrides the value in `.envy.json`. |
+
+**Behaviour**
+
+1. Calls `secrets.reveal` on the server, which decrypts using your project's master key.
+2. Scans the working directory for existing `.env*` files. Prompts you to pick a destination file or create a new one (default `.env.local`).
+3. If the destination file already exists:
+   - If it has keys *not* present in the remote, you're asked whether to keep those local-only keys or overwrite the file completely.
+   - Otherwise you're asked to confirm the overwrite.
+4. Writes the values back as `KEY="value"` with `\n`, `\r`, `\\`, and `"` escaped.
+
+**Sample output**
+
+```
+✓ 12 secrets fetched from "production"
+
+✔ Write secrets to: .env.local
+
+┌──────────────────────────────────┐
+│  Project      my-saas            │
+│  Environment  production         │
+│  Secrets      12 pulled          │
+│  File         .env.local         │
+└──────────────────────────────────┘
+
+✓ Secrets pulled successfully
+Run "envy push" to sync changes back
+```
+
+**Exit codes**
+
+| Code | Meaning |
+|---|---|
+| `0` | Success |
+| `1` | Usage error (no project linked, invalid filename, etc.) |
+| `2` | Not authenticated |
+
+---
+
+### `envy open`
+
+Opens the project's dashboard at `https://useenvy.dev/dashboard/<slug>` in your default browser. If the directory isn't linked, opens the dashboard root.
+
+```bash
+envy open
+```
+
+**Requirements**: must be authenticated. A linked project (`envy init`) is recommended but not required.
+
+---
+
+## Configuration files
+
+### `.envy.json` (per-directory)
+
+Created by `envy init`. Tells the CLI which project + environment this directory targets.
+
+```json
+{
+  "project_id": "d0fed5b7-d42b-4b13-932c-c1282868d59c",
+  "project_slug": "my-saas",
+  "environment": "production"
+}
+```
+
+- **Location**: the directory you ran `envy init` in.
+- **Gitignore**: appended to `.gitignore` automatically when one exists.
+- **Safe to commit?** Yes — it contains no secrets, only IDs that are useless without your CLI token.
+
+### `~/.envy/credentials.json` (per-user)
+
+Created by `envy login`. Holds your personal CLI token.
+
+```json
+{
+  "token": "envy_live_...",
+  "user": "Guilherme Brasil",
+  "api_url": "https://api.useenvy.dev",
+  "created_at": "2026-05-09T16:43:02.624Z"
+}
+```
+
+- **Location**: your home directory (`~/.envy/credentials.json` on macOS/Linux, `%USERPROFILE%\.envy\credentials.json` on Windows).
+- **Permissions**: `0600` — owner read/write only.
+- **Never commit this file.**
+
+---
+
+## Environment variables
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `ENVY_API_URL` | Override the API server URL (takes precedence over the `api_url` saved in credentials). | `https://api.useenvy.dev` |
+| `ENVY_WEB_URL` | Override the dashboard URL used by `envy login` and `envy open`. | `https://useenvy.dev` |
+| `ENVY_DEBUG` | When set to any truthy value, prints full stack traces and `fetch` `cause` objects on errors. | unset |
+
+**Self-hosted or local development**:
+
+```bash
+export ENVY_API_URL=http://localhost:3000
+export ENVY_WEB_URL=http://localhost:3001
+envy login
+```
 
 ---
 
 ## Workflows
 
-### Local Development
+### Daily team development
 
 ```bash
-# One-time setup
-envy login
-envy init
-
-# Daily usage: sync latest secrets
-envy pull
-
-# If you update .env locally, push back
-envy push
+envy login          # once per machine
+envy init           # once per project
+envy pull           # any time you want fresh secrets
+# … hack on .env.local …
+envy push           # share your changes with the team
 ```
 
-### Multiple Environments
+### Working across environments
 
 ```bash
-# Pull from staging
-envy pull --env staging
-
-# Push to production (with confirmation)
-envy push --env production
+envy pull --env staging         # grab staging secrets
+envy push --env production      # publish to production (with confirm)
 ```
 
-### Team Onboarding
-
-All team members follow the same three-command quickstart:
+### Onboarding a new teammate
 
 ```bash
 envy login
-envy init
+cd path/to/project   # already contains .envy.json from someone else's commit
 envy pull
 ```
 
-Each gets their own `.envy.json` and credentials file (their own API token).
+They get their own token (revocable independently) and a fully populated `.env.local`.
 
 ---
 
 ## Troubleshooting
 
-### "Not authenticated"
+### `Error: Not authenticated`
+Run `envy login`.
 
-```bash
-envy login
-```
+### `Error: No project linked`
+The current directory has no `.envy.json`. Run `envy init`.
 
-### "No project linked"
-
-```bash
-envy init
-```
-
-### "No .env files found"
-
-Create a `.env` file first:
+### `Error: No .env files found in current directory`
+Create one and try again:
 
 ```bash
 touch .env
 envy push
 ```
 
-Or use `envy pull` to download from a remote environment.
+…or fetch them with `envy pull`.
 
-### "Key exists in multiple files with different values"
-
-The CLI will prompt you to choose which file's value to use. Select one and continue.
-
-### Self-hosted server
+### `Error: fetch failed`
+Network-level failure reaching the API. Re-run with debug output to see the exact cause:
 
 ```bash
-export ENVY_API_URL=https://my-envy-server.com
+ENVY_DEBUG=1 envy push
+```
+
+Common causes shown by the CLI:
+
+- **DNS lookup failed** (`ENOTFOUND`) — wrong API URL, or no internet.
+- **Connection refused** (`ECONNREFUSED`) — API URL points at a server that isn't running.
+- **Connection timed out** — VPN, corporate proxy, or firewall.
+- **TLS certificate problem** — self-signed or expired cert in the chain.
+
+### `Push failed — unexpected response from server`
+The server returned an unexpected payload. Usually means the server is running an old build with a known bug. Update the server or report the issue.
+
+### Conflicts during `envy push`
+If the same key appears in multiple selected files with different values, the CLI prompts you to pick the winning value per key.
+
+### Self-hosting or pointing at a different server
+
+```bash
+export ENVY_API_URL=https://envy.mycompany.com
 envy login
 ```
 
+`ENVY_API_URL` overrides the `api_url` saved in your credentials, so you can switch servers without re-logging in for one-off commands.
+
 ---
 
-## For Maintainers
+## Exit codes
 
-### Building the CLI
+| Code | Name | Meaning |
+|---|---|---|
+| `0` | OK | Success |
+| `1` | USAGE | Misuse of a command (missing config, no `.env` files, invalid arguments) |
+| `2` | AUTH | Not authenticated, login expired, or login cancelled |
+| `3` | NETWORK | Could not reach the API |
+| `4` | PERMISSION | Authenticated but not authorised for the resource |
+| `5` | SOFTWARE | Server returned an unexpected response |
+
+---
+
+## Development
+
+This package is part of the [Envy monorepo](../../README.md). All commands below assume you're inside `packages/cli/`.
+
+### Build
 
 ```bash
 bun run build
 ```
 
-Outputs a standalone binary to `dist/cli` using Bun's `--compile` flag.
+Bundles `src/index.ts` into `dist/cli.js` (ESM, `--target node`). The `bin` field in `package.json` makes that file the `envy` binary.
 
-### Testing
+### Run from source during development
 
 ```bash
-bun test
+bun run --cwd packages/cli src/index.ts <command>
 ```
 
-Run all unit and integration tests.
+Or, after `bun install` at the repo root, link the workspace globally:
 
-### Architecture
+```bash
+cd packages/cli
+npm link
+envy --version
+```
 
-See `packages/cli/CONVENTIONS.md` for detailed code patterns, error handling, and testing.
+### Layout
+
+```
+src/
+  commands/    one file per command, each exporting a register*(program) helper
+  lib/
+    api.ts        tRPC client (uses ENVY_API_URL → saved api_url → default)
+    auth.ts       reads/writes ~/.envy/credentials.json
+    banner.ts     ASCII banner shown by interactive commands
+    config.ts     reads/writes .envy.json
+    constants.ts  default URLs, polling timeouts, config filename
+    errors.ts     EnvyError class + EXIT codes
+    output.ts     console formatting (success/error/spinner/raw)
+  index.ts     entry point — wires up commander + top-level error handler
+```
+
+For deeper conventions (error handling, output style, command file structure), see [`CONVENTIONS.md`](./CONVENTIONS.md).
 
 ---
 
-*Version 0.0.1 — See ENVY.md for API reference.*
+*Issues and contributions welcome at [github.com/gbrasil720/envy](https://github.com/gbrasil720/envy).*
