@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander'
-import updateNotifier from 'update-notifier'
 import pkg from '../package.json'
 import { registerInit } from './commands/init'
 import { registerLogin } from './commands/login'
@@ -11,10 +10,9 @@ import { registerProjects } from './commands/projects'
 import { registerPull } from './commands/pull'
 import { registerPush } from './commands/push'
 import { registerWhoAmI } from './commands/whoami'
+import { checkForUpdate } from './lib/checkForUpdate'
 import { describeError, EnvyError } from './lib/errors'
 import { output } from './lib/output'
-
-updateNotifier({ pkg, updateCheckInterval: 1000 * 60 * 60 * 24 }).notify()
 
 const program = new Command()
 
@@ -31,6 +29,8 @@ registerProjects(program)
 registerPush(program)
 registerPull(program)
 registerOpen(program)
+
+await checkForUpdate(pkg.version)
 
 try {
   await program.parseAsync()
