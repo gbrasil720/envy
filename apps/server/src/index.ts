@@ -11,14 +11,8 @@ import { Elysia } from 'elysia'
 import { waitlistRoutes } from './routes/waitlist'
 
 const app = new Elysia()
-  .onError(({ code, error, set }) => {
-    set.headers['Content-Type'] = 'application/json'
-    return JSON.stringify({
-      error: {
-        message: error instanceof Error ? error.message : String(error),
-        code
-      }
-    })
+  .onParse({ as: 'global' }, async ({ request: { url } }) => {
+    if (new URL(url).pathname.startsWith('/trpc')) return true
   })
   .use(
     cors({
