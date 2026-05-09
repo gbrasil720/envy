@@ -1,6 +1,6 @@
 {
   "name": "useenvy",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "type": "module",
   "description": "Secrets and environment variable management for developers",
   "homepage": "https://useenvy.dev",
@@ -23,5 +23,11 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "update-notifier": "^7.3.1"
+  },
+  "devDependencies": {
+    "@types/update-notifier": "^6.0.8"
   }
 }
