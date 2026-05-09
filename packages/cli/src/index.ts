@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { Command } from 'commander'
 import { registerInit } from './commands/init'
 import { registerLogin } from './commands/login'

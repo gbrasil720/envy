@@ -11,6 +11,15 @@ import { Elysia } from 'elysia'
 import { waitlistRoutes } from './routes/waitlist'
 
 const app = new Elysia()
+  .onError(({ code, error, set }) => {
+    set.headers['Content-Type'] = 'application/json'
+    return JSON.stringify({
+      error: {
+        message: error instanceof Error ? error.message : String(error),
+        code
+      }
+    })
+  })
   .use(
     cors({
       origin: env.CORS_ORIGIN,

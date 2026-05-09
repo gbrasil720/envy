@@ -117,7 +117,12 @@ export function AuthFormCli({ sessionToken }: Props) {
       onSuccess: () => setApproved(true),
       onError: (err) => {
         console.error(err)
-        if (err.data?.code === 'UNAUTHORIZED') setExpired(true)
+        if (
+          err.data?.code === 'UNAUTHORIZED' ||
+          err.data?.code === 'NOT_FOUND'
+        ) {
+          setExpired(true)
+        }
       }
     })
   )
