@@ -1,6 +1,6 @@
 {
-  "name": "envy-cli",
-  "version": "0.1.0",
+  "name": "useenvy",
+  "version": "1.0.0",
   "type": "module",
   "bin": {
     "envy": "./dist/cli.js"
