@@ -22,6 +22,8 @@ export async function openCommand(): Promise<void> {
     projectLabel = config.project_slug
   } else {
     url = `${WEB_URL}/dashboard`
+    output.warn('No project linked in this directory')
+    output.dim('Run "envy init" to link a project — opening dashboard instead')
   }
 
   try {
