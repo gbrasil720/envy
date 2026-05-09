@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(perl -i -pe 's/\\\\bw-\\(\\\\d+\\(?:\\\\.\\\\d+\\)?\\) h-\\\\1\\\\b/size-$1/g; s/\\\\bh-\\(\\\\d+\\(?:\\\\.\\\\d+\\)?\\) w-\\\\1\\\\b/size-$1/g' components/auth/access-denied-card.tsx)"
+    ]
+  }
+}

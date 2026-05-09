@@ -44,7 +44,7 @@ export function FeatureCard({
         <div className="size-12 bg-brand-dim rounded-xl flex items-center justify-center text-brand mb-6 group-hover:scale-110 transition-transform">
           <HugeiconsIcon icon={icon} size={24} />
         </div>
-        <h3 className="text-xl font-display font-bold mb-3">{title}</h3>
+        <h3 className="text-xl font-display font-semibold mb-3">{title}</h3>
         <p className="text-text-secondary text-[16px] leading-[1.75] mb-6">
           {description}
         </p>

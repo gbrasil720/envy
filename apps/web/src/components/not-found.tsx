@@ -53,7 +53,7 @@ export function NotFound() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="text-xl md:text-3xl font-bold font-display text-text-primary mb-4"
+          className="text-xl md:text-3xl font-semibold font-display text-text-primary mb-4"
         >
           Environment Variable Not Found
         </motion.p>
@@ -100,9 +100,9 @@ export function NotFound() {
           className="mt-16 bg-surface-2/50 border border-border backdrop-blur-sm p-4 rounded-lg font-mono text-[11px] md:text-xs text-left text-text-muted overflow-hidden max-w-[400px] mx-auto relative group pointer-events-none"
         >
           <div className="flex gap-2 mb-3 border-b border-border/50 pb-3">
-            <div className="w-2.5 h-2.5 rounded-full bg-danger/50" />
-            <div className="w-2.5 h-2.5 rounded-full bg-warning/50" />
-            <div className="w-2.5 h-2.5 rounded-full bg-success/50" />
+            <div className="size-2.5 rounded-full bg-danger/50" />
+            <div className="size-2.5 rounded-full bg-warning/50" />
+            <div className="size-2.5 rounded-full bg-success/50" />
           </div>
           <div className="flex flex-col gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
             <span className="text-danger flex gap-2">

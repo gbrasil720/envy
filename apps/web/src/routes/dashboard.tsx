@@ -29,12 +29,6 @@ function deriveSection(pathname: string): DashboardSection {
 }
 
 export const Route = createFileRoute('/dashboard')({
-  head: () => ({
-    meta: [
-      { title: 'Dashboard — Envy' },
-      { name: 'robots', content: 'noindex, nofollow' }
-    ]
-  }),
   beforeLoad: async ({ context }) => {
     if (typeof window === 'undefined') {
       return
@@ -54,6 +48,12 @@ export const Route = createFileRoute('/dashboard')({
       throw redirect({ to: '/onboarding' })
     }
   },
+  head: () => ({
+    meta: [
+      { title: 'Dashboard — Envy' },
+      { name: 'robots', content: 'noindex, nofollow' }
+    ]
+  }),
   component: DashboardLayout
 })
 

@@ -12,11 +12,11 @@ export function Footer() {
         <div className="grid md:grid-cols-4 gap-12 mb-16">
           <div className="col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-6 w-fit">
-              <div className="w-8 h-8 bg-[#111] rounded-lg flex items-center justify-center">
+              <div className="size-8 bg-[#111] rounded-lg flex items-center justify-center">
                 <img
                   src="/logo-no-bg.png"
                   alt="Envy"
-                  className="w-14 h-14 object-cover"
+                  className="size-14 object-cover"
                 />
               </div>
               <span className="text-xl font-display font-bold tracking-tight">
@@ -36,7 +36,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="font-bold mb-6">Product</h4>
+            <h4 className="font-semibold mb-6">Product</h4>
             <ul className="space-y-4 text-sm text-text-secondary">
               <li>
                 <a
@@ -60,7 +60,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="font-bold mb-6">Company</h4>
+            <h4 className="font-semibold mb-6">Company</h4>
             <ul className="space-y-4 text-sm text-text-secondary">
               <li>
                 <a

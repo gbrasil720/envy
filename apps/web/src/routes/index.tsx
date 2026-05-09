@@ -127,7 +127,7 @@ function HomeComponent() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="text-[26px] sm:text-[44px] md:text-[72px] font-display font-extrabold tracking-tight mb-6 md:mb-8 leading-[1.1] sm:leading-[1.05] text-text-primary wrap-break-word"
+                className="text-[26px] sm:text-[44px] md:text-[72px] font-display font-semibold tracking-tight mb-6 md:mb-8 leading-[1.1] sm:leading-[1.05] text-text-primary wrap-break-word"
               >
                 Stop sharing .env files
                 <br />

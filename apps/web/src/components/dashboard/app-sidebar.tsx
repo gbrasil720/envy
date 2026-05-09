@@ -70,6 +70,85 @@ function copySnippet(text: string, label: string) {
   )
 }
 
+function NavButton({
+  item,
+  disabled,
+  collapsed,
+  section,
+  handleSectionChange
+}: {
+  item: (typeof WORKSPACE_NAV)[number] | (typeof CONFIG_NAV)[number]
+  disabled: boolean
+  collapsed: boolean
+  section: DashboardSection
+  handleSectionChange: (s: DashboardSection) => void
+}) {
+  const active = section === item.id && !disabled
+
+  const btnClass = cn(
+    'flex w-full items-center rounded-lg py-2 text-left text-sm transition-colors',
+    'disabled:cursor-not-allowed disabled:opacity-40',
+    collapsed ? 'justify-center gap-0 px-0' : 'gap-2.5 px-2.5',
+    active
+      ? 'bg-brand/10 font-medium text-brand'
+      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+  )
+
+  const iconEl = (
+    <DashboardIcon
+      icon={item.icon}
+      size="nav"
+      data-icon="inline-start"
+      className={active ? 'text-brand' : undefined}
+    />
+  )
+
+  const labelEl = (
+    <span
+      className={cn(
+        'overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-200 motion-reduce:transition-none',
+        collapsed ? 'max-w-0 opacity-0' : 'max-w-[160px] opacity-100'
+      )}
+    >
+      {item.label}
+    </span>
+  )
+
+  if (collapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <button
+              type="button"
+              onClick={() => handleSectionChange(item.id)}
+              disabled={disabled}
+              className={btnClass}
+            />
+          }
+        >
+          {iconEl}
+          {labelEl}
+        </TooltipTrigger>
+        <TooltipContent side="right">{item.label}</TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => handleSectionChange(item.id)}
+      disabled={disabled}
+      title={disabled ? 'Select a project first' : undefined}
+      className={btnClass}
+    >
+      {iconEl}
+      {labelEl}
+    </button>
+  )
+}
+
 function SidebarInner({
   currentProject,
   section,
@@ -94,79 +173,6 @@ function SidebarInner({
     onAfterNavigate?.()
   }
 
-  function NavButton({
-    item,
-    disabled
-  }: {
-    item: (typeof WORKSPACE_NAV)[number] | (typeof CONFIG_NAV)[number]
-    disabled: boolean
-  }) {
-    const active = section === item.id && currentProject && !disabled
-
-    const btnClass = cn(
-      'flex w-full items-center rounded-lg py-2 text-left text-sm transition-colors',
-      'disabled:cursor-not-allowed disabled:opacity-40',
-      collapsed ? 'justify-center gap-0 px-0' : 'gap-2.5 px-2.5',
-      active
-        ? 'bg-brand/10 font-medium text-brand'
-        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-    )
-
-    const iconEl = (
-      <DashboardIcon
-        icon={item.icon}
-        size="nav"
-        data-icon="inline-start"
-        className={active ? 'text-brand' : undefined}
-      />
-    )
-
-    const labelEl = (
-      <span
-        className={cn(
-          'overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-200 motion-reduce:transition-none',
-          collapsed ? 'max-w-0 opacity-0' : 'max-w-[160px] opacity-100'
-        )}
-      >
-        {item.label}
-      </span>
-    )
-
-    if (collapsed) {
-      return (
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <button
-                type="button"
-                onClick={() => handleSectionChange(item.id)}
-                disabled={disabled}
-                className={btnClass}
-              />
-            }
-          >
-            {iconEl}
-            {labelEl}
-          </TooltipTrigger>
-          <TooltipContent side="right">{item.label}</TooltipContent>
-        </Tooltip>
-      )
-    }
-
-    return (
-      <button
-        type="button"
-        onClick={() => handleSectionChange(item.id)}
-        disabled={disabled}
-        title={disabled ? 'Select a project first' : undefined}
-        className={btnClass}
-      >
-        {iconEl}
-        {labelEl}
-      </button>
-    )
-  }
-
   return (
     <div className="flex h-full flex-col">
       {/* Header: logo + project switcher */}
@@ -183,7 +189,7 @@ function SidebarInner({
               alt="Envy"
               width={28}
               height={28}
-              className="h-7 w-7 object-cover"
+              className="size-7 object-cover"
             />
             {onToggleCollapse && (
               <button
@@ -208,7 +214,7 @@ function SidebarInner({
                 alt="Envy"
                 width={40}
                 height={40}
-                className="h-10 w-10 object-cover"
+                className="size-10 object-cover"
               />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-display text-sm font-semibold tracking-tight">
@@ -244,7 +250,14 @@ function SidebarInner({
           </p>
         )}
         {WORKSPACE_NAV.map((item) => (
-          <NavButton key={item.id} item={item} disabled={!currentProject} />
+          <NavButton
+            key={item.id}
+            item={item}
+            disabled={!currentProject}
+            collapsed={collapsed}
+            section={section}
+            handleSectionChange={handleSectionChange}
+          />
         ))}
         <Separator className="my-2" />
         {!collapsed && (
@@ -253,7 +266,14 @@ function SidebarInner({
           </p>
         )}
         {CONFIG_NAV.map((item) => (
-          <NavButton key={item.id} item={item} disabled={!currentProject} />
+          <NavButton
+            key={item.id}
+            item={item}
+            disabled={!currentProject}
+            collapsed={collapsed}
+            section={section}
+            handleSectionChange={handleSectionChange}
+          />
         ))}
       </nav>
 

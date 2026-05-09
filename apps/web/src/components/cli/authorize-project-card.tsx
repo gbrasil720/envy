@@ -63,7 +63,7 @@ export function AuthorizeProjectCard({
     >
       <CardContent className="p-6 sm:p-10 md:p-12">
         <div className="flex items-center justify-center gap-6 mb-10">
-          <div className="w-12 h-12 bg-ghost-bg border border-border rounded-xl flex items-center justify-center">
+          <div className="size-12 bg-ghost-bg border border-border rounded-xl flex items-center justify-center">
             <HugeiconsIcon
               icon={TerminalIcon}
               size={16}
@@ -71,17 +71,17 @@ export function AuthorizeProjectCard({
             />
           </div>
           <div className="text-text-muted font-display text-xl">→</div>
-          <div className="w-12 h-12 bg-brand/10 border border-brand/20 rounded-xl flex items-center justify-center text-brand">
+          <div className="size-12 bg-brand/10 border border-brand/20 rounded-xl flex items-center justify-center text-brand">
             <img
               src="/logo-no-bg.png"
               alt="CLI"
-              className="w-14 h-14 object-cover"
+              className="size-14 object-cover"
             />
           </div>
         </div>
 
         <div className="text-center mb-8">
-          <h1 className="font-display font-bold text-[26px] text-text-primary leading-tight mb-2">
+          <h1 className="font-display font-semibold text-[26px] text-text-primary leading-tight mb-2">
             Authorize CLI access
           </h1>
           <p className="text-text-secondary text-sm">
@@ -149,7 +149,7 @@ export function AuthorizeProjectCard({
           className="w-full h-12 bg-brand text-bg font-bold rounded-[10px] flex items-center justify-center gap-2 hover:brightness-110 transition-all active:scale-[0.98] disabled:opacity-70"
         >
           {isAuthorizing ? (
-            <div className="w-5 h-5 border-2 border-bg/30 border-t-bg rounded-full animate-spin" />
+            <div className="size-5 border-2 border-bg/30 border-t-bg rounded-full animate-spin" />
           ) : (
             <>
               <HugeiconsIcon
@@ -168,7 +168,7 @@ export function AuthorizeProjectCard({
           className="w-full h-12 bg-transparent text-text-muted font-medium rounded-[10px] flex items-center justify-center hover:text-danger transition-colors disabled:opacity-50"
         >
           {isCancelling ? (
-            <div className="w-4 h-4 border-2 border-danger/30 border-t-danger rounded-full animate-spin" />
+            <div className="size-4 border-2 border-danger/30 border-t-danger rounded-full animate-spin" />
           ) : (
             'Cancel and revoke session'
           )}

@@ -208,9 +208,15 @@ export function AuditLog({ projectId, environments }: Props) {
       map.get(bucket)?.push(log)
     }
     const order = ['Today', 'Yesterday', 'Last 7 days', 'Earlier']
-    return order
-      .filter((k) => map.has(k))
-      .map((k) => ({ label: k, items: map.get(k) ?? [] }))
+    return order.reduce<{ label: string; items: typeof filtered }[]>(
+      (acc, k) => {
+        if (map.has(k)) {
+          acc.push({ label: k, items: map.get(k) ?? [] })
+        }
+        return acc
+      },
+      []
+    )
   }, [filtered])
 
   if (auditQuery.isLoading) {

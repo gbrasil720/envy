@@ -26,7 +26,7 @@ export function SavingsCalculator() {
             initial={{ opacity: 0, y: 24 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5 }}
-            className="text-3xl md:text-5xl font-display font-extrabold mb-4"
+            className="text-3xl md:text-5xl font-display font-semibold mb-4"
           >
             Stop overpaying for security.
           </motion.h2>

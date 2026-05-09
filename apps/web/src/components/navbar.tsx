@@ -39,7 +39,7 @@ export function Navbar() {
       }
     }
 
-    window.addEventListener('scroll', handleScroll)
+    window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
@@ -58,11 +58,11 @@ export function Navbar() {
     >
       <div className="mx-auto flex w-full min-w-0 max-w-7xl items-center justify-between px-4 sm:px-6 md:grid md:grid-cols-3">
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-[#111] rounded-lg flex items-center justify-center">
+          <div className="size-8 bg-[#111] rounded-lg flex items-center justify-center">
             <img
               src="/logo-no-bg.png"
               alt="Envy"
-              className="w-14 h-14 object-cover"
+              className="size-14 object-cover"
             />
           </div>
           <span className="text-xl font-display font-bold tracking-tight">

@@ -27,12 +27,6 @@ function toSlug(val: string) {
 }
 
 export const Route = createFileRoute('/onboarding')({
-  head: () => ({
-    meta: [
-      { title: 'Get Started — Envy' },
-      { name: 'robots', content: 'noindex, nofollow' }
-    ]
-  }),
   beforeLoad: async ({ context }) => {
     if (typeof window === 'undefined') return
 
@@ -50,6 +44,12 @@ export const Route = createFileRoute('/onboarding')({
       })
     }
   },
+  head: () => ({
+    meta: [
+      { title: 'Get Started — Envy' },
+      { name: 'robots', content: 'noindex, nofollow' }
+    ]
+  }),
   component: OnboardingPage
 })
 
@@ -156,7 +156,7 @@ function OnboardingPage() {
                   <p className="text-[11px] font-medium uppercase tracking-wider text-text-muted mb-1">
                     Step 1 of 2
                   </p>
-                  <h1 className="font-display font-bold text-[26px] md:text-[28px] text-text-primary mb-2 tracking-tight leading-tight">
+                  <h1 className="font-display font-semibold text-[26px] md:text-[28px] text-text-primary mb-2 tracking-tight leading-tight">
                     Name your workspace
                   </h1>
                   <p className="font-sans text-[15px] text-text-secondary leading-relaxed">
@@ -205,7 +205,7 @@ function OnboardingPage() {
                     onClick={handleContinue}
                     disabled={!orgName.trim()}
                   >
-                    Continue
+                    Next Step
                   </Button>
                   <button
                     type="button"
@@ -234,7 +234,7 @@ function OnboardingPage() {
                   <p className="text-[11px] font-medium uppercase tracking-wider text-text-muted mb-1">
                     Step 2 of 2
                   </p>
-                  <h1 className="font-display font-bold text-[26px] md:text-[28px] text-text-primary mb-2 tracking-tight leading-tight">
+                  <h1 className="font-display font-semibold text-[26px] md:text-[28px] text-text-primary mb-2 tracking-tight leading-tight">
                     Create your first project
                   </h1>
                   <p className="font-sans text-[15px] text-text-secondary leading-relaxed">
