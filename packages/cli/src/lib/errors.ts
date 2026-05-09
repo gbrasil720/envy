@@ -3,7 +3,8 @@ export const EXIT = {
   USAGE: 1,
   AUTH: 2,
   NETWORK: 3,
-  PERMISSION: 4
+  PERMISSION: 4,
+  SOFTWARE: 5
 } as const
 
 type ExitCode = (typeof EXIT)[keyof typeof EXIT]

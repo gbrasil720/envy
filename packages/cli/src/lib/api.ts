@@ -9,7 +9,7 @@ export function getApiClient(): ReturnType<typeof createTRPCClient<AppRouter>> {
   if (_client) return _client
 
   const auth = getAuth()
-  const baseUrl = auth?.api_url ?? API_URL
+  const baseUrl = process.env.ENVY_API_URL ?? auth?.api_url ?? API_URL
 
   _client = createTRPCClient<AppRouter>({
     links: [

@@ -292,6 +292,14 @@ export async function pushCommand(options: PushOptions): Promise<void> {
   })
   output.stopSpinner()
 
+  if (!result || typeof result.upserted !== 'number') {
+    throw new EnvyError('Push failed — unexpected response from server', {
+      suggestion: 'Try again, or check the server logs',
+      code: 'PUSH_FAILED',
+      exitCode: EXIT.SOFTWARE
+    })
+  }
+
   const lines = [
     { label: 'Project', value: projectSlug },
     { label: 'Environment', value: environment },
