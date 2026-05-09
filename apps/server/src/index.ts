@@ -43,19 +43,24 @@ const app = new Elysia()
     return status(405)
   })
   .all('/trpc/*', async (context) => {
-    // Elysia's default parser already consumed context.request.body.
-    // Reconstruct a fresh Request so fetchRequestHandler can read the body.
-    const bodyText =
-      context.body !== undefined && context.body !== null
-        ? typeof context.body === 'string'
-          ? context.body
-          : JSON.stringify(context.body)
-        : undefined
-    const req = new Request(context.request.url, {
-      method: context.request.method,
-      headers: context.request.headers,
-      body: bodyText
-    })
+    let req: Request
+    if (['GET', 'HEAD'].includes(context.request.method)) {
+      req = context.request
+    } else {
+      // Elysia's default parser already consumed context.request.body.
+      // Reconstruct a fresh Request so fetchRequestHandler can read the body.
+      const bodyText =
+        context.body != null
+          ? typeof context.body === 'string'
+            ? context.body
+            : JSON.stringify(context.body)
+          : undefined
+      req = new Request(context.request.url, {
+        method: context.request.method,
+        headers: context.request.headers,
+        body: bodyText
+      })
+    }
     const res = await fetchRequestHandler({
       endpoint: '/trpc',
       router: appRouter,
