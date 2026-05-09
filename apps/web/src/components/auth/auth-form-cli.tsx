@@ -105,10 +105,10 @@ export function AuthFormCli({ sessionToken }: Props) {
   const [expired, setExpired] = useState(false)
   const [cancelled, setCancelled] = useState(false)
 
-  const { data: sessionInfo } = useQuery(
+  const { data: sessionInfo, isError: sessionNotFound } = useQuery(
     trpc.cliAuth.getSession.queryOptions(
       { token: sessionToken! },
-      { enabled: !!sessionToken && !!sessionData?.user }
+      { enabled: !!sessionToken && !!sessionData?.user, retry: false }
     )
   )
 
@@ -130,7 +130,15 @@ export function AuthFormCli({ sessionToken }: Props) {
   const cancel = useMutation(
     trpc.cliAuth.cancel.mutationOptions({
       onSuccess: () => setCancelled(true),
-      onError: (err) => console.error(err)
+      onError: (err) => {
+        console.error(err)
+        if (
+          err.data?.code === 'UNAUTHORIZED' ||
+          err.data?.code === 'NOT_FOUND'
+        ) {
+          setExpired(true)
+        }
+      }
     })
   )
 
@@ -146,7 +154,7 @@ export function AuthFormCli({ sessionToken }: Props) {
     <div className="relative z-10 w-full max-w-[480px] px-6">
       <AnimatePresence mode="wait">
         {!sessionData?.user && <LoginCard sessionToken={sessionToken} />}
-        {sessionData?.user && expired && (
+        {sessionData?.user && (expired || sessionNotFound) && (
           <AuthorizationExpiredCard key="expired" />
         )}
         {sessionData?.user && cancelled && (
@@ -155,7 +163,7 @@ export function AuthFormCli({ sessionToken }: Props) {
         {sessionData?.user && approved && (
           <ProjectAuthorizedCard key="success" />
         )}
-        {sessionData?.user && !approved && !expired && !cancelled && (
+        {sessionData?.user && !approved && !expired && !cancelled && !sessionNotFound && (
           <AuthorizeProjectCard
             key="authorize"
             sessionToken={sessionToken || ''}

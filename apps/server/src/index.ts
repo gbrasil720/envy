@@ -11,11 +11,6 @@ import { Elysia } from 'elysia'
 import { waitlistRoutes } from './routes/waitlist'
 
 const app = new Elysia()
-  .onParse({ as: 'global' }, async ({ request }) => {
-    if (new URL(request.url).pathname.startsWith('/trpc')) {
-      return request.text()
-    }
-  })
   .use(
     cors({
       origin: env.CORS_ORIGIN,
@@ -48,13 +43,18 @@ const app = new Elysia()
     return status(405)
   })
   .all('/trpc/*', async (context) => {
-    const rawBody = typeof context.body === 'string' && context.body.length > 0
-      ? context.body
-      : undefined
+    // Elysia's default parser already consumed context.request.body.
+    // Reconstruct a fresh Request so fetchRequestHandler can read the body.
+    const bodyText =
+      context.body !== undefined && context.body !== null
+        ? typeof context.body === 'string'
+          ? context.body
+          : JSON.stringify(context.body)
+        : undefined
     const req = new Request(context.request.url, {
       method: context.request.method,
       headers: context.request.headers,
-      body: rawBody
+      body: bodyText
     })
     const res = await fetchRequestHandler({
       endpoint: '/trpc',
