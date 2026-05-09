@@ -2,6 +2,8 @@ import { Command } from 'commander'
 import { registerInit } from './commands/init'
 import { registerLogin } from './commands/login'
 import { registerLogout } from './commands/logout'
+import { registerOpen } from './commands/open'
+import { registerProjects } from './commands/projects'
 import { registerPull } from './commands/pull'
 import { registerPush } from './commands/push'
 import { registerWhoAmI } from './commands/whoami'
@@ -19,8 +21,10 @@ registerLogin(program)
 registerWhoAmI(program)
 registerLogout(program)
 registerInit(program)
+registerProjects(program)
 registerPush(program)
 registerPull(program)
+registerOpen(program)
 
 try {
   await program.parseAsync()

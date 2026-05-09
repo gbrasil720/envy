@@ -1,4 +1,5 @@
 export const API_URL = process.env.ENVY_API_URL ?? 'http://localhost:3000'
+export const WEB_URL = process.env.ENVY_WEB_URL ?? 'https://useenvy.dev'
 
 export const CONFIG_FILENAME = '.envy.json'
 
