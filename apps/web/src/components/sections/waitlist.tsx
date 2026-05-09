@@ -49,7 +49,7 @@ export function Waitlist() {
               duration: 0.55,
               ease: [0.25, 0.46, 0.45, 0.94]
             }}
-            className="text-[26px] sm:text-5xl md:text-7xl font-display font-bold mb-6 md:mb-8 tracking-tight sm:tracking-tighter leading-[1.05] sm:leading-[0.95] md:leading-[0.9]"
+            className="text-[26px] sm:text-5xl md:text-7xl font-display font-semibold mb-6 md:mb-8 tracking-tight sm:tracking-tighter leading-[1.05] sm:leading-[0.95] md:leading-[0.9]"
           >
             Your .env belongs in Envy. <br />
             <motion.span

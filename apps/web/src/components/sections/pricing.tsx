@@ -72,7 +72,7 @@ function PricingWaitlist({ isInView }: { isInView: boolean }) {
             <span className="inline-block px-3 py-1 bg-brand/20 text-brand text-[10px] font-bold uppercase rounded-full tracking-widest">
               Early Access
             </span>
-            <h3 className="text-2xl md:text-3xl font-bold mt-4 mb-3">
+            <h3 className="text-2xl md:text-3xl font-semibold mt-4 mb-3">
               Pricing that grows with your team
             </h3>
             <p className="text-text-secondary max-w-md mx-auto">
@@ -165,7 +165,7 @@ function PricingFull({ isInView }: { isInView: boolean }) {
           className="bg-surface border border-border rounded-3xl transition-all duration-300 hover:border-brand/30 hover:shadow-brand relative ring-0 gap-0 py-0"
         >
           <CardContent className="p-8 md:p-10 flex-1">
-            <h3 id="plan-free" className="text-lg font-bold mb-2">
+            <h3 id="plan-free" className="text-lg font-semibold mb-2">
               Free
             </h3>
             <div className="flex items-baseline gap-1 mb-6">
@@ -222,7 +222,7 @@ function PricingFull({ isInView }: { isInView: boolean }) {
             </span>
           </div>
           <CardContent className="p-8 md:p-10 pt-12 md:pt-12 flex-1">
-            <h3 id="plan-pro" className="text-lg font-bold mb-2">
+            <h3 id="plan-pro" className="text-lg font-semibold mb-2">
               Pro
             </h3>
             <div className="flex items-baseline gap-1 mb-6">
@@ -275,7 +275,7 @@ function PricingFull({ isInView }: { isInView: boolean }) {
           className="bg-surface border border-border rounded-3xl transition-all duration-300 hover:border-brand/30 hover:shadow-brand relative ring-0 gap-0 py-0"
         >
           <CardContent className="p-8 md:p-10 flex-1">
-            <h3 id="plan-team" className="text-lg font-bold mb-2">
+            <h3 id="plan-team" className="text-lg font-semibold mb-2">
               Team
             </h3>
             <div className="flex items-baseline gap-1 mb-6">
@@ -335,7 +335,7 @@ export function Pricing() {
             initial={{ opacity: 0, y: 24 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5 }}
-            className="text-3xl md:text-5xl font-display font-extrabold mb-4"
+            className="text-3xl md:text-5xl font-display font-semibold mb-4"
           >
             Simple pricing. Scales with your team.
           </motion.h2>

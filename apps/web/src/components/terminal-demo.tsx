@@ -101,23 +101,23 @@ export function TerminalDemo() {
       className="bg-surface-2 dark:bg-[#0D0D14] border border-border dark:border-white/10 rounded-xl overflow-hidden shadow-2xl w-full min-w-0 max-w-3xl mx-auto mt-8 md:mt-16 font-mono text-xs sm:text-sm md:text-base"
     >
       <div className="bg-ghost-bg px-4 py-2 flex items-center gap-2 border-b border-ghost-divider">
-        <div className="w-3 h-3 rounded-full bg-[#FF5F56]" />
-        <div className="w-3 h-3 rounded-full bg-[#FFBD2E]" />
-        <div className="w-3 h-3 rounded-full bg-[#27C93F]" />
+        <div className="size-3 rounded-full bg-[#FF5F56]" />
+        <div className="size-3 rounded-full bg-[#FFBD2E]" />
+        <div className="size-3 rounded-full bg-[#27C93F]" />
         <div className="ml-2 text-xs text-text-muted">bash — 80x24</div>
       </div>
       <div
         className="p-4 md:p-6 h-[220px] sm:h-[280px] md:h-[320px] overflow-x-auto overflow-y-auto whitespace-pre"
         ref={terminalRef}
       >
-        {lines.map((line, i) => {
+        {lines.map((line) => {
           const scriptLine = SCRIPT.find((s) => s.text === line)
           const colorClass =
             scriptLine && 'color' in scriptLine
               ? scriptLine.color
               : 'text-text-primary'
           return (
-            <div key={i} className={`mb-1 ${colorClass}`}>
+            <div key={line} className={`mb-1 ${colorClass}`}>
               {line}
             </div>
           )

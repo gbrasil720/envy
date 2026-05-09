@@ -11,11 +11,9 @@ const SIZES = {
   lg: 20
 } as const
 
-export type DashboardIconSize = keyof typeof SIZES
-
 type Props = {
   icon: IconSvgElement
-  size?: DashboardIconSize
+  size?: keyof typeof SIZES
   className?: string
 } & Omit<ComponentProps<typeof HugeiconsIcon>, 'icon' | 'size'>
 

@@ -2,12 +2,6 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { authClient } from '@/lib/auth-client'
 
 export const Route = createFileRoute('/auth/callback')({
-  head: () => ({
-    meta: [
-      { title: 'Signing In — Envy' },
-      { name: 'robots', content: 'noindex, nofollow' }
-    ]
-  }),
   beforeLoad: async ({ context }) => {
     if (typeof window === 'undefined') return
 
@@ -30,5 +24,11 @@ export const Route = createFileRoute('/auth/callback')({
       search: { project: '', section: 'secrets' as const }
     })
   },
+  head: () => ({
+    meta: [
+      { title: 'Signing In — Envy' },
+      { name: 'robots', content: 'noindex, nofollow' }
+    ]
+  }),
   component: () => null
 })

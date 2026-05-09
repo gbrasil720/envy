@@ -27,7 +27,7 @@ export function Features() {
             initial={{ opacity: 0, y: 24 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5 }}
-            className="text-[32px] md:text-[48px] font-display font-extrabold mb-6 leading-tight"
+            className="text-[32px] md:text-[48px] font-display font-semibold mb-6 leading-tight"
           >
             Ship faster. <br />
             Leak nothing.

@@ -54,6 +54,7 @@ export function ProjectSwitcher({
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            aria-controls="project-switcher-listbox"
             className="h-9 w-full justify-between rounded-xl border-border bg-muted/40 px-2.5 font-normal hover:bg-muted/60"
           />
         }
@@ -85,7 +86,7 @@ export function ProjectSwitcher({
       <PopoverContent className="w-[260px] rounded-xl p-0" align="start">
         <Command>
           <CommandInput placeholder="Search projects…" />
-          <CommandList>
+          <CommandList id="project-switcher-listbox">
             <CommandEmpty>
               {projectsQuery.isLoading ? 'Loading…' : 'No projects found.'}
             </CommandEmpty>

@@ -16,12 +16,12 @@ export function AuthorizationExpiredCard() {
     >
       <CardContent className="p-12 text-center">
         <div className="flex justify-center mb-8">
-          <div className="w-20 h-20 bg-danger/10 rounded-full flex items-center justify-center text-danger">
+          <div className="size-20 bg-danger/10 rounded-full flex items-center justify-center text-danger">
             <HugeiconsIcon icon={CancelCircleIcon} size={40} />
           </div>
         </div>
 
-        <h1 className="font-display font-bold text-[24px] text-danger mb-2">
+        <h1 className="font-display font-semibold text-[24px] text-danger mb-2">
           Session expired
         </h1>
         <p className="text-text-secondary text-[15px] mb-8">

@@ -50,7 +50,7 @@ import {
   ViewOffIcon
 } from '@hugeicons/core-free-icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { useTRPC } from '@/utils/trpc'
 import { DashboardIcon } from './dashboard-icon'
@@ -80,7 +80,7 @@ export function SecretsTable({
   const [currentEnv, setCurrentEnv] = useState(
     environments[0]?.name ?? 'development'
   )
-  const [revealed, setRevealed] = useState<Record<string, boolean>>({})
+  const revealed = useRef<Set<string>>(new Set())
   const [revealAll, setRevealAll] = useState(false)
   const [search, setSearch] = useState('')
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
@@ -125,17 +125,21 @@ export function SecretsTable({
   }, [secretEntries, search])
 
   function isRevealed(key: string) {
-    return revealAll || revealed[key]
+    return revealAll || revealed.current.has(key)
   }
 
   function toggleReveal(key: string) {
     setRevealAll(false)
-    setRevealed((prev) => ({ ...prev, [key]: !prev[key] }))
+    if (revealed.current.has(key)) {
+      revealed.current.delete(key)
+    } else {
+      revealed.current.add(key)
+    }
   }
 
   function handleEnvChange(env: string) {
     setCurrentEnv(env)
-    setRevealed({})
+    revealed.current.clear()
     setRevealAll(false)
     setSelectedKeys(new Set())
     setSearch('')
@@ -178,13 +182,15 @@ export function SecretsTable({
   }
 
   async function runBulkDelete(keys: string[]) {
-    for (const key of keys) {
-      await deleteMutation.mutateAsync({
-        projectId,
-        environment: currentEnv,
-        key
-      })
-    }
+    await Promise.all(
+      keys.map((key) =>
+        deleteMutation.mutateAsync({
+          projectId,
+          environment: currentEnv,
+          key
+        })
+      )
+    )
     toast.success(
       keys.length === 1 ? 'Secret deleted' : `${keys.length} secrets deleted`
     )
@@ -246,10 +252,10 @@ export function SecretsTable({
               const v = groupValue[0]
               if (v === 'show') {
                 setRevealAll(true)
-                setRevealed({})
+                revealed.current.clear()
               } else {
                 setRevealAll(false)
-                setRevealed({})
+                revealed.current.clear()
               }
             }}
             variant="outline"

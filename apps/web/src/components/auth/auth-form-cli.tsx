@@ -52,7 +52,7 @@ function LoginCard({ sessionToken }: { sessionToken: string | undefined }) {
       </div>
       <CardContent className="p-10 mt-10">
         <div className="flex flex-col items-center mb-8">
-          <h2 className="font-display font-bold text-2xl text-text-primary mb-2">
+          <h2 className="font-display font-semibold text-2xl text-text-primary mb-2">
             Welcome back.
           </h2>
           <p className="text-text-secondary text-sm text-center">
@@ -65,7 +65,7 @@ function LoginCard({ sessionToken }: { sessionToken: string | undefined }) {
           className="w-full h-12 bg-surface-2 border border-ghost-border rounded-[10px] flex items-center justify-center gap-3 hover:bg-ghost-bg transition-all active:scale-[0.98] disabled:opacity-70"
         >
           {loading ? (
-            <div className="w-5 h-5 border-2 border-text-muted/30 border-t-text-muted rounded-full animate-spin" />
+            <div className="size-5 border-2 border-text-muted/30 border-t-text-muted rounded-full animate-spin" />
           ) : (
             <>
               <HugeiconsIcon
@@ -132,7 +132,7 @@ export function AuthFormCli({ sessionToken }: Props) {
   if (isPending) {
     return (
       <div className="relative z-10 w-full max-w-[480px] px-6 flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />
+        <div className="size-8 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />
       </div>
     )
   }

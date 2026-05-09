@@ -47,7 +47,7 @@ export function WaitlistForm() {
         animate={{ opacity: 1, scale: 1 }}
         className="flex flex-col items-center gap-4 text-brand py-4"
       >
-        <div className="w-16 h-16 bg-brand/10 rounded-full flex items-center justify-center border border-brand/20">
+        <div className="size-16 bg-brand/10 rounded-full flex items-center justify-center border border-brand/20">
           <HugeiconsIcon icon={Tick01Icon} size={32} />
         </div>
         <div className="text-center">
@@ -84,7 +84,7 @@ export function WaitlistForm() {
           className="w-full sm:w-auto sm:self-stretch shrink-0 bg-brand text-bg px-8 py-3.5 sm:py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-70 relative z-10 shadow-lg shadow-brand/20"
         >
           {status === 'submitting' ? (
-            <div className="w-6 h-6 border-2 border-bg/30 border-t-bg rounded-full animate-spin" />
+            <div className="size-6 border-2 border-bg/30 border-t-bg rounded-full animate-spin" />
           ) : (
             <>
               Join <HugeiconsIcon icon={ArrowRight01Icon} size={20} />
@@ -96,11 +96,11 @@ export function WaitlistForm() {
         <span className="flex items-center gap-1.5">
           <HugeiconsIcon icon={Shield01Icon} size={10} /> Secure
         </span>
-        <span className="w-1 h-1 bg-ghost-border rounded-full shrink-0" />
+        <span className="size-1 bg-ghost-border rounded-full shrink-0" />
         <span className="flex items-center gap-1.5">
           <HugeiconsIcon icon={LockIcon} size={10} /> 256-bit AES
         </span>
-        <span className="w-1 h-1 bg-ghost-border rounded-full shrink-0" />
+        <span className="size-1 bg-ghost-border rounded-full shrink-0" />
         <span>Early Access</span>
       </div>
     </form>

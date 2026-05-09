@@ -21,10 +21,10 @@ export function ProjectAuthorizedCard() {
         <div className="flex justify-center mb-8">
           <div className="relative">
             <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
               transition={{ type: 'spring', damping: 12, stiffness: 200 }}
-              className="w-20 h-20 bg-brand/10 rounded-full flex items-center justify-center text-brand"
+              className="size-20 bg-brand/10 rounded-full flex items-center justify-center text-brand"
             >
               <HugeiconsIcon icon={CheckmarkCircle02Icon} size={40} />
             </motion.div>
@@ -37,7 +37,7 @@ export function ProjectAuthorizedCard() {
           </div>
         </div>
 
-        <h1 className="font-display font-bold text-[28px] text-text-primary mb-2">
+        <h1 className="font-display font-semibold text-[28px] text-text-primary mb-2">
           You're logged in!
         </h1>
         <p className="text-text-secondary text-[15px] mb-8">

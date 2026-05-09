@@ -58,7 +58,7 @@ export function FAQ() {
                 initial={{ opacity: 0, y: 24 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ delay: 0.15, duration: 0.5 }}
-                className="text-3xl sm:text-4xl md:text-5xl font-display font-bold mb-6 tracking-tight"
+                className="text-3xl sm:text-4xl md:text-5xl font-display font-semibold mb-6 tracking-tight"
               >
                 Questions we get a lot.
               </motion.h2>

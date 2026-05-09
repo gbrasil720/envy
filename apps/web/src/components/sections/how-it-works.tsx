@@ -63,7 +63,7 @@ export function HowItWorks() {
             initial={{ opacity: 0, y: 24 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5 }}
-            className="text-[32px] md:text-[48px] font-display font-extrabold mb-6"
+            className="text-[32px] md:text-[48px] font-display font-semibold mb-6"
           >
             Up and running in{' '}
             <span className="relative inline-block">

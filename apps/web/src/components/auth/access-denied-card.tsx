@@ -58,7 +58,7 @@ export function AccessDeniedCard() {
                   stiffness: 180,
                   delay: 0.1
                 }}
-                className="w-20 h-20 bg-danger/10 rounded-full flex items-center justify-center text-danger relative z-10"
+                className="size-20 bg-danger/10 rounded-full flex items-center justify-center text-danger relative z-10"
               >
                 <HugeiconsIcon icon={ShieldBanIcon} size={40} />
               </motion.div>
@@ -84,7 +84,7 @@ export function AccessDeniedCard() {
 
           <h1
             role="alert"
-            className="font-display font-bold text-[24px] md:text-[26px] text-text-primary mb-3 tracking-tight leading-tight"
+            className="font-display font-semibold text-[24px] md:text-[26px] text-text-primary mb-3 tracking-tight leading-tight"
           >
             You're not on the list yet.
           </h1>

@@ -50,7 +50,7 @@ export function SecurityRisks() {
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5 }}
-            className="text-3xl md:text-5xl font-display font-extrabold mb-6"
+            className="text-3xl md:text-5xl font-display font-semibold mb-6"
           >
             <span className="relative inline-block">
               Every team does this
@@ -111,7 +111,7 @@ export function SecurityRisks() {
                   </motion.div>
                 </div>
 
-                <h3 className="text-xl font-bold mb-2 text-text-primary">
+                <h3 className="text-xl font-semibold mb-2 text-text-primary">
                   {item.title}
                 </h3>
                 <p className="text-text-secondary text-sm leading-relaxed mb-8">

@@ -6,14 +6,14 @@ import { AuthFormCli } from '@/components/auth/auth-form-cli'
 import { MeshBackground } from '@/components/mesh-background'
 
 export const Route = createFileRoute('/cli-auth')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    session: typeof search.session === 'string' ? search.session : undefined
+  }),
   head: () => ({
     meta: [
       { title: 'CLI Authorization — Envy' },
       { name: 'robots', content: 'noindex, nofollow' }
     ]
-  }),
-  validateSearch: (search: Record<string, unknown>) => ({
-    session: typeof search.session === 'string' ? search.session : undefined
   }),
   component: RouteComponent
 })
@@ -25,7 +25,7 @@ function RouteComponent() {
   return (
     <MeshBackground>
       <div className="absolute top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2">
-        <div className="w-8 h-8 bg-brand rounded-lg flex items-center justify-center">
+        <div className="size-8 bg-brand rounded-lg flex items-center justify-center">
           <span className="text-bg font-mono font-bold text-lg">{'{}'}</span>
         </div>
         <span className="font-display font-bold text-text-primary text-lg tracking-tight">

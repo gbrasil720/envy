@@ -84,12 +84,12 @@ export function AuthForm() {
           className={`p-10 md:p-12 ${error ? 'mt-8' : ''} transition-all duration-300`}
         >
           <div className="flex flex-col items-center mb-8">
-            <div className="w-8 h-8 text-brand mb-3">
-              <div className="w-8 h-8 bg-[#111] rounded-lg flex items-center justify-center">
+            <div className="size-8 text-brand mb-3">
+              <div className="size-8 bg-[#111] rounded-lg flex items-center justify-center">
                 <img
                   src="/logo-no-bg.png"
                   alt="Envy"
-                  className="w-14 h-14 object-cover"
+                  className="size-14 object-cover"
                 />
               </div>
             </div>
@@ -99,7 +99,7 @@ export function AuthForm() {
           </div>
 
           <div className="mb-8">
-            <h2 className="font-display font-bold text-[26px] md:text-[32px] text-text-primary mb-2 tracking-tight leading-tight">
+            <h2 className="font-display font-semibold text-[26px] md:text-[32px] text-text-primary mb-2 tracking-tight leading-tight">
               Open the vault.
             </h2>
             <p className="font-sans text-[15px] text-text-secondary leading-relaxed">
@@ -115,7 +115,7 @@ export function AuthForm() {
           >
             {isLoading ? (
               <div className="flex items-center gap-3">
-                <div className="w-4 h-4 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />
+                <div className="size-4 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />
                 <span className="font-sans font-medium text-[15px] text-text-primary">
                   Connecting to GitHub...
                 </span>

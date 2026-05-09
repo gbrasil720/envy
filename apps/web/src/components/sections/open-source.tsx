@@ -42,7 +42,7 @@ export function OpenSource() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={isInView ? { opacity: 1, y: 0 } : {}}
                   transition={{ delay: 0.2, duration: 0.5 }}
-                  className="text-3xl md:text-5xl font-display font-extrabold mb-6"
+                  className="text-3xl md:text-5xl font-display font-semibold mb-6"
                 >
                   Security you can audit.
                 </motion.h2>
@@ -102,9 +102,9 @@ export function OpenSource() {
                 className="bg-surface-2 dark:bg-[#0D0D14] border border-border dark:border-white/10 rounded-2xl p-4 sm:p-6 font-mono text-xs sm:text-sm shadow-2xl overflow-x-auto"
               >
                 <div className="flex items-center gap-2 mb-4 border-b border-ghost-divider pb-4">
-                  <div className="w-3 h-3 rounded-full bg-red-500/50" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
-                  <div className="w-3 h-3 rounded-full bg-green-500/50" />
+                  <div className="size-3 rounded-full bg-red-500/50" />
+                  <div className="size-3 rounded-full bg-yellow-500/50" />
+                  <div className="size-3 rounded-full bg-green-500/50" />
                   <span className="ml-2 text-text-muted text-xs">
                     cli / src / encrypt.ts
                   </span>
