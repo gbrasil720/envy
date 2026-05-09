@@ -101,80 +101,74 @@ export const secretsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      try {
-        const userId = ctx.session.user.id
-        const masterKeyBase64 = await getProjectMasterKey(
-          ctx.db,
-          input.projectId,
-          userId,
-          ctx.authHeader
-        )
-        const environmentId = await findOrCreateEnvironment(
-          ctx.db,
-          input.projectId,
-          input.environment
-        )
+      const userId = ctx.session.user.id
+      const masterKeyBase64 = await getProjectMasterKey(
+        ctx.db,
+        input.projectId,
+        userId,
+        ctx.authHeader
+      )
+      const environmentId = await findOrCreateEnvironment(
+        ctx.db,
+        input.projectId,
+        input.environment
+      )
 
-        const entries = Object.entries(input.secrets)
+      const entries = Object.entries(input.secrets)
 
-        if (entries.length === 0) {
-          return { upserted: 0 }
-        }
+      if (entries.length === 0) {
+        return { upserted: 0 }
+      }
 
-        const values = await Promise.all(
-          entries.map(async ([key, value]) => {
-            const { ciphertext, iv, tag } = await encrypt(
-              value,
-              masterKeyBase64
-            )
-            const valHash = await hashValue(value)
+      const values = await Promise.all(
+        entries.map(async ([key, value]) => {
+          const { ciphertext, iv, tag } = await encrypt(value, masterKeyBase64)
+          const valHash = await hashValue(value)
 
-            return {
-              id: crypto.randomUUID(),
-              projectId: input.projectId,
-              environmentId,
-              key,
-              encryptedVal: ciphertext,
-              valIv: iv,
-              valTag: tag,
-              valHash,
-              createdBy: userId,
-              updatedBy: userId
-            }
-          })
-        )
-
-        await ctx.db.batch([
-          ctx.db
-            .insert(secret)
-            .values(values)
-            .onConflictDoUpdate({
-              target: [secret.projectId, secret.environmentId, secret.key],
-              set: {
-                encryptedVal: sql`excluded.encrypted_val`,
-                valIv: sql`excluded.val_iv`,
-                valTag: sql`excluded.val_tag`,
-                valHash: sql`excluded.val_hash`,
-                updatedBy: sql`excluded.updated_by`,
-                updatedAt: new Date()
-              }
-            }),
-          ctx.db.insert(auditLog).values({
+          return {
             id: crypto.randomUUID(),
             projectId: input.projectId,
-            userId,
-            environment: input.environment,
-            action: 'pushed',
-            targetKey: null,
-            metadata: { count: values.length },
-            createdAt: new Date()
-          })
-        ])
+            environmentId,
+            key,
+            encryptedVal: ciphertext,
+            valIv: iv,
+            valTag: tag,
+            valHash,
+            createdBy: userId,
+            updatedBy: userId
+          }
+        })
+      )
 
-        return { upserted: values.length }
-      } catch (error) {
-        console.log(error)
-      }
+      await ctx.db.transaction(async (tx) => {
+        await tx
+          .insert(secret)
+          .values(values)
+          .onConflictDoUpdate({
+            target: [secret.projectId, secret.environmentId, secret.key],
+            set: {
+              encryptedVal: sql`excluded.encrypted_val`,
+              valIv: sql`excluded.val_iv`,
+              valTag: sql`excluded.val_tag`,
+              valHash: sql`excluded.val_hash`,
+              updatedBy: sql`excluded.updated_by`,
+              updatedAt: new Date()
+            }
+          })
+
+        await tx.insert(auditLog).values({
+          id: crypto.randomUUID(),
+          projectId: input.projectId,
+          userId,
+          environment: input.environment,
+          action: 'pushed',
+          targetKey: null,
+          metadata: { count: values.length },
+          createdAt: new Date()
+        })
+      })
+
+      return { upserted: values.length }
     }),
 
   reveal: protectedProcedure
