@@ -5,12 +5,13 @@ import { printWelcomeBanner } from '../lib/banner'
 import { API_URL, POLL_INTERVAL_MS, POLL_TIMEOUT_MS } from '../lib/constants'
 import { EnvyError, EXIT } from '../lib/errors'
 import { output } from '../lib/output'
+import { spawn } from 'node:child_process'
 
 async function pollForApiKey(sessionToken: string): Promise<string> {
   const deadline = Date.now() + POLL_TIMEOUT_MS
 
   while (Date.now() < deadline) {
-    await Bun.sleep(POLL_INTERVAL_MS)
+    await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS))
 
     const result = await api.cliAuth.poll.query({ token: sessionToken })
 
@@ -46,11 +47,11 @@ export async function loginCommand(): Promise<void> {
 
   try {
     if (process.platform === 'win32') {
-      Bun.spawn(['cmd', '/c', 'start', url])
+      spawn('cmd', ['/c', 'start', url], { detached: true, stdio: 'ignore' })
     } else if (process.platform === 'darwin') {
-      Bun.spawn(['open', url])
+      spawn('open', [url], { detached: true, stdio: 'ignore' })
     } else {
-      Bun.spawn(['xdg-open', url])
+      spawn('xdg-open', [url], { detached: true, stdio: 'ignore' })
     }
   } catch {
     output.warn('Could not open browser automatically — visit the URL above')

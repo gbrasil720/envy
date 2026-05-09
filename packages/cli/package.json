@@ -1,14 +1,18 @@
 {
-  "name": "@envy/cli",
-  "version": "0.0.0",
-  "private": true,
+  "name": "envy-cli",
+  "version": "0.1.0",
   "type": "module",
   "bin": {
-    "envy": "./dist/cli"
+    "envy": "./dist/cli.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "bun build ./src/index.ts --compile --outfile dist/cli",
-    "check-types": "tsc --noEmit"
+    "build": "bun build ./src/index.ts --outfile dist/cli.js --target node --format esm"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "devDependencies": {
     "@envy/config": "workspace:*",

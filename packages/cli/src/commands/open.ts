@@ -3,6 +3,7 @@ import { requireAuth } from '../lib/auth'
 import { getConfig } from '../lib/config'
 import { WEB_URL } from '../lib/constants'
 import { output } from '../lib/output'
+import { spawn } from 'node:child_process'
 
 const GREEN = '\x1b[38;2;61;214;140m'
 const GRAY = '\x1b[38;5;240m'
@@ -28,14 +29,14 @@ export async function openCommand(): Promise<void> {
 
   try {
     if (process.platform === 'win32') {
-      Bun.spawn(['cmd', '/c', 'start', url])
+      spawn('cmd', ['/c', 'start', url], { detached: true, stdio: 'ignore' })
     } else if (process.platform === 'darwin') {
-      Bun.spawn(['open', url])
+      spawn('open', [url], { detached: true, stdio: 'ignore' })
     } else {
-      Bun.spawn(['xdg-open', url])
+      spawn('xdg-open', [url], { detached: true, stdio: 'ignore' })
     }
   } catch {
-    output.warn('Could not open browser automatically')
+    output.warn('Could not open browser automatically — visit the URL above')
   }
 
   const lines = [
