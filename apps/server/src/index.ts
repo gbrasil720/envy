@@ -11,8 +11,10 @@ import { Elysia } from 'elysia'
 import { waitlistRoutes } from './routes/waitlist'
 
 const app = new Elysia()
-  .onParse({ as: 'global' }, async ({ request: { url } }) => {
-    if (new URL(url).pathname.startsWith('/trpc')) return true
+  .onParse({ as: 'global' }, async ({ request }) => {
+    if (new URL(request.url).pathname.startsWith('/trpc')) {
+      return request.text()
+    }
   })
   .use(
     cors({
@@ -46,10 +48,18 @@ const app = new Elysia()
     return status(405)
   })
   .all('/trpc/*', async (context) => {
+    const rawBody = typeof context.body === 'string' && context.body.length > 0
+      ? context.body
+      : undefined
+    const req = new Request(context.request.url, {
+      method: context.request.method,
+      headers: context.request.headers,
+      body: rawBody
+    })
     const res = await fetchRequestHandler({
       endpoint: '/trpc',
       router: appRouter,
-      req: context.request,
+      req,
       createContext: async (): Promise<ApiContext> => {
         const authHeader = context.request.headers.get('authorization')
         const cookieHeader = context.request.headers.get('cookie')
