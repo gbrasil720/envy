@@ -25,8 +25,12 @@ function RouteComponent() {
   return (
     <MeshBackground>
       <div className="absolute top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2">
-        <div className="size-8 bg-brand rounded-lg flex items-center justify-center">
-          <span className="text-bg font-mono font-bold text-lg">{'{}'}</span>
+        <div className="size-8 bg-[#111] rounded-lg flex items-center justify-center">
+          <img
+            src="/logo-no-bg.png"
+            alt="Envy"
+            className="size-14 object-cover"
+          />
         </div>
         <span className="font-display font-bold text-text-primary text-lg tracking-tight">
           envy
