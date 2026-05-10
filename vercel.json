@@ -1,3 +1,3 @@
 {
-  "ignoreCommand": "node scripts/should-deploy.mjs"
+  "ignoreCommand": "node ../../scripts/should-deploy.mjs"
 }
