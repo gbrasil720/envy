@@ -1,3 +1,3 @@
 {
-  "ignoreCommand": "git diff --quiet $VERCEL_GIT_PREVIOUS_SHA $VERCEL_GIT_COMMIT_SHA -- apps/web/ packages/api/ packages/auth/ packages/env/ packages/config/ packages/ui/"
+  "ignoreCommand": "git diff --quiet $VERCEL_GIT_PREVIOUS_SHA $VERCEL_GIT_COMMIT_SHA -- apps/web/ packages/api/ packages/auth/ packages/env/ packages/config/ packages/ui/ && exit 0 || exit 1"
 }
