@@ -6,7 +6,7 @@ import { useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 
 const SCRIPT = [
-  { type: 'cmd', text: '$ npx envy pull --env production' },
+  { type: 'cmd', text: '$ npx useenvy pull --env production' },
   { type: 'out', text: '  ✓ Connected to useenvy.dev', color: 'text-brand' },
   {
     type: 'out',
@@ -35,7 +35,7 @@ const SCRIPT = [
     color: 'text-text-primary'
   },
   { type: 'out', text: '' },
-  { type: 'cmd', text: '$ npx envy run -- node server.js' },
+  { type: 'cmd', text: '$ npx useenvy run -- node server.js' },
   {
     type: 'out',
     text: '  ▶ Injecting 12 secrets into process...',
