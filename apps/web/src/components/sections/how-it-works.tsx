@@ -1,18 +1,34 @@
+import { Badge } from '@envy/ui/components/badge'
 import { Card, CardContent } from '@envy/ui/components/card'
+import {
+  Copy01Icon,
+  CopyCheckIcon,
+  TerminalIcon
+} from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
 import { motion, useInView, useReducedMotion } from 'motion/react'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 
 const MotionCard = motion.create(Card)
+
+const INSTALL_CMD = 'npm i -g useenvy'
 
 export function HowItWorks() {
   const reduceMotion = useReducedMotion()
   const sectionRef = useRef<HTMLElement>(null)
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' })
+  const [copiedCmd, setCopiedCmd] = useState<string | null>(null)
+
+  const copyToClipboard = (cmd: string) => {
+    navigator.clipboard.writeText(cmd)
+    setCopiedCmd(cmd)
+    setTimeout(() => setCopiedCmd(null), 2000)
+  }
 
   const steps = [
     {
       step: 1,
-      cmd: 'npx envy login',
+      cmd: 'envy login',
       desc: 'Authenticate once with GitHub'
     },
     {
@@ -58,7 +74,7 @@ export function HowItWorks() {
       />
 
       <div className="max-w-7xl w-full min-w-0 mx-auto relative z-10">
-        <div className="text-center mb-20">
+        <div className="text-center mb-14">
           <motion.h2
             initial={{ opacity: 0, y: 24 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -78,6 +94,161 @@ export function HowItWorks() {
             .
           </motion.h2>
         </div>
+
+        {/* Install card — full-width, centered, one-time prerequisite */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{
+            delay: 0.1,
+            duration: 0.5,
+            type: 'spring',
+            stiffness: 100,
+            damping: 15
+          }}
+          className="mb-6 relative max-w-lg mx-auto"
+        >
+          {/* Attention pulse ring */}
+          <motion.div
+            className="absolute -inset-px rounded-xl pointer-events-none"
+            animate={
+              isInView && !reduceMotion
+                ? {
+                    boxShadow: [
+                      '0 0 0 0px rgba(61, 214, 140, 0)',
+                      '0 0 0 4px rgba(61, 214, 140, 0.12)',
+                      '0 0 0 0px rgba(61, 214, 140, 0)'
+                    ]
+                  }
+                : {}
+            }
+            transition={{
+              delay: 1.4,
+              duration: 2.2,
+              repeat: reduceMotion ? 0 : Infinity,
+              repeatDelay: 4
+            }}
+          />
+
+          <MotionCard
+            whileHover={{
+              y: -3,
+              transition: {
+                duration: 0.25,
+                type: 'spring',
+                stiffness: 300,
+                damping: 20
+              }
+            }}
+            className="bg-surface border border-brand/20 rounded-xl ring-0 gap-0 py-0 relative overflow-hidden transition-all duration-300 hover:border-brand/35 hover:shadow-[0_8px_40px_rgba(0,0,0,0.6)] cursor-default"
+          >
+            <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-brand/50 to-transparent pointer-events-none" />
+
+            <CardContent className="p-6 flex flex-row items-center justify-between gap-6 group">
+              <div className="flex items-center gap-4 shrink-0">
+                <motion.div
+                  animate={
+                    isInView && !reduceMotion
+                      ? {
+                          boxShadow: [
+                            '0 0 0 0px rgba(61, 214, 140, 0.35)',
+                            '0 0 0 12px rgba(61, 214, 140, 0)',
+                            '0 0 0 0px rgba(61, 214, 140, 0)'
+                          ]
+                        }
+                      : {}
+                  }
+                  transition={{
+                    delay: 0.8,
+                    duration: 1.8,
+                    repeat: reduceMotion ? 0 : Infinity,
+                    repeatDelay: 3
+                  }}
+                  className="size-10 bg-brand/10 border border-brand/25 text-brand rounded-full flex items-center justify-center shrink-0"
+                >
+                  <HugeiconsIcon
+                    icon={TerminalIcon}
+                    size={16}
+                    aria-hidden="true"
+                  />
+                </motion.div>
+
+                <div className="flex flex-col items-start gap-1">
+                  <Badge
+                    variant="outline"
+                    className="text-brand/80 bg-brand/10 border border-brand/20 px-2.5 py-0.5 tracking-widest rounded-sm"
+                  >
+                    One-time setup
+                  </Badge>
+                  <p className="text-[15px] font-semibold text-text-primary leading-snug">
+                    Install the CLI
+                  </p>
+                  <p className="text-[13px] text-text-secondary leading-relaxed">
+                    Install the CLI to get started.
+                  </p>
+                </div>
+              </div>
+
+              {/* Right: command */}
+              <div className="relative overflow-hidden rounded-lg flex-1 max-w-[260px]">
+                <code className="relative z-10 bg-surface-2 dark:bg-[#0D0D14] border border-border dark:border-white/10 px-4 py-2.5 rounded-lg font-mono text-brand text-sm flex items-center justify-between transition-all duration-200 group-hover:border-brand/15 group-hover:border-2">
+                  <span>
+                    <span className="text-text-muted mr-1">$</span>
+                    {INSTALL_CMD}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(INSTALL_CMD)}
+                    aria-label="Copy install command to clipboard"
+                    className="ml-3 text-text-muted hover:text-brand transition-colors duration-150 cursor-pointer shrink-0"
+                  >
+                    <HugeiconsIcon
+                      icon={
+                        copiedCmd === INSTALL_CMD ? CopyCheckIcon : Copy01Icon
+                      }
+                      size={14}
+                      aria-hidden="true"
+                    />
+                  </button>
+                </code>
+                <motion.div
+                  className="absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{
+                    background:
+                      'linear-gradient(105deg, transparent 40%, rgba(61, 214, 140, 0.07) 50%, transparent 60%)'
+                  }}
+                  animate={reduceMotion ? undefined : { x: ['-100%', '200%'] }}
+                  transition={{
+                    duration: 2,
+                    repeat: reduceMotion ? 0 : Infinity,
+                    repeatDelay: 1,
+                    ease: 'linear'
+                  }}
+                />
+              </div>
+            </CardContent>
+          </MotionCard>
+        </motion.div>
+
+        {/* Connector to steps */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={isInView ? { opacity: 1 } : {}}
+          transition={{ delay: 0.3, duration: 0.4 }}
+          className="flex justify-center mb-6"
+        >
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="w-px h-4 bg-linear-to-b from-brand/30 to-brand/10" />
+            <div
+              className="w-0 h-0"
+              style={{
+                borderLeft: '4px solid transparent',
+                borderRight: '4px solid transparent',
+                borderTop: '5px solid rgba(61, 214, 140, 0.25)'
+              }}
+            />
+          </div>
+        </motion.div>
 
         <div className="relative">
           <motion.div
@@ -137,8 +308,23 @@ export function HowItWorks() {
                   </div>
 
                   <div className="relative overflow-hidden rounded-lg mb-4 w-full">
-                    <code className="relative z-10 bg-surface-2 dark:bg-[#0D0D14] border border-border dark:border-white/10 px-4 py-2.5 rounded-lg font-mono text-brand text-sm block transition-all duration-200 group-hover:border-brand/15 group-hover:border-2">
-                      <span className="text-text-muted mr-1">$</span> {item.cmd}
+                    <code className="relative z-10 bg-surface-2 dark:bg-[#0D0D14] border border-border dark:border-white/10 px-4 py-2.5 rounded-lg font-mono text-brand text-sm flex items-center justify-center transition-all duration-200 group-hover:border-brand/15 group-hover:border-2">
+                      <span className="absolute left-3 text-text-muted">$</span>
+                      {item.cmd}
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(item.cmd)}
+                        aria-label={`Copy ${item.cmd} to clipboard`}
+                        className="absolute right-3 text-text-muted hover:text-brand transition-colors duration-150 cursor-pointer"
+                      >
+                        <HugeiconsIcon
+                          icon={
+                            copiedCmd === item.cmd ? CopyCheckIcon : Copy01Icon
+                          }
+                          size={14}
+                          aria-hidden="true"
+                        />
+                      </button>
                     </code>
                     <motion.div
                       className="absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
