@@ -26,7 +26,6 @@ function RouteComponent() {
     <MeshBackground>
       <div className="absolute top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2">
         <div className="size-8 bg-[#111] rounded-lg flex items-center justify-center">
-          {/** biome-ignore lint/performance/noImgElement: <> */}
           <img
             src="/logo-no-bg.png"
             alt="Envy"
