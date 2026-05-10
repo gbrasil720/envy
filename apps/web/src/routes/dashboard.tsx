@@ -111,7 +111,6 @@ function DashboardLayout() {
       audit: '/dashboard/$projectSlug/audit',
       settings: '/dashboard/$projectSlug/settings'
     }
-    // biome-ignore lint/suspicious/noExplicitAny: dynamic section route
     navigate({
       to: routes[s] as any,
       params: { projectSlug: currentProject.slug } as any
