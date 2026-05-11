@@ -11,7 +11,7 @@ import { useRef, useState } from 'react'
 
 const MotionCard = motion.create(Card)
 
-const INSTALL_CMD = 'npm i -g useenvy'
+const INSTALL_CMD = 'npm i -g useenvy@latest'
 
 export function HowItWorks() {
   const reduceMotion = useReducedMotion()
@@ -106,7 +106,7 @@ export function HowItWorks() {
             stiffness: 100,
             damping: 15
           }}
-          className="mb-6 relative max-w-lg mx-auto"
+          className="mb-6 relative w-full max-w-lg mx-auto min-w-0"
         >
           {/* Attention pulse ring */}
           <motion.div
@@ -144,8 +144,8 @@ export function HowItWorks() {
           >
             <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-brand/50 to-transparent pointer-events-none" />
 
-            <CardContent className="p-6 flex flex-row items-center justify-between gap-6 group">
-              <div className="flex items-center gap-4 shrink-0">
+            <CardContent className="p-4 sm:p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 group">
+              <div className="flex items-center gap-4 min-w-0 sm:shrink-0">
                 <motion.div
                   animate={
                     isInView && !reduceMotion
@@ -190,17 +190,17 @@ export function HowItWorks() {
               </div>
 
               {/* Right: command */}
-              <div className="relative overflow-hidden rounded-lg flex-1 max-w-[260px]">
-                <code className="relative z-10 bg-surface-2 dark:bg-[#0D0D14] border border-border dark:border-white/10 px-4 py-2.5 rounded-lg font-mono text-brand text-sm flex items-center justify-between transition-all duration-200 group-hover:border-brand/15 group-hover:border-2">
-                  <span>
+              <div className="relative w-full min-w-0 rounded-lg overflow-hidden sm:flex-1 sm:max-w-[260px]">
+                <code className="relative z-10 bg-surface-2 dark:bg-[#0D0D14] border border-border dark:border-white/10 px-3 py-2.5 sm:px-4 rounded-lg font-mono text-brand text-[13px] sm:text-sm flex items-center gap-2 min-w-0 transition-all duration-200 group-hover:border-brand/15 group-hover:border-2">
+                  <span className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:thin]">
                     <span className="text-text-muted mr-1">$</span>
-                    {INSTALL_CMD}
+                    <span className="whitespace-nowrap">{INSTALL_CMD}</span>
                   </span>
                   <button
                     type="button"
                     onClick={() => copyToClipboard(INSTALL_CMD)}
                     aria-label="Copy install command to clipboard"
-                    className="ml-3 text-text-muted hover:text-brand transition-colors duration-150 cursor-pointer shrink-0"
+                    className="text-text-muted hover:text-brand transition-colors duration-150 cursor-pointer shrink-0 ml-1"
                   >
                     <HugeiconsIcon
                       icon={
