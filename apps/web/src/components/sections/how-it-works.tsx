@@ -106,7 +106,7 @@ export function HowItWorks() {
             stiffness: 100,
             damping: 15
           }}
-          className="mb-6 relative w-full max-w-lg mx-auto min-w-0"
+          className="mb-6 relative w-full max-w-2xl mx-auto min-w-0"
         >
           {/* Attention pulse ring */}
           <motion.div
@@ -189,42 +189,47 @@ export function HowItWorks() {
                 </div>
               </div>
 
-              {/* Right: command */}
-              <div className="relative w-full min-w-0 rounded-lg overflow-hidden sm:flex-1 sm:max-w-[260px]">
-                <code className="relative z-10 bg-surface-2 dark:bg-[#0D0D14] border border-border dark:border-white/10 px-3 py-2.5 sm:px-4 rounded-lg font-mono text-brand text-[13px] sm:text-sm flex items-center gap-2 min-w-0 transition-all duration-200 group-hover:border-brand/15 group-hover:border-2">
-                  <span className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:thin]">
-                    <span className="text-text-muted mr-1">$</span>
+              <div className="relative w-full min-w-0 sm:flex-1 sm:min-w-0">
+                <div className="relative w-full min-w-0 overflow-x-auto overflow-y-hidden rounded-lg [scrollbar-width:thin] sm:overflow-hidden">
+                  <code className="relative z-10 flex w-full min-w-0 items-center justify-center bg-surface-2 dark:bg-[#0D0D14] border border-border dark:border-white/10 px-4 py-2.5 rounded-lg font-mono text-brand text-[13px] sm:text-sm transition-all duration-200 group-hover:border-brand/15 group-hover:border-2">
+                    <span className="absolute left-3 text-text-muted" aria-hidden="true">
+                      $
+                    </span>
                     <span className="whitespace-nowrap">{INSTALL_CMD}</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(INSTALL_CMD)}
-                    aria-label="Copy install command to clipboard"
-                    className="text-text-muted hover:text-brand transition-colors duration-150 cursor-pointer shrink-0 ml-1"
-                  >
-                    <HugeiconsIcon
-                      icon={
-                        copiedCmd === INSTALL_CMD ? CopyCheckIcon : Copy01Icon
-                      }
-                      size={14}
-                      aria-hidden="true"
-                    />
-                  </button>
-                </code>
-                <motion.div
-                  className="absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  style={{
-                    background:
-                      'linear-gradient(105deg, transparent 40%, rgba(61, 214, 140, 0.07) 50%, transparent 60%)'
-                  }}
-                  animate={reduceMotion ? undefined : { x: ['-100%', '200%'] }}
-                  transition={{
-                    duration: 2,
-                    repeat: reduceMotion ? 0 : Infinity,
-                    repeatDelay: 1,
-                    ease: 'linear'
-                  }}
-                />
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(INSTALL_CMD)}
+                      aria-label="Copy install command to clipboard"
+                      className="absolute right-3 text-text-muted hover:text-brand transition-colors duration-150 cursor-pointer"
+                    >
+                      <HugeiconsIcon
+                        icon={
+                          copiedCmd === INSTALL_CMD
+                            ? CopyCheckIcon
+                            : Copy01Icon
+                        }
+                        size={14}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </code>
+                  <motion.div
+                    className="absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    style={{
+                      background:
+                        'linear-gradient(105deg, transparent 40%, rgba(61, 214, 140, 0.07) 50%, transparent 60%)'
+                    }}
+                    animate={
+                      reduceMotion ? undefined : { x: ['-100%', '200%'] }
+                    }
+                    transition={{
+                      duration: 2,
+                      repeat: reduceMotion ? 0 : Infinity,
+                      repeatDelay: 1,
+                      ease: 'linear'
+                    }}
+                  />
+                </div>
               </div>
             </CardContent>
           </MotionCard>
