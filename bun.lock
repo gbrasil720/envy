@@ -65,6 +65,7 @@
         "@vercel/analytics": "^2.0.1",
         "@vercel/speed-insights": "^2.0.0",
         "better-auth": "catalog:",
+        "cmdk": "^1.1.1",
         "dotenv": "catalog:",
         "lucide-react": "catalog:",
         "motion": "^12.38.0",
