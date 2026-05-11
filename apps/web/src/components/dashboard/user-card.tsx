@@ -116,11 +116,15 @@ export function UserCard({ planLabel, compact = false }: Props) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setPreferencesOpen(true)}>
+            <DropdownMenuItem
+              className="rounded-none"
+              onClick={() => setPreferencesOpen(true)}
+            >
               <DashboardIcon icon={Settings01Icon} data-icon="inline-start" />
               Preferences
             </DropdownMenuItem>
             <DropdownMenuItem
+              className="rounded-none"
               onSelect={() => {
                 window.open(
                   'https://docs.useenvy.dev',
@@ -141,6 +145,7 @@ export function UserCard({ planLabel, compact = false }: Props) {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
+              className="rounded-none"
               onSelect={() => {
                 authClient.signOut({
                   fetchOptions: {
