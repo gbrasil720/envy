@@ -1,21 +1,15 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { authClient } from '@/lib/auth-client'
+import { getAuthState } from '@/functions/get-auth-state'
 
 export const Route = createFileRoute('/auth/callback')({
-  beforeLoad: async ({ context }) => {
-    if (typeof window === 'undefined') return
+  beforeLoad: async () => {
+    const auth = await getAuthState()
 
-    const { data: session } = await authClient.getSession()
-
-    if (!session) {
+    if (!auth) {
       throw redirect({ to: '/login' })
     }
 
-    const me = await context.queryClient.fetchQuery(
-      context.trpc.me.get.queryOptions()
-    )
-
-    if (!me.onboardingCompletedAt && !me.onboardingSkippedAt) {
+    if (!auth.onboardingCompletedAt && !auth.onboardingSkippedAt) {
       throw redirect({ to: '/onboarding' })
     }
 

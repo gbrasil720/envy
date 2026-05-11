@@ -10,6 +10,7 @@
   "dependencies": {
     "@better-auth/infra": "catalog:",
     "@envy/api": "workspace:*",
+    "@envy/db": "workspace:*",
     "@envy/auth": "workspace:*",
     "@envy/env": "workspace:*",
     "@envy/ui": "workspace:*",

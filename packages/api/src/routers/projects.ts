@@ -1,25 +1,10 @@
-import { encrypt, exportKey, generateKey } from '@envy/crypto'
-import { and, count, eq, inArray, sql } from '@envy/db'
-import { member, organization } from '@envy/db/schema/auth'
+import { and, count, eq, inArray, isNull, sql } from '@envy/db'
+import { member, organization, user } from '@envy/db/schema/auth'
 import { auditLog, environment, project, secret } from '@envy/db/schema/envy'
-import { env } from '@envy/env/server'
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { protectedProcedure, router } from '..'
-
-const PLAN_LIMITS = {
-  free: { projects: 1, secrets: 50 },
-  pro: { projects: Infinity, secrets: Infinity },
-  team: { projects: Infinity, secrets: Infinity }
-} as const
-
-function generateSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
+import { createOwnedProject } from '../lib/create-project'
 
 export const projectsRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
@@ -95,84 +80,14 @@ export const projectsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
 
-      const existingMemberships = await ctx.db.query.member.findMany({
-        where: and(eq(member.userId, userId), eq(member.role, 'owner')),
-        columns: { organizationId: true }
-      })
+      const created = await createOwnedProject(ctx.db, userId, input)
 
-      const isOnFree =
-        existingMemberships.length === 0 ||
-        (await (async () => {
-          const orgIds = existingMemberships.map((m) => m.organizationId)
-          const orgs = await ctx.db.query.organization.findMany({
-            where: (o, { inArray }) => inArray(o.id, orgIds),
-            columns: { metadata: true }
-          })
-          return orgs.every(
-            (o) =>
-              ((o.metadata as { plan?: string } | null)?.plan ?? 'free') ===
-              'free'
-          )
-        })())
+      await ctx.db
+        .update(user)
+        .set({ onboardingCompletedAt: new Date() })
+        .where(and(eq(user.id, userId), isNull(user.onboardingCompletedAt)))
 
-      if (isOnFree && existingMemberships.length >= PLAN_LIMITS.free.projects) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message:
-            'Free plan allows only 1 project. Upgrade to Pro or Team to create more.'
-        })
-      }
-
-      const slug = generateSlug(input.name)
-
-      const existing = await ctx.db.query.project.findFirst({
-        where: eq(project.slug, slug),
-        columns: { id: true }
-      })
-
-      if (existing) {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message: `A project with slug "${slug}" already exists`
-        })
-      }
-
-      const masterKey = await generateKey()
-      const masterKeyBase64 = await exportKey(masterKey)
-      const { ciphertext, iv, tag } = await encrypt(
-        masterKeyBase64,
-        env.SERVER_ENCRYPTION_KEY
-      )
-
-      const orgId = crypto.randomUUID()
-
-      await ctx.db.insert(organization).values({
-        id: orgId,
-        name: input.name,
-        slug,
-        metadata: { plan: 'free' },
-        createdAt: new Date()
-      })
-
-      await ctx.db.insert(member).values({
-        id: crypto.randomUUID(),
-        organizationId: orgId,
-        userId,
-        role: 'owner',
-        createdAt: new Date()
-      })
-
-      await ctx.db.insert(project).values({
-        id: orgId,
-        name: input.name,
-        slug,
-        encryptedMk: ciphertext,
-        mkIv: iv,
-        mkTag: tag,
-        createdBy: userId
-      })
-
-      return { id: orgId, name: input.name, slug }
+      return created
     }),
   get: protectedProcedure
     .input(z.object({ slug: z.string() }))

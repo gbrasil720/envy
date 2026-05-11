@@ -18,7 +18,7 @@ import type {
 } from '@/components/dashboard/dashboard-types'
 import { NewProjectDialog } from '@/components/dashboard/new-project-dialog'
 import { MeshBackground } from '@/components/mesh-background'
-import { authClient } from '@/lib/auth-client'
+import { getAuthState } from '@/functions/get-auth-state'
 import { useTRPC } from '@/utils/trpc'
 
 function deriveSection(pathname: string): DashboardSection {
@@ -29,22 +29,14 @@ function deriveSection(pathname: string): DashboardSection {
 }
 
 export const Route = createFileRoute('/dashboard')({
-  beforeLoad: async ({ context }) => {
-    if (typeof window === 'undefined') {
-      return
-    }
+  beforeLoad: async () => {
+    const auth = await getAuthState()
 
-    const { data: session } = await authClient.getSession()
-
-    if (!session) {
+    if (!auth) {
       throw redirect({ to: '/login' })
     }
 
-    const me = await context.queryClient.fetchQuery(
-      context.trpc.me.get.queryOptions()
-    )
-
-    if (!me.onboardingCompletedAt && !me.onboardingSkippedAt) {
+    if (!auth.onboardingCompletedAt && !auth.onboardingSkippedAt) {
       throw redirect({ to: '/onboarding' })
     }
   },
