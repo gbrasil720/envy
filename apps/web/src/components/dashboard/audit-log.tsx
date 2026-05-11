@@ -279,10 +279,10 @@ export function AuditLog({ projectId, environments }: Props) {
               value={envFilter}
               onValueChange={(v) => setEnvFilter(v ?? 'all')}
             >
-              <SelectTrigger id="audit-env" className="h-9 w-[180px]">
+              <SelectTrigger id="audit-env" className="h-9 w-[180px] rounded-md">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-md">
                 <SelectItem value="all">All environments</SelectItem>
                 {environments.map((e) => (
                   <SelectItem key={e.id} value={e.name}>
@@ -328,27 +328,28 @@ export function AuditLog({ projectId, environments }: Props) {
         </div>
       </div>
 
-      <ScrollArea className="max-h-[min(560px,calc(100vh-280px))] rounded-xl border border-border">
+      <ScrollArea className="max-h-[min(560px,calc(100vh-280px))] overflow-hidden rounded-xl border border-border">
         <div className="flex flex-col p-1">
           {grouped.map(
             (group) =>
               group.items.length > 0 && (
                 <div key={group.label} className="mb-2">
-                  <p className="sticky top-0 z-10 bg-card px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <p className="sticky top-0 z-10 rounded-md bg-card px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     {group.label}
                   </p>
-                  {group.items.map((log) => {
-                    const parts = formatAction(
-                      log.action,
-                      log.targetKey,
-                      log.environment
-                    )
-                    const icon = actionIcon(log.action)
-                    return (
-                      <div
-                        key={log.id}
-                        className="flex gap-3 border-b border-border px-3 py-3 last:border-0"
-                      >
+                  <div className="divide-y divide-border">
+                    {group.items.map((log) => {
+                      const parts = formatAction(
+                        log.action,
+                        log.targetKey,
+                        log.environment
+                      )
+                      const icon = actionIcon(log.action)
+                      return (
+                        <div
+                          key={log.id}
+                          className="flex gap-3 px-3 py-3"
+                        >
                         <div
                           className={`flex size-8 shrink-0 items-center justify-center rounded-full ${actionTone(log.action)}`}
                         >
@@ -412,11 +413,13 @@ export function AuditLog({ projectId, environments }: Props) {
                           </div>
                         </div>
                       </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
                 </div>
               )
           )}
+          <div className="h-10 shrink-0" aria-hidden="true" />
         </div>
       </ScrollArea>
 
