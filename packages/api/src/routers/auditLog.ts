@@ -11,6 +11,7 @@ export const auditLogRouter = router({
       z.object({
         projectId: z.string(),
         environment: z.string().optional(),
+        userId: z.string().optional(),
         limit: z.number().min(1).max(100).default(50),
         offset: z.number().default(0)
       })
@@ -33,6 +34,9 @@ export const auditLogRouter = router({
       const conditions = [eq(auditLog.projectId, input.projectId)]
       if (input.environment) {
         conditions.push(eq(auditLog.environment, input.environment))
+      }
+      if (input.userId) {
+        conditions.push(eq(auditLog.userId, input.userId))
       }
 
       const logs = await ctx.db.query.auditLog.findMany({

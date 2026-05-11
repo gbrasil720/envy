@@ -46,7 +46,7 @@ type Props = {
   environments: { id: string; name: string }[]
 }
 
-type ActionFilter = 'all' | 'secrets' | 'members'
+type ActionFilter = 'all' | 'secrets'
 
 const SECRET_ACTIONS = new Set([
   'pushed',
@@ -55,7 +55,25 @@ const SECRET_ACTIONS = new Set([
   'secret_updated',
   'secret_deleted'
 ])
-const MEMBER_ACTIONS = new Set(['member_invited', 'member_removed'])
+
+/** Leading cap for log labels; leaves emails unchanged. */
+function capitalizeLabel(text: string) {
+  const t = text.trim()
+  if (!t) return text
+  if (t.includes('@')) return text
+  return t.charAt(0).toUpperCase() + t.slice(1)
+}
+
+/** Title-style words for display names (not secret keys). */
+function capitalizeWords(text: string) {
+  const t = text.trim()
+  if (!t) return text
+  if (t.includes('@')) return t
+  return t
+    .split(/\s+/)
+    .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : w))
+    .join(' ')
+}
 
 function formatAction(
   action: string,
@@ -65,40 +83,61 @@ function formatAction(
   const parts: { text: string; muted?: boolean }[] = []
   switch (action) {
     case 'pushed':
-      parts.push({ text: 'pushed secrets' })
-      if (environment) parts.push({ text: `to ${environment}`, muted: true })
+      parts.push({ text: 'Pushed secrets' })
+      if (environment) {
+        parts.push({ text: `To ${capitalizeLabel(environment)}`, muted: true })
+      }
       break
     case 'pulled':
-      parts.push({ text: 'pulled secrets' })
+      parts.push({ text: 'Pulled secrets' })
       if (environment) {
-        parts.push({ text: `from ${environment}`, muted: true })
+        parts.push({
+          text: `From ${capitalizeLabel(environment)}`,
+          muted: true
+        })
       }
       break
     case 'secret_created':
-      parts.push({ text: 'created' })
-      if (targetKey) parts.push({ text: targetKey, muted: true })
-      if (environment) parts.push({ text: `in ${environment}`, muted: true })
+      parts.push({ text: 'Created' })
+      if (targetKey)
+        parts.push({ text: capitalizeLabel(targetKey), muted: true })
+      if (environment) {
+        parts.push({ text: `In ${capitalizeLabel(environment)}`, muted: true })
+      }
       break
     case 'secret_updated':
-      parts.push({ text: 'updated' })
-      if (targetKey) parts.push({ text: targetKey, muted: true })
-      if (environment) parts.push({ text: `in ${environment}`, muted: true })
+      parts.push({ text: 'Updated' })
+      if (targetKey)
+        parts.push({ text: capitalizeLabel(targetKey), muted: true })
+      if (environment) {
+        parts.push({ text: `In ${capitalizeLabel(environment)}`, muted: true })
+      }
       break
     case 'secret_deleted':
-      parts.push({ text: 'deleted' })
-      if (targetKey) parts.push({ text: targetKey, muted: true })
-      if (environment) parts.push({ text: `from ${environment}`, muted: true })
+      parts.push({ text: 'Deleted' })
+      if (targetKey)
+        parts.push({ text: capitalizeLabel(targetKey), muted: true })
+      if (environment) {
+        parts.push({
+          text: `From ${capitalizeLabel(environment)}`,
+          muted: true
+        })
+      }
       break
     case 'member_invited':
-      parts.push({ text: 'invited' })
-      if (targetKey) parts.push({ text: targetKey, muted: true })
+      parts.push({ text: 'Invited' })
+      if (targetKey)
+        parts.push({ text: capitalizeLabel(targetKey), muted: true })
       break
     case 'member_removed':
-      parts.push({ text: 'removed' })
-      if (targetKey) parts.push({ text: targetKey, muted: true })
+      parts.push({ text: 'Removed' })
+      if (targetKey)
+        parts.push({ text: capitalizeLabel(targetKey), muted: true })
       break
     default:
-      parts.push({ text: action.replace(/_/g, ' ') })
+      parts.push({
+        text: capitalizeWords(action.replace(/_/g, ' '))
+      })
   }
   return parts
 }
@@ -167,27 +206,34 @@ function dateBucket(d: Date): string {
 export function AuditLog({ projectId, environments }: Props) {
   const trpc = useTRPC()
   const [envFilter, setEnvFilter] = useState<string>('all')
+  const [memberFilter, setMemberFilter] = useState<string>('all')
   const [actionFilter, setActionFilter] = useState<ActionFilter>('all')
   const [search, setSearch] = useState('')
   const [limit, setLimit] = useState(50)
+
+  const membersQuery = useQuery(trpc.members.list.queryOptions({ projectId }))
 
   const auditQuery = useQuery(
     trpc.auditLog.list.queryOptions({
       projectId,
       limit,
       offset: 0,
-      ...(envFilter !== 'all' ? { environment: envFilter } : {})
+      ...(envFilter !== 'all' ? { environment: envFilter } : {}),
+      ...(memberFilter !== 'all' ? { userId: memberFilter } : {})
     })
   )
 
   const logs = auditQuery.data ?? []
 
+  const hasActiveFilters =
+    envFilter !== 'all' ||
+    memberFilter !== 'all' ||
+    actionFilter === 'secrets' ||
+    search.trim() !== ''
+
   const filtered = useMemo(() => {
     return logs.filter((log) => {
       if (actionFilter === 'secrets' && !SECRET_ACTIONS.has(log.action)) {
-        return false
-      }
-      if (actionFilter === 'members' && !MEMBER_ACTIONS.has(log.action)) {
         return false
       }
       if (search.trim()) {
@@ -219,6 +265,11 @@ export function AuditLog({ projectId, environments }: Props) {
     )
   }, [filtered])
 
+  const firstSectionLabel = useMemo(
+    () => grouped.find((g) => g.items.length > 0)?.label,
+    [grouped]
+  )
+
   if (auditQuery.isLoading) {
     return (
       <div className="flex flex-col gap-2 rounded-xl border border-border p-4">
@@ -235,7 +286,7 @@ export function AuditLog({ projectId, environments }: Props) {
     )
   }
 
-  if (logs.length === 0) {
+  if (logs.length === 0 && !hasActiveFilters) {
     return (
       <Empty className="min-h-[320px] rounded-xl border border-dashed border-border bg-muted/20">
         <EmptyHeader>
@@ -279,8 +330,17 @@ export function AuditLog({ projectId, environments }: Props) {
               value={envFilter}
               onValueChange={(v) => setEnvFilter(v ?? 'all')}
             >
-              <SelectTrigger id="audit-env" className="h-9 w-[180px] rounded-md">
-                <SelectValue placeholder="All" />
+              <SelectTrigger
+                id="audit-env"
+                className="h-9 w-[180px] rounded-md"
+              >
+                <SelectValue placeholder="All environments">
+                  {(value) =>
+                    value === 'all' || value == null
+                      ? 'All environments'
+                      : String(value)
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className="rounded-md">
                 <SelectItem value="all">All environments</SelectItem>
@@ -293,12 +353,59 @@ export function AuditLog({ projectId, environments }: Props) {
             </Select>
           </div>
           <div className="flex flex-col gap-1.5">
+            <Label
+              htmlFor="audit-member"
+              className="text-xs text-muted-foreground"
+            >
+              Member
+            </Label>
+            <Select
+              value={memberFilter}
+              onValueChange={(v) => setMemberFilter(v ?? 'all')}
+            >
+              <SelectTrigger
+                id="audit-member"
+                className="h-9 w-[200px] rounded-md"
+              >
+                <SelectValue placeholder="All members">
+                  {(value) => {
+                    if (value === 'all' || value == null) return 'All members'
+                    const row = membersQuery.data?.find(
+                      (m) => m.userId === value
+                    )
+                    return row?.user?.name
+                      ? capitalizeWords(row.user.name)
+                      : 'Member'
+                  }}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="rounded-md">
+                <SelectItem value="all">All members</SelectItem>
+                {membersQuery.data?.map((m) => (
+                  <SelectItem key={m.id} value={m.userId}>
+                    <span className="flex items-center gap-2">
+                      <Avatar className="size-4">
+                        {m.user.image ? (
+                          <AvatarImage src={m.user.image} alt="" />
+                        ) : null}
+                        <AvatarFallback className="text-[8px]">
+                          {m.user.name?.slice(0, 2).toUpperCase() ?? '??'}
+                        </AvatarFallback>
+                      </Avatar>
+                      {capitalizeWords(m.user.name ?? 'Unknown')}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1.5">
             <span className="text-xs text-muted-foreground">Type</span>
             <ToggleGroup
               value={[actionFilter]}
               onValueChange={(v) => {
                 const x = v[0]
-                if (x === 'all' || x === 'secrets' || x === 'members') {
+                if (x === 'all' || x === 'secrets') {
                   setActionFilter(x)
                 }
               }}
@@ -307,7 +414,6 @@ export function AuditLog({ projectId, environments }: Props) {
             >
               <ToggleGroupItem value="all">All</ToggleGroupItem>
               <ToggleGroupItem value="secrets">Secrets</ToggleGroupItem>
-              <ToggleGroupItem value="members">Members</ToggleGroupItem>
             </ToggleGroup>
           </div>
         </div>
@@ -328,28 +434,33 @@ export function AuditLog({ projectId, environments }: Props) {
         </div>
       </div>
 
-      <ScrollArea className="max-h-[min(560px,calc(100vh-280px))] overflow-hidden rounded-xl border border-border">
-        <div className="flex flex-col p-1">
-          {grouped.map(
-            (group) =>
-              group.items.length > 0 && (
-                <div key={group.label} className="mb-2">
-                  <p className="sticky top-0 z-10 rounded-md bg-card px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {group.label}
-                  </p>
-                  <div className="divide-y divide-border">
-                    {group.items.map((log) => {
-                      const parts = formatAction(
-                        log.action,
-                        log.targetKey,
-                        log.environment
-                      )
-                      const icon = actionIcon(log.action)
-                      return (
-                        <div
-                          key={log.id}
-                          className="flex gap-3 px-3 py-3"
-                        >
+      <ScrollArea
+        className="w-full min-w-0 rounded-xl border border-border"
+        viewportClassName="max-h-[min(800px,calc(100vh-200px))]"
+      >
+        <div className="flex flex-col px-0 pb-1 pt-0">
+          {grouped.map((group) =>
+            group.items.length > 0 ? (
+              <div key={group.label} className="mb-2">
+                <p
+                  className={`sticky top-0 z-10 bg-card px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground ${
+                    group.label === firstSectionLabel
+                      ? 'rounded-b-lg'
+                      : 'rounded-lg'
+                  }`}
+                >
+                  {group.label}
+                </p>
+                <div className="divide-y divide-border">
+                  {group.items.map((log) => {
+                    const parts = formatAction(
+                      log.action,
+                      log.targetKey,
+                      log.environment
+                    )
+                    const icon = actionIcon(log.action)
+                    return (
+                      <div key={log.id} className="flex gap-3 px-3 py-3">
                         <div
                           className={`flex size-8 shrink-0 items-center justify-center rounded-full ${actionTone(log.action)}`}
                         >
@@ -376,7 +487,7 @@ export function AuditLog({ projectId, environments }: Props) {
                                 variant="outline"
                                 className="font-mono text-[10px]"
                               >
-                                {log.environment}
+                                {capitalizeLabel(log.environment)}
                               </Badge>
                             ) : null}
                             <Tooltip>
@@ -392,7 +503,10 @@ export function AuditLog({ projectId, environments }: Props) {
                               </TooltipContent>
                             </Tooltip>
                             <span className="font-mono text-xs flex items-center gap-1">
-                              - by {log.user?.name ?? 'System'}{' '}
+                              — By{' '}
+                              {log.user?.name
+                                ? capitalizeWords(log.user.name)
+                                : 'System'}{' '}
                               {log.user?.image ? (
                                 <Avatar className="size-4">
                                   <AvatarImage src={log.user.image} alt="" />
@@ -406,24 +520,25 @@ export function AuditLog({ projectId, environments }: Props) {
                             typeof log.metadata === 'object' &&
                             'source' in log.metadata ? (
                               <span>
-                                via{' '}
-                                {(log.metadata as { source: string }).source}
+                                Via{' '}
+                                {capitalizeLabel(
+                                  (log.metadata as { source: string }).source
+                                )}
                               </span>
                             ) : null}
                           </div>
                         </div>
                       </div>
-                      )
-                    })}
-                  </div>
+                    )
+                  })}
                 </div>
-              )
+              </div>
+            ) : null
           )}
-          <div className="h-10 shrink-0" aria-hidden="true" />
         </div>
       </ScrollArea>
 
-      {filtered.length === 0 && logs.length > 0 ? (
+      {filtered.length === 0 && hasActiveFilters ? (
         <p className="text-center text-sm text-muted-foreground">
           No entries match your filters.
         </p>
