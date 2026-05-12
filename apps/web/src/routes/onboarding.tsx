@@ -13,7 +13,7 @@ import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
 import { MeshBackground } from '@/components/mesh-background'
-import { authClient } from '@/lib/auth-client'
+import { getAuthState } from '@/functions/get-auth-state'
 import { useTRPC } from '@/utils/trpc'
 
 const MotionCard = motion.create(Card)
@@ -27,17 +27,11 @@ function toSlug(val: string) {
 }
 
 export const Route = createFileRoute('/onboarding')({
-  beforeLoad: async ({ context }) => {
-    if (typeof window === 'undefined') return
+  beforeLoad: async () => {
+    const auth = await getAuthState()
+    if (!auth) throw redirect({ to: '/login' })
 
-    const { data: session } = await authClient.getSession()
-    if (!session) throw redirect({ to: '/login' })
-
-    const me = await context.queryClient.fetchQuery(
-      context.trpc.me.get.queryOptions()
-    )
-
-    if (me.onboardingCompletedAt || me.onboardingSkippedAt) {
+    if (auth.onboardingCompletedAt || auth.onboardingSkippedAt) {
       throw redirect({
         to: '/dashboard',
         search: { project: '', section: 'secrets' as const }
@@ -61,10 +55,20 @@ function OnboardingPage() {
   const [orgName, setOrgName] = useState('')
   const [nameError, setNameError] = useState('')
 
-  const completeMutation = useMutation(
-    trpc.me.completeOnboarding.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries(trpc.me.get.queryOptions())
+  const meQueryOpts = trpc.me.get.queryOptions()
+
+  const onboardingCompleteMutation = useMutation(
+    trpc.me.completeOnboardingWithProject.mutationOptions({
+      onSuccess: (data) => {
+        queryClient.setQueryData(meQueryOpts.queryKey, (prev) =>
+          prev
+            ? {
+                ...prev,
+                onboardingCompletedAt: data.onboardingCompletedAt
+              }
+            : prev
+        )
+        queryClient.invalidateQueries(trpc.projects.list.queryOptions())
         navigate({
           to: '/dashboard',
           search: { project: '', section: 'secrets' as const }
@@ -73,19 +77,18 @@ function OnboardingPage() {
     })
   )
 
-  const createMutation = useMutation(
-    trpc.projects.create.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries(trpc.projects.list.queryOptions())
-        completeMutation.mutate()
-      }
-    })
-  )
-
   const skipMutation = useMutation(
     trpc.me.skipOnboarding.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries(trpc.me.get.queryOptions())
+      onSuccess: (data) => {
+        queryClient.setQueryData(meQueryOpts.queryKey, (prev) =>
+          prev
+            ? {
+                ...prev,
+                onboardingSkippedAt: data.onboardingSkippedAt,
+                onboardingCompletedAt: data.onboardingCompletedAt
+              }
+            : prev
+        )
         navigate({
           to: '/dashboard',
           search: { project: '', section: 'secrets' as const }
@@ -95,9 +98,7 @@ function OnboardingPage() {
   )
 
   const isPending =
-    createMutation.isPending ||
-    completeMutation.isPending ||
-    skipMutation.isPending
+    onboardingCompleteMutation.isPending || skipMutation.isPending
 
   function handleContinue() {
     const trimmed = orgName.trim()
@@ -114,7 +115,7 @@ function OnboardingPage() {
   }
 
   function handleCreate() {
-    createMutation.mutate({ name: orgName.trim() })
+    onboardingCompleteMutation.mutate({ name: orgName.trim() })
   }
 
   function handleSkip() {
@@ -254,9 +255,9 @@ function OnboardingPage() {
                   </p>
                 </div>
 
-                {createMutation.isError && (
+                {onboardingCompleteMutation.isError && (
                   <p className="text-[13px] text-danger mb-4">
-                    {createMutation.error.message}
+                    {onboardingCompleteMutation.error.message}
                   </p>
                 )}
 
@@ -266,7 +267,7 @@ function OnboardingPage() {
                     onClick={handleCreate}
                     disabled={isPending}
                   >
-                    {createMutation.isPending || completeMutation.isPending
+                    {onboardingCompleteMutation.isPending
                       ? 'Creating…'
                       : 'Create project'}
                   </Button>

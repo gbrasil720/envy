@@ -46,6 +46,7 @@ export function NewProjectDialog({ open, onClose, onSuccess }: Props) {
     trpc.projects.create.mutationOptions({
       onSuccess: (data) => {
         queryClient.invalidateQueries(trpc.projects.list.queryOptions())
+        queryClient.invalidateQueries(trpc.me.get.queryOptions())
         onSuccess(data)
         onClose()
         setName('')

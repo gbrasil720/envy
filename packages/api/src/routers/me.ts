@@ -2,7 +2,9 @@ import { and, count, eq } from '@envy/db'
 import { member, user } from '@envy/db/schema/auth'
 import { project, secret } from '@envy/db/schema/envy'
 import { TRPCError } from '@trpc/server'
+import { z } from 'zod'
 import { protectedProcedure, router } from '..'
+import { createOwnedProject } from '../lib/create-project'
 
 export const meRouter = router({
   get: protectedProcedure.query(async ({ ctx }) => {
@@ -53,6 +55,31 @@ export const meRouter = router({
 
     return { ...currentUser, plan, projectCount, secretCount }
   }),
+
+  completeOnboardingWithProject: protectedProcedure
+    .input(z.object({ name: z.string().min(1).max(64) }))
+    .mutation(async ({ ctx, input }) => {
+      const completedAt = new Date()
+      return await ctx.db.transaction(async (tx) => {
+        const proj = await createOwnedProject(tx, ctx.session.user.id, input)
+        const [updated] = await tx
+          .update(user)
+          .set({ onboardingCompletedAt: completedAt })
+          .where(eq(user.id, ctx.session.user.id))
+          .returning({
+            onboardingCompletedAt: user.onboardingCompletedAt
+          })
+
+        if (!updated) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' })
+        }
+
+        return {
+          project: proj,
+          onboardingCompletedAt: updated.onboardingCompletedAt
+        }
+      })
+    }),
 
   completeOnboarding: protectedProcedure.mutation(async ({ ctx }) => {
     const [updated] = await ctx.db

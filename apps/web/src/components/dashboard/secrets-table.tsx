@@ -50,7 +50,7 @@ import {
   ViewOffIcon
 } from '@hugeicons/core-free-icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useTRPC } from '@/utils/trpc'
 import { DashboardIcon } from './dashboard-icon'
@@ -80,7 +80,7 @@ export function SecretsTable({
   const [currentEnv, setCurrentEnv] = useState(
     environments[0]?.name ?? 'development'
   )
-  const revealed = useRef<Set<string>>(new Set())
+  const [revealed, setRevealed] = useState<Set<string>>(() => new Set())
   const [revealAll, setRevealAll] = useState(false)
   const [search, setSearch] = useState('')
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
@@ -125,21 +125,22 @@ export function SecretsTable({
   }, [secretEntries, search])
 
   function isRevealed(key: string) {
-    return revealAll || revealed.current.has(key)
+    return revealAll || revealed.has(key)
   }
 
   function toggleReveal(key: string) {
-    setRevealAll(false)
-    if (revealed.current.has(key)) {
-      revealed.current.delete(key)
-    } else {
-      revealed.current.add(key)
-    }
+    if (revealAll) setRevealAll(false)
+    setRevealed((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
   }
 
   function handleEnvChange(env: string) {
     setCurrentEnv(env)
-    revealed.current.clear()
+    setRevealed(new Set())
     setRevealAll(false)
     setSelectedKeys(new Set())
     setSearch('')
@@ -252,10 +253,10 @@ export function SecretsTable({
               const v = groupValue[0]
               if (v === 'show') {
                 setRevealAll(true)
-                revealed.current.clear()
+                setRevealed(new Set())
               } else {
                 setRevealAll(false)
-                revealed.current.clear()
+                setRevealed(new Set())
               }
             }}
             variant="outline"

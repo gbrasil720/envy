@@ -11,7 +11,7 @@ import { useRef, useState } from 'react'
 
 const MotionCard = motion.create(Card)
 
-const INSTALL_CMD = 'npm i -g useenvy'
+const INSTALL_CMD = 'npm i -g useenvy@latest'
 
 export function HowItWorks() {
   const reduceMotion = useReducedMotion()
@@ -106,7 +106,7 @@ export function HowItWorks() {
             stiffness: 100,
             damping: 15
           }}
-          className="mb-6 relative max-w-lg mx-auto"
+          className="mb-6 relative w-full max-w-2xl mx-auto min-w-0"
         >
           {/* Attention pulse ring */}
           <motion.div
@@ -144,8 +144,8 @@ export function HowItWorks() {
           >
             <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-brand/50 to-transparent pointer-events-none" />
 
-            <CardContent className="p-6 flex flex-row items-center justify-between gap-6 group">
-              <div className="flex items-center gap-4 shrink-0">
+            <CardContent className="p-4 sm:p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 group">
+              <div className="flex items-center gap-4 min-w-0 sm:shrink-0">
                 <motion.div
                   animate={
                     isInView && !reduceMotion
@@ -189,42 +189,47 @@ export function HowItWorks() {
                 </div>
               </div>
 
-              {/* Right: command */}
-              <div className="relative overflow-hidden rounded-lg flex-1 max-w-[260px]">
-                <code className="relative z-10 bg-surface-2 dark:bg-[#0D0D14] border border-border dark:border-white/10 px-4 py-2.5 rounded-lg font-mono text-brand text-sm flex items-center justify-between transition-all duration-200 group-hover:border-brand/15 group-hover:border-2">
-                  <span>
-                    <span className="text-text-muted mr-1">$</span>
-                    {INSTALL_CMD}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(INSTALL_CMD)}
-                    aria-label="Copy install command to clipboard"
-                    className="ml-3 text-text-muted hover:text-brand transition-colors duration-150 cursor-pointer shrink-0"
-                  >
-                    <HugeiconsIcon
-                      icon={
-                        copiedCmd === INSTALL_CMD ? CopyCheckIcon : Copy01Icon
-                      }
-                      size={14}
-                      aria-hidden="true"
-                    />
-                  </button>
-                </code>
-                <motion.div
-                  className="absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  style={{
-                    background:
-                      'linear-gradient(105deg, transparent 40%, rgba(61, 214, 140, 0.07) 50%, transparent 60%)'
-                  }}
-                  animate={reduceMotion ? undefined : { x: ['-100%', '200%'] }}
-                  transition={{
-                    duration: 2,
-                    repeat: reduceMotion ? 0 : Infinity,
-                    repeatDelay: 1,
-                    ease: 'linear'
-                  }}
-                />
+              <div className="relative w-full min-w-0 sm:flex-1 sm:min-w-0">
+                <div className="relative w-full min-w-0 overflow-x-auto overflow-y-hidden rounded-lg [scrollbar-width:thin] sm:overflow-hidden">
+                  <code className="relative z-10 flex w-full min-w-0 items-center justify-center bg-surface-2 dark:bg-[#0D0D14] border border-border dark:border-white/10 px-4 py-2.5 rounded-lg font-mono text-brand text-[13px] sm:text-sm transition-all duration-200 group-hover:border-brand/15 group-hover:border-2">
+                    <span className="absolute left-3 text-text-muted" aria-hidden="true">
+                      $
+                    </span>
+                    <span className="whitespace-nowrap">{INSTALL_CMD}</span>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(INSTALL_CMD)}
+                      aria-label="Copy install command to clipboard"
+                      className="absolute right-3 text-text-muted hover:text-brand transition-colors duration-150 cursor-pointer"
+                    >
+                      <HugeiconsIcon
+                        icon={
+                          copiedCmd === INSTALL_CMD
+                            ? CopyCheckIcon
+                            : Copy01Icon
+                        }
+                        size={14}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </code>
+                  <motion.div
+                    className="absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    style={{
+                      background:
+                        'linear-gradient(105deg, transparent 40%, rgba(61, 214, 140, 0.07) 50%, transparent 60%)'
+                    }}
+                    animate={
+                      reduceMotion ? undefined : { x: ['-100%', '200%'] }
+                    }
+                    transition={{
+                      duration: 2,
+                      repeat: reduceMotion ? 0 : Infinity,
+                      repeatDelay: 1,
+                      ease: 'linear'
+                    }}
+                  />
+                </div>
               </div>
             </CardContent>
           </MotionCard>
