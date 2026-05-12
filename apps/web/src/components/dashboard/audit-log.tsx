@@ -56,7 +56,6 @@ const SECRET_ACTIONS = new Set([
   'secret_deleted'
 ])
 
-/** Leading cap for log labels; leaves emails unchanged. */
 function capitalizeLabel(text: string) {
   const t = text.trim()
   if (!t) return text
@@ -64,7 +63,6 @@ function capitalizeLabel(text: string) {
   return t.charAt(0).toUpperCase() + t.slice(1)
 }
 
-/** Title-style words for display names (not secret keys). */
 function capitalizeWords(text: string) {
   const t = text.trim()
   if (!t) return text
