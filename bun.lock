@@ -45,8 +45,6 @@
       "dependencies": {
         "@better-auth/infra": "catalog:",
         "@envy/api": "workspace:*",
-        "@envy/auth": "workspace:*",
-        "@envy/db": "workspace:*",
         "@envy/env": "workspace:*",
         "@envy/ui": "workspace:*",
         "@hugeicons/core-free-icons": "^4.1.1",

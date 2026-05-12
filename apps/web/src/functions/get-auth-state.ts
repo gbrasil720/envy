@@ -1,40 +1,32 @@
-import { db, eq } from '@envy/db'
-import { user } from '@envy/db/schema/auth'
-import { createServerFn } from '@tanstack/react-start'
+import type { AppRouter } from '@envy/api/routers/index'
+import { createMiddleware, createServerFn } from '@tanstack/react-start'
+import { createTRPCClient, httpBatchLink } from '@trpc/client'
+import type { inferRouterOutputs } from '@trpc/server'
 
-import { optionalAuthMiddleware } from '@/middleware/auth'
+import { SERVER_URL } from '@/lib/env'
 
-export type AuthState =
-  | {
-      userId: string
-      onboardingCompletedAt: Date | null
-      onboardingSkippedAt: Date | null
-    }
-  | null
+export type AuthState = inferRouterOutputs<AppRouter>['me']['authState']
+
+const forwardCookieMiddleware = createMiddleware().server(
+  async ({ next, request }) => {
+    const cookie = request.headers.get('cookie') ?? ''
+    return next({ context: { cookie } })
+  }
+)
 
 export const getAuthState = createServerFn({ method: 'GET' })
-  .middleware([optionalAuthMiddleware])
+  .middleware([forwardCookieMiddleware])
   .handler(async ({ context }): Promise<AuthState> => {
-    const session = context.session
-    if (!session?.user?.id) {
-      return null
-    }
-
-    const row = await db.query.user.findFirst({
-      where: eq(user.id, session.user.id),
-      columns: {
-        onboardingCompletedAt: true,
-        onboardingSkippedAt: true
-      }
+    const client = createTRPCClient<AppRouter>({
+      links: [
+        httpBatchLink({
+          url: `${SERVER_URL}/trpc`,
+          headers: () => ({
+            cookie: context.cookie
+          })
+        })
+      ]
     })
 
-    if (!row) {
-      return null
-    }
-
-    return {
-      userId: session.user.id,
-      onboardingCompletedAt: row.onboardingCompletedAt ?? null,
-      onboardingSkippedAt: row.onboardingSkippedAt ?? null
-    }
+    return await client.me.authState.query()
   })

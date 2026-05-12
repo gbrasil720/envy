@@ -3,10 +3,35 @@ import { member, user } from '@envy/db/schema/auth'
 import { project, secret } from '@envy/db/schema/envy'
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
-import { protectedProcedure, router } from '..'
+import { protectedProcedure, publicProcedure, router } from '..'
 import { createOwnedProject } from '../lib/create-project'
 
 export const meRouter = router({
+  authState: publicProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session?.user?.id
+    if (!userId) {
+      return null
+    }
+
+    const row = await ctx.db.query.user.findFirst({
+      where: (users, { eq }) => eq(users.id, userId),
+      columns: {
+        onboardingCompletedAt: true,
+        onboardingSkippedAt: true
+      }
+    })
+
+    if (!row) {
+      return null
+    }
+
+    return {
+      userId,
+      onboardingCompletedAt: row.onboardingCompletedAt ?? null,
+      onboardingSkippedAt: row.onboardingSkippedAt ?? null
+    }
+  }),
+
   get: protectedProcedure.query(async ({ ctx }) => {
     const currentUser = await ctx.db.query.user.findFirst({
       where: (users, { eq }) => eq(users.id, ctx.session.user.id),
