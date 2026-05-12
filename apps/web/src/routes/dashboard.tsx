@@ -114,7 +114,7 @@ function DashboardLayout() {
       value={{ openNewProject: () => setNewProjectOpen(true) }}
     >
       <MeshBackground
-        className="flex h-screen overflow-hidden"
+        className="flex h-dvh overflow-hidden"
         intensity="strong"
       >
         <AppSidebar

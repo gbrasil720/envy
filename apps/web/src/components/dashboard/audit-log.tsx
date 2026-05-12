@@ -10,7 +10,6 @@ import {
 } from '@envy/ui/components/empty'
 import { Input } from '@envy/ui/components/input'
 import { Label } from '@envy/ui/components/label'
-import { ScrollArea } from '@envy/ui/components/scroll-area'
 import {
   Select,
   SelectContent,
@@ -432,10 +431,7 @@ export function AuditLog({ projectId, environments }: Props) {
         </div>
       </div>
 
-      <ScrollArea
-        className="w-full min-w-0 rounded-xl border border-border"
-        viewportClassName="max-h-[min(800px,calc(100vh-200px))]"
-      >
+      <div className="w-full min-w-0 rounded-xl border border-border">
         <div className="flex flex-col px-0 pb-1 pt-0">
           {grouped.map((group) =>
             group.items.length > 0 ? (
@@ -534,7 +530,7 @@ export function AuditLog({ projectId, environments }: Props) {
             ) : null
           )}
         </div>
-      </ScrollArea>
+      </div>
 
       {filtered.length === 0 && hasActiveFilters ? (
         <p className="text-center text-sm text-muted-foreground">

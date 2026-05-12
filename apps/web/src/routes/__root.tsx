@@ -88,7 +88,7 @@ function RootDocument() {
       <body suppressHydrationWarning>
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
           <TooltipProvider delay={300}>
-            <div className="grid h-svh min-w-0 max-w-[100vw] grid-rows-[auto_1fr] overflow-x-clip">
+            <div className="grid h-svh min-w-0 max-w-[100vw] grid-rows-[auto_1fr] overflow-clip">
               <Outlet />
             </div>
             <Toaster richColors />
