@@ -5,17 +5,19 @@ import {
   writeFileSync
 } from 'node:fs'
 import { join } from 'node:path'
+import { z } from 'zod'
 import { CONFIG_FILENAME } from './constants'
 import { EnvyError, EXIT } from './errors'
 
 const MAX_WALK_DEPTH = 5
 
-export type EnvyConfig = {
-  project_id: string
-  project_name: string
-  default_env: string
-  api_url: string
-}
+const EnvyConfigSchema = z.object({
+  project_id: z.string().min(1),
+  project_slug: z.string().regex(/^[a-z0-9-]+$/),
+  environment: z.string().min(1).max(64)
+})
+
+export type EnvyConfig = z.infer<typeof EnvyConfigSchema>
 
 export function getConfig(): EnvyConfig | null {
   const path = findConfigFile()
@@ -23,7 +25,9 @@ export function getConfig(): EnvyConfig | null {
 
   try {
     const raw = readFileSync(path, 'utf-8')
-    return JSON.parse(raw) as EnvyConfig
+    const parsed = EnvyConfigSchema.safeParse(JSON.parse(raw))
+    if (!parsed.success) return null
+    return parsed.data
   } catch {
     return null
   }

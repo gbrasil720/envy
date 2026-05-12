@@ -44,6 +44,7 @@ type Props = {
     createdAt?: string | Date
   }
   environments: { id: string; name: string; createdAt?: string | Date }[]
+  secretsCount: number
   onUpgrade: () => void
 }
 
@@ -67,21 +68,19 @@ async function copyText(text: string, label: string) {
   }
 }
 
-export function ProjectSettings({ project, environments, onUpgrade }: Props) {
+export function ProjectSettings({
+  project,
+  environments,
+  secretsCount,
+  onUpgrade
+}: Props) {
   const trpc = useTRPC()
   const [deleteOpen, setDeleteOpen] = useState(false)
 
   const projectsListQuery = useQuery(trpc.projects.list.queryOptions())
   const projectCount = projectsListQuery.data?.length ?? 0
 
-  const sampleEnv = environments[0]?.name ?? 'development'
-  const secretsQuery = useQuery(
-    trpc.secrets.reveal.queryOptions({
-      projectId: project.id,
-      environment: sampleEnv
-    })
-  )
-  const secretCount = Object.keys(secretsQuery.data?.secrets ?? {}).length
+  const secretCount = secretsCount
 
   const plan = project.plan as keyof typeof PLAN_LIMITS.secrets
   const secretLimit = PLAN_LIMITS.secrets[plan] ?? PLAN_LIMITS.secrets.free

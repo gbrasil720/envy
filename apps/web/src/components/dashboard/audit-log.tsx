@@ -49,10 +49,9 @@ type ActionFilter = 'all' | 'secrets'
 
 const SECRET_ACTIONS = new Set([
   'pushed',
-  'pulled',
-  'secret_created',
-  'secret_updated',
-  'secret_deleted'
+  'revealed',
+  'secrets_updated',
+  'secrets_deleted'
 ])
 
 function capitalizeLabel(text: string) {
@@ -103,6 +102,7 @@ function formatAction(
       }
       break
     case 'secret_updated':
+    case 'secrets_updated':
       parts.push({ text: 'Updated' })
       if (targetKey)
         parts.push({ text: capitalizeLabel(targetKey), muted: true })
@@ -111,6 +111,7 @@ function formatAction(
       }
       break
     case 'secret_deleted':
+    case 'secrets_deleted':
       parts.push({ text: 'Deleted' })
       if (targetKey)
         parts.push({ text: capitalizeLabel(targetKey), muted: true })
@@ -119,6 +120,12 @@ function formatAction(
           text: `From ${capitalizeLabel(environment)}`,
           muted: true
         })
+      }
+      break
+    case 'revealed':
+      parts.push({ text: 'Revealed secrets' })
+      if (environment) {
+        parts.push({ text: `In ${capitalizeLabel(environment)}`, muted: true })
       }
       break
     case 'member_invited':
@@ -154,12 +161,15 @@ function actionIcon(action: string): IconSvgElement {
     case 'pushed':
       return Upload01Icon
     case 'pulled':
+    case 'revealed':
       return Download01Icon
     case 'secret_created':
       return FileKeyIcon
     case 'secret_updated':
+    case 'secrets_updated':
       return Wrench01Icon
     case 'secret_deleted':
+    case 'secrets_deleted':
       return Delete01Icon
     case 'member_invited':
       return UserAdd01Icon
@@ -176,9 +186,11 @@ function actionIcon(action: string): IconSvgElement {
 function actionTone(action: string): string {
   switch (action) {
     case 'secret_deleted':
+    case 'secrets_deleted':
     case 'key_revoked':
       return 'bg-destructive/15 text-destructive'
     case 'secret_updated':
+    case 'secrets_updated':
     case 'member_invited':
       return 'bg-info/10 text-info'
     case 'member_removed':

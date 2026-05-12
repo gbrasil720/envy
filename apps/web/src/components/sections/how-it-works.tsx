@@ -192,7 +192,10 @@ export function HowItWorks() {
               <div className="relative w-full min-w-0 sm:flex-1 sm:min-w-0">
                 <div className="relative w-full min-w-0 overflow-x-auto overflow-y-hidden rounded-lg [scrollbar-width:thin] sm:overflow-hidden">
                   <code className="relative z-10 flex w-full min-w-0 items-center justify-center bg-surface-2 dark:bg-[#0D0D14] border border-border dark:border-white/10 px-4 py-2.5 rounded-lg font-mono text-brand text-[13px] sm:text-sm transition-all duration-200 group-hover:border-brand/15 group-hover:border-2">
-                    <span className="absolute left-3 text-text-muted" aria-hidden="true">
+                    <span
+                      className="absolute left-3 text-text-muted"
+                      aria-hidden="true"
+                    >
                       $
                     </span>
                     <span className="whitespace-nowrap">{INSTALL_CMD}</span>
@@ -204,9 +207,7 @@ export function HowItWorks() {
                     >
                       <HugeiconsIcon
                         icon={
-                          copiedCmd === INSTALL_CMD
-                            ? CopyCheckIcon
-                            : Copy01Icon
+                          copiedCmd === INSTALL_CMD ? CopyCheckIcon : Copy01Icon
                         }
                         size={14}
                         aria-hidden="true"

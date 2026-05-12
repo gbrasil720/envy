@@ -1,5 +1,11 @@
 export { decrypt } from './decrypt'
 export { encrypt } from './encrypt'
-export { generateApiToken, hashToken, hashValue, tokenPrefix } from './hash'
+export {
+  generateApiToken,
+  hashToken,
+  hashValue,
+  hmacValue,
+  tokenPrefix
+} from './hash'
 export { exportKey, generateKey, importKey } from './key'
 export type { EncryptedPayload, RawKey } from './types'

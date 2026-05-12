@@ -163,22 +163,26 @@ export function AuthFormCli({ sessionToken }: Props) {
         {sessionData?.user && approved && (
           <ProjectAuthorizedCard key="success" />
         )}
-        {sessionData?.user && !approved && !expired && !cancelled && !sessionNotFound && (
-          <AuthorizeProjectCard
-            key="authorize"
-            sessionToken={sessionToken || ''}
-            expiresAt={
-              sessionInfo?.expiresAt ??
-              new Date(Date.now() + 5 * 60 * 1000).toISOString()
-            }
-            onAuthorize={() => approve.mutate({ token: sessionToken || '' })}
-            onCancel={() => cancel.mutate({ token: sessionToken || '' })}
-            isAuthorizing={approve.isPending}
-            isCancelling={cancel.isPending}
-            error={approve.error?.message}
-            user={sessionData.user}
-          />
-        )}
+        {sessionData?.user &&
+          !approved &&
+          !expired &&
+          !cancelled &&
+          !sessionNotFound && (
+            <AuthorizeProjectCard
+              key="authorize"
+              sessionToken={sessionToken || ''}
+              expiresAt={
+                sessionInfo?.expiresAt ??
+                new Date(Date.now() + 5 * 60 * 1000).toISOString()
+              }
+              onAuthorize={() => approve.mutate({ token: sessionToken || '' })}
+              onCancel={() => cancel.mutate({ token: sessionToken || '' })}
+              isAuthorizing={approve.isPending}
+              isCancelling={cancel.isPending}
+              error={approve.error?.message}
+              user={sessionData.user}
+            />
+          )}
       </AnimatePresence>
     </div>
   )

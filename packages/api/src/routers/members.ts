@@ -1,5 +1,5 @@
 import { and, eq } from '@envy/db'
-import { invitation, member, organization } from '@envy/db/schema/auth'
+import { invitation, member, organization, user } from '@envy/db/schema/auth'
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { protectedProcedure, router } from '..'
@@ -124,8 +124,16 @@ export const membersRouter = router({
         columns: { id: true }
       })
 
+      const pendingInvites = await ctx.db.query.invitation.findMany({
+        where: and(
+          eq(invitation.organizationId, input.projectId),
+          eq(invitation.status, 'pending')
+        ),
+        columns: { id: true }
+      })
+
       const limit = PLAN_MEMBER_LIMITS[plan]
-      if (currentMembers.length >= limit) {
+      if (currentMembers.length + pendingInvites.length >= limit) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: `Team plan allows up to ${limit} members.`
@@ -204,6 +212,21 @@ export const membersRouter = router({
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Invitation has expired.'
+        })
+      }
+
+      const currentUser = await ctx.db.query.user.findFirst({
+        where: eq(user.id, userId),
+        columns: { email: true }
+      })
+
+      if (
+        !currentUser?.email ||
+        currentUser.email.toLowerCase() !== invite.email.toLowerCase()
+      ) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'This invitation is not for your account.'
         })
       }
 

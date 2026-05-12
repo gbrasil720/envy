@@ -129,13 +129,20 @@ export function SecretsTable({
   }
 
   function toggleReveal(key: string) {
-    if (revealAll) setRevealAll(false)
-    setRevealed((prev) => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
+    if (revealAll) {
+      setRevealAll(false)
+      // Keep all other secrets visible; hide only the clicked one
+      setRevealed(
+        new Set(secretEntries.map(([k]) => k).filter((k) => k !== key))
+      )
+    } else {
+      setRevealed((prev) => {
+        const next = new Set(prev)
+        if (next.has(key)) next.delete(key)
+        else next.add(key)
+        return next
+      })
+    }
   }
 
   function handleEnvChange(env: string) {

@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process'
 import type { Command } from 'commander'
 import { api } from '../lib/api'
 import { saveAuth } from '../lib/auth'
@@ -5,13 +6,12 @@ import { printWelcomeBanner } from '../lib/banner'
 import { API_URL, POLL_INTERVAL_MS, POLL_TIMEOUT_MS } from '../lib/constants'
 import { EnvyError, EXIT } from '../lib/errors'
 import { output } from '../lib/output'
-import { spawn } from 'node:child_process'
 
 async function pollForApiKey(sessionToken: string): Promise<string> {
   const deadline = Date.now() + POLL_TIMEOUT_MS
 
   while (Date.now() < deadline) {
-    await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS))
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS))
 
     const result = await api.cliAuth.poll.query({ token: sessionToken })
 
@@ -46,8 +46,16 @@ export async function loginCommand(): Promise<void> {
   output.dim(`If it didn't open, visit: ${url}`)
 
   try {
-    if (process.platform === 'win32') {
-      spawn('cmd', ['/c', 'start', url], { detached: true, stdio: 'ignore' })
+    const parsedUrl = new URL(url)
+    if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') {
+      output.warn('Unexpected URL scheme — skipping auto-open')
+    } else if (process.platform === 'win32') {
+      // Pass an empty title string so cmd /c start treats the next arg as a URL,
+      // preventing shell metacharacter interpretation.
+      spawn('cmd', ['/c', 'start', '""', url], {
+        detached: true,
+        stdio: 'ignore'
+      })
     } else if (process.platform === 'darwin') {
       spawn('open', [url], { detached: true, stdio: 'ignore' })
     } else {

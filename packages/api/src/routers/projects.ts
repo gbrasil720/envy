@@ -80,7 +80,9 @@ export const projectsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
 
-      const created = await createOwnedProject(ctx.db, userId, input)
+      const created = await ctx.db.transaction(async (tx) =>
+        createOwnedProject(tx as unknown as typeof ctx.db, userId, input)
+      )
 
       await ctx.db
         .update(user)

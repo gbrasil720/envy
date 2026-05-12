@@ -113,10 +113,7 @@ function DashboardLayout() {
     <DashboardActionsContext
       value={{ openNewProject: () => setNewProjectOpen(true) }}
     >
-      <MeshBackground
-        className="flex h-dvh overflow-hidden"
-        intensity="strong"
-      >
+      <MeshBackground className="flex h-dvh overflow-hidden" intensity="strong">
         <AppSidebar
           currentProject={currentProject}
           section={section}

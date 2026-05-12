@@ -1,6 +1,6 @@
-import { auth } from '@envy/auth'
-import { decrypt, encrypt, hashValue } from '@envy/crypto'
-import { and, eq, sql } from '@envy/db'
+import { decrypt, encrypt, hmacValue } from '@envy/crypto'
+import { and, count, eq, sql } from '@envy/db'
+import { member } from '@envy/db/schema/auth'
 import { auditLog, environment, project, secret } from '@envy/db/schema/envy'
 import { env } from '@envy/env/server'
 import { TRPCError } from '@trpc/server'
@@ -11,8 +11,7 @@ import type { Context } from '../context'
 async function getProjectMasterKey(
   db: Context['db'],
   projectId: string,
-  userId: string,
-  authHeader: string | null
+  userId: string
 ): Promise<string> {
   const proj = await db.query.project.findFirst({
     where: eq(project.id, projectId),
@@ -32,17 +31,15 @@ async function getProjectMasterKey(
   const isOwner = proj.createdBy === userId
 
   if (!isOwner) {
-    const headers = new Headers()
-    if (authHeader) headers.set('authorization', authHeader)
+    const m = await db.query.member.findFirst({
+      where: and(
+        eq(member.organizationId, projectId),
+        eq(member.userId, userId)
+      ),
+      columns: { role: true }
+    })
 
-    const member = await auth.api.getActiveMember({ headers })
-
-    const hasAccess =
-      member &&
-      member.organizationId === projectId &&
-      ['owner', 'admin'].includes(member.role)
-
-    if (!hasAccess) {
+    if (!m || !['owner', 'admin'].includes(m.role)) {
       throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' })
     }
   }
@@ -105,8 +102,7 @@ export const secretsRouter = router({
       const masterKeyBase64 = await getProjectMasterKey(
         ctx.db,
         input.projectId,
-        userId,
-        ctx.authHeader
+        userId
       )
       const environmentId = await findOrCreateEnvironment(
         ctx.db,
@@ -120,10 +116,37 @@ export const secretsRouter = router({
         return { upserted: 0 }
       }
 
+      // Enforce per-plan secret quota
+      const org = await ctx.db.query.organization.findFirst({
+        where: (o, { eq }) => eq(o.id, input.projectId),
+        columns: { metadata: true }
+      })
+      const plan = ((org?.metadata as { plan?: string } | null)?.plan ??
+        'free') as 'free' | 'pro' | 'team'
+      const PLAN_SECRET_LIMITS = {
+        free: 50,
+        pro: Infinity,
+        team: Infinity
+      } as const
+      const limit = PLAN_SECRET_LIMITS[plan]
+      if (Number.isFinite(limit)) {
+        const [row] = await ctx.db
+          .select({ cnt: count() })
+          .from(secret)
+          .where(eq(secret.projectId, input.projectId))
+        const existing = row?.cnt ?? 0
+        if (existing + entries.length > limit) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: `Secret limit (${limit}) reached for your plan.`
+          })
+        }
+      }
+
       const values = await Promise.all(
         entries.map(async ([key, value]) => {
           const { ciphertext, iv, tag } = await encrypt(value, masterKeyBase64)
-          const valHash = await hashValue(value)
+          const valHash = await hmacValue(value, env.SERVER_ENCRYPTION_KEY)
 
           return {
             id: crypto.randomUUID(),
@@ -187,8 +210,7 @@ export const secretsRouter = router({
       const masterKeyBase64 = await getProjectMasterKey(
         ctx.db,
         input.projectId,
-        userId,
-        ctx.authHeader
+        userId
       )
 
       const environmentRow = await ctx.db.query.environment.findFirst({
@@ -261,18 +283,13 @@ export const secretsRouter = router({
           .min(1)
           .max(64)
           .regex(/^[a-z0-9_-]+$/),
-        secrets: z.array(
-          z.object({
-            key: z.string(),
-            hash: z.string()
-          })
-        )
+        secrets: z.record(z.string().min(1).max(255), z.string())
       })
     )
-    .query(async ({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
 
-      await getProjectMasterKey(ctx.db, input.projectId, userId, ctx.authHeader)
+      await getProjectMasterKey(ctx.db, input.projectId, userId)
 
       const environmentRow = await ctx.db.query.environment.findFirst({
         where: and(
@@ -284,7 +301,7 @@ export const secretsRouter = router({
 
       if (!environmentRow) {
         return {
-          added: input.secrets.map((s) => s.key),
+          added: Object.keys(input.secrets),
           changed: [],
           unchanged: []
         }
@@ -299,19 +316,21 @@ export const secretsRouter = router({
       })
 
       const remoteMap = new Map(remoteSecrets.map((s) => [s.key, s.valHash]))
-      const localMap = new Map(input.secrets.map((s) => [s.key, s.hash]))
 
       const added: string[] = []
       const changed: string[] = []
       const unchanged: string[] = []
 
-      for (const [key, hash] of localMap.entries()) {
+      for (const [key, value] of Object.entries(input.secrets)) {
         if (!remoteMap.has(key)) {
           added.push(key)
-        } else if (remoteMap.get(key) !== hash) {
-          changed.push(key)
         } else {
-          unchanged.push(key)
+          const localHash = await hmacValue(value, env.SERVER_ENCRYPTION_KEY)
+          if (remoteMap.get(key) !== localHash) {
+            changed.push(key)
+          } else {
+            unchanged.push(key)
+          }
         }
       }
 
@@ -336,8 +355,7 @@ export const secretsRouter = router({
       const masterKeyBase64 = await getProjectMasterKey(
         ctx.db,
         input.projectId,
-        userId,
-        ctx.authHeader
+        userId
       )
 
       const environmentRow = await ctx.db.query.environment.findFirst({
@@ -372,7 +390,7 @@ export const secretsRouter = router({
         input.value,
         masterKeyBase64
       )
-      const valHash = await hashValue(input.value)
+      const valHash = await hmacValue(input.value, env.SERVER_ENCRYPTION_KEY)
 
       await ctx.db
         .update(secret)
@@ -421,7 +439,7 @@ export const secretsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
 
-      await getProjectMasterKey(ctx.db, input.projectId, userId, ctx.authHeader)
+      await getProjectMasterKey(ctx.db, input.projectId, userId)
 
       const environmentRow = await ctx.db.query.environment.findFirst({
         where: and(

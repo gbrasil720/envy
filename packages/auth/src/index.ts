@@ -32,9 +32,6 @@ export function createAuth() {
       env.BETTER_AUTH_URL,
       ...(env.TRUSTED_ORIGINS?.split(',') ?? [])
     ],
-    emailAndPassword: {
-      enabled: true
-    },
     databaseHooks: {
       session: {
         create: {

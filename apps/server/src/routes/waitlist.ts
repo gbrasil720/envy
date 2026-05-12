@@ -1,28 +1,29 @@
 // apps/api/src/routes/waitlist.ts
-import { db, eq } from '@envy/db'
+import { db } from '@envy/db'
 import { waitlist } from '@envy/db/schema/envy'
 import Elysia from 'elysia'
+import { z } from 'zod'
+
+const bodySchema = z.object({
+  email: z.string().email().max(254).toLowerCase()
+})
 
 export const waitlistRoutes = new Elysia().post(
   '/waitlist',
   async ({ body, status }) => {
-    const { email } = body as { email: string }
-
-    if (!email || !email.includes('@')) {
+    const parsed = bodySchema.safeParse(body)
+    if (!parsed.success) {
       return status(400, { message: 'Invalid email' })
     }
 
-    const existing = await db.query.waitlist.findFirst({
-      where: eq(waitlist.email, email)
-    })
-
-    if (existing) return { success: true }
-
-    await db.insert(waitlist).values({
-      id: crypto.randomUUID(),
-      email,
-      status: 'pending'
-    })
+    await db
+      .insert(waitlist)
+      .values({
+        id: crypto.randomUUID(),
+        email: parsed.data.email,
+        status: 'pending'
+      })
+      .onConflictDoNothing({ target: waitlist.email })
 
     return { success: true }
   }

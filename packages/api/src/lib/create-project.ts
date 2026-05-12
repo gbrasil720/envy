@@ -1,6 +1,6 @@
 import { encrypt, exportKey, generateKey } from '@envy/crypto'
-import { and, eq } from '@envy/db'
 import type { db } from '@envy/db'
+import { and, eq } from '@envy/db'
 import { member, organization } from '@envy/db/schema/auth'
 import { project } from '@envy/db/schema/envy'
 import { env } from '@envy/env/server'
