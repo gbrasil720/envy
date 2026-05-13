@@ -1,4 +1,10 @@
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  lstatSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync
+} from 'node:fs'
 import { join, resolve, sep } from 'node:path'
 import confirm from '@inquirer/confirm'
 import input from '@inquirer/input'
@@ -39,7 +45,10 @@ function writeEnvFile(filePath: string, secrets: Record<string, string>): void {
       .replace(/"/g, '\\"')
     return `${key}="${escaped}"`
   })
-  writeFileSync(filePath, lines.join('\n') + '\n', 'utf-8')
+  writeFileSync(filePath, lines.join('\n') + '\n', {
+    encoding: 'utf-8',
+    mode: 0o600
+  })
 }
 
 function validateTargetPath(targetFile: string): string {
@@ -140,7 +149,8 @@ export async function pullCommand(options: PullOptions): Promise<void> {
         default: '.env.local',
         theme,
         validate: (v) =>
-          /^\.env(\..+)?$/.test(v.trim()) || 'Must be a valid .env filename'
+          /^\.env(\.[a-z0-9._-]+)?$/.test(v.trim()) ||
+          'Must be a valid .env filename'
       })
     } else {
       targetFile = selected
@@ -149,6 +159,18 @@ export async function pullCommand(options: PullOptions): Promise<void> {
 
   const targetPath = validateTargetPath(targetFile)
   let finalSecrets = { ...remoteSecrets }
+
+  if (existsSync(targetPath) && lstatSync(targetPath).isSymbolicLink()) {
+    throw new EnvyError(
+      'Target file is a symlink — refusing to write secrets to it',
+      {
+        suggestion:
+          'Remove the symlink and create a regular file, or choose a different filename',
+        code: 'SYMLINK_TARGET',
+        exitCode: EXIT.USAGE
+      }
+    )
+  }
 
   if (existsSync(targetPath)) {
     const localSecrets = parseEnvFile(targetPath)

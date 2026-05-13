@@ -25,6 +25,13 @@ const app = new Elysia()
       credentials: true
     })
   )
+  .onAfterHandle(({ response }) => {
+    if (response instanceof Response) {
+      response.headers.set('X-Frame-Options', 'DENY')
+      response.headers.set('Content-Security-Policy', "frame-ancestors 'none'")
+      response.headers.set('X-Content-Type-Options', 'nosniff')
+    }
+  })
   .use(waitlistRoutes)
   .all('/api/auth/*', async (context) => {
     const { request, status } = context

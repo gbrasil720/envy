@@ -1,9 +1,9 @@
+import { spawn } from 'node:child_process'
 import type { Command } from 'commander'
 import { requireAuth } from '../lib/auth'
 import { getConfig } from '../lib/config'
 import { WEB_URL } from '../lib/constants'
 import { output } from '../lib/output'
-import { spawn } from 'node:child_process'
 
 const GREEN = '\x1b[38;2;61;214;140m'
 const GRAY = '\x1b[38;5;240m'
@@ -17,9 +17,10 @@ export async function openCommand(): Promise<void> {
   let url: string
   let projectLabel: string | null = null
 
-  const config = getConfig() as (Record<string, string> & { project_slug?: string }) | null
+  const config = getConfig()
   if (config?.project_slug) {
-    url = `${WEB_URL}/dashboard/${config.project_slug}`
+    // project_slug is already validated against /^[a-z0-9-]+$/ by getConfig()
+    url = `${WEB_URL}/dashboard/${encodeURIComponent(config.project_slug)}`
     projectLabel = config.project_slug
   } else {
     url = `${WEB_URL}/dashboard`
@@ -29,7 +30,12 @@ export async function openCommand(): Promise<void> {
 
   try {
     if (process.platform === 'win32') {
-      spawn('cmd', ['/c', 'start', url], { detached: true, stdio: 'ignore' })
+      // Pass an empty title string so cmd /c start treats the next arg as a URL,
+      // preventing shell metacharacter interpretation.
+      spawn('cmd', ['/c', 'start', '""', url], {
+        detached: true,
+        stdio: 'ignore'
+      })
     } else if (process.platform === 'darwin') {
       spawn('open', [url], { detached: true, stdio: 'ignore' })
     } else {

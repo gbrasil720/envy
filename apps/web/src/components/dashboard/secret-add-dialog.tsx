@@ -114,8 +114,7 @@ export function SecretAddDialog({
               spellCheck={false}
             />
             <FieldDescription>
-              Encrypted with AES-256-GCM in the browser before upload. Multiline
-              values are OK.
+              Encrypted at rest with AES-256-GCM. Multiline values are OK.
             </FieldDescription>
             {pushMutation.isError ? (
               <FieldError>{pushMutation.error.message}</FieldError>

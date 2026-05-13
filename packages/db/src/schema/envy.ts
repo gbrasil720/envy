@@ -1,4 +1,4 @@
-import { relations } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import {
   index,
   jsonb,
@@ -142,6 +142,10 @@ export const cliAuthSession = pgTable(
   {
     id: text('id').primaryKey(),
     sessionToken: text('session_token').notNull().unique(),
+    browserToken: text('browser_token')
+      .notNull()
+      .unique()
+      .default(sql`gen_random_uuid()`),
     status: text('status').notNull().default('pending'),
     rawKey: text('raw_key'),
     expiresAt: timestamp('expires_at').notNull(),
@@ -149,6 +153,7 @@ export const cliAuthSession = pgTable(
   },
   (table) => [
     uniqueIndex('cli_auth_session_token_uidx').on(table.sessionToken),
+    uniqueIndex('cli_auth_session_browser_token_uidx').on(table.browserToken),
     index('cli_auth_session_expiresAt_idx').on(table.expiresAt),
     index('cli_auth_session_status_idx').on(table.status)
   ]

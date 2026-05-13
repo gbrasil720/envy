@@ -121,7 +121,7 @@ export function SecretEditDialog({
               </InputGroupAddon>
             </InputGroup>
             <FieldDescription>
-              Encrypted with AES-256-GCM before upload.
+              Encrypted at rest with AES-256-GCM.
             </FieldDescription>
             {updateMutation.isError ? (
               <FieldError>{updateMutation.error.message}</FieldError>

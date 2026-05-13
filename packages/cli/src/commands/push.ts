@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, lstatSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import checkbox from '@inquirer/checkbox'
 import confirm from '@inquirer/confirm'
@@ -26,7 +26,14 @@ const theme = {
 
 function scanEnvFiles(dir: string): string[] {
   return readdirSync(dir)
-    .filter((f) => /^\.env(\..+)?$/.test(f))
+    .filter((f) => {
+      if (!/^\.env(\..+)?$/.test(f)) return false
+      try {
+        return lstatSync(join(dir, f)).isFile()
+      } catch {
+        return false
+      }
+    })
     .sort()
 }
 
@@ -45,7 +52,12 @@ export function parseEnvFile(filePath: string): Record<string, string> {
       (value.startsWith('"') && value.endsWith('"')) ||
       (value.startsWith("'") && value.endsWith("'"))
     ) {
-      value = value.slice(1, -1)
+      value = value
+        .slice(1, -1)
+        .replace(/\\n/g, '\n')
+        .replace(/\\r/g, '\r')
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, '\\')
     }
     if (key) result[key] = value
   }
@@ -53,16 +65,9 @@ export function parseEnvFile(filePath: string): Record<string, string> {
   return result
 }
 
-async function hashSecrets(
-  secrets: Record<string, string>
-): Promise<{ key: string; hash: string }[]> {
-  const { hashValue } = await import('@envy/crypto')
-  return Promise.all(
-    Object.entries(secrets).map(async ([key, value]) => ({
-      key,
-      hash: await hashValue(value)
-    }))
-  )
+function maskSecret(v: string): string {
+  if (v.length === 0) return '(empty)'
+  return v.slice(0, 3) + '•'.repeat(Math.max(0, Math.min(v.length - 3, 10)))
 }
 
 type ConflictResolution = {
@@ -112,7 +117,7 @@ async function resolveConflicts(
         message: `Which value for ${GREEN}${conflict.key}${RESET}?`,
         theme,
         choices: conflict.files.map((file, i) => ({
-          name: `${GRAY}${file}${RESET}  ${conflict.values[i]}`,
+          name: `${GRAY}${file}${RESET}  ${maskSecret(conflict.values[i] ?? '')}`,
           value: conflict.values[i]
         }))
       })
@@ -229,10 +234,24 @@ export async function pushCommand(options: PushOptions): Promise<void> {
     return
   }
 
-  const fileSecrets = selectedFiles.map((file) => ({
-    file,
-    secrets: parseEnvFile(join(process.cwd(), file))
-  }))
+  const fileSecrets = selectedFiles.map((file) => {
+    const filePath = join(process.cwd(), file)
+    try {
+      if (lstatSync(filePath).isSymbolicLink()) {
+        throw new EnvyError(
+          `"${file}" is a symlink — refusing to read secrets from it`,
+          {
+            suggestion: 'Use a regular file instead of a symlink',
+            code: 'SYMLINK_SOURCE',
+            exitCode: EXIT.USAGE
+          }
+        )
+      }
+    } catch (err) {
+      if (err instanceof EnvyError) throw err
+    }
+    return { file, secrets: parseEnvFile(filePath) }
+  })
 
   const secrets = await resolveConflicts(fileSecrets)
   const count = Object.keys(secrets).length
@@ -247,11 +266,10 @@ export async function pushCommand(options: PushOptions): Promise<void> {
 
   output.spinner('Comparing with remote...')
 
-  const hashes = await hashSecrets(secrets)
-  const diff = await api.secrets.diff.query({
+  const diff = await api.secrets.diff.mutate({
     projectId,
     environment,
-    secrets: hashes
+    secrets
   })
   output.stopSpinner()
 

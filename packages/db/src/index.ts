@@ -14,6 +14,7 @@ export {
   inArray,
   isNotNull,
   isNull,
+  lt,
   ne,
   not,
   or,

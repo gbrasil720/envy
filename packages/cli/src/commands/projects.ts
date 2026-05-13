@@ -1,5 +1,5 @@
-import type { Command } from 'commander'
 import input from '@inquirer/input'
+import type { Command } from 'commander'
 import { api } from '../lib/api'
 import { requireAuth } from '../lib/auth'
 import { printWelcomeBanner } from '../lib/banner'
@@ -17,6 +17,10 @@ const theme = {
     highlight: (t: string) => `${GREEN}${t}${RESET}`,
     selectedChoice: (t: string) => `${GREEN}${t}${RESET}`
   }
+}
+
+function sanitizeForTerminal(s: string): string {
+  return s.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').replace(/[\x00-\x1f\x7f]/g, '')
 }
 
 function formatRelativeTime(dateStr: string | null): string {
@@ -55,7 +59,8 @@ export async function projectsCommand(options: ProjectsOptions): Promise<void> {
     } catch (err) {
       output.stopSpinner()
       throw EnvyError.from(err, {
-        suggestion: 'Check your plan limits or run "envy whoami" to verify auth',
+        suggestion:
+          'Check your plan limits or run "envy whoami" to verify auth',
         code: 'PROJECT_CREATE_FAILED',
         exitCode: EXIT.USAGE
       })
@@ -122,10 +127,10 @@ export async function projectsCommand(options: ProjectsOptions): Promise<void> {
   }
 
   const rows = projects.map((p) => ({
-    name: p.name,
+    name: sanitizeForTerminal(p.name),
     envs:
       p.environments.length > 0
-        ? p.environments.map((e) => e.name).join(', ')
+        ? p.environments.map((e) => sanitizeForTerminal(e.name)).join(', ')
         : '—',
     secrets: `${p.secretsCount} secret${p.secretsCount !== 1 ? 's' : ''}`,
     sync: formatRelativeTime(p.lastSyncedAt)

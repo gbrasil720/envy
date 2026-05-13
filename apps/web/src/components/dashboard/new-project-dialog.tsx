@@ -55,8 +55,10 @@ export function NewProjectDialog({ open, onClose, onSuccess }: Props) {
   )
 
   function handleCreate() {
-    if (!name.trim()) return
-    createMutation.mutate({ name: name.trim() })
+    const trimmed = name.trim()
+    if (!trimmed) return
+    if (!toSlug(trimmed)) return
+    createMutation.mutate({ name: trimmed })
   }
 
   const slugPreview = name ? toSlug(name) : ''

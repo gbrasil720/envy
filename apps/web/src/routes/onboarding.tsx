@@ -110,6 +110,10 @@ function OnboardingPage() {
       setNameError('Name must be 64 characters or less')
       return
     }
+    if (!toSlug(trimmed)) {
+      setNameError('Name must contain at least one letter or number')
+      return
+    }
     setNameError('')
     setStep(2)
   }
