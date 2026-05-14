@@ -32,13 +32,13 @@ import {
   TableHeader,
   TableRow
 } from '@envy/ui/components/table'
-import { Tabs, TabsList, TabsTrigger } from '@envy/ui/components/tabs'
 import { ToggleGroup, ToggleGroupItem } from '@envy/ui/components/toggle-group'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger
 } from '@envy/ui/components/tooltip'
+import { cn } from '@envy/ui/lib/utils'
 import {
   Copy01Icon,
   Delete01Icon,
@@ -96,6 +96,18 @@ export function SecretsTable({
     trpc.secrets.reveal.queryOptions({ projectId, environment: currentEnv })
   )
 
+  const envsListQuery = useQuery(
+    trpc.environments.list.queryOptions({ projectId })
+  )
+
+  const envCountMap = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const e of envsListQuery.data ?? []) {
+      map.set(e.id, e.secretsCount)
+    }
+    return map
+  }, [envsListQuery.data])
+
   const deleteMutation = useMutation(
     trpc.secrets.delete.mutationOptions({
       onSuccess: () => {
@@ -107,6 +119,9 @@ export function SecretsTable({
         )
         queryClient.invalidateQueries(
           trpc.auditLog.list.queryOptions({ projectId, limit: 50 })
+        )
+        queryClient.invalidateQueries(
+          trpc.environments.list.queryOptions({ projectId })
         )
         setDeletingKey(null)
         setBulkDeleteKeys(null)
@@ -218,25 +233,45 @@ export function SecretsTable({
       />
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <Tabs value={currentEnv} onValueChange={handleEnvChange}>
-          <TabsList className="h-9 flex-wrap gap-0">
-            {environments.map((env) => (
-              <TabsTrigger
+        <div role="tablist" className="flex flex-wrap gap-1.5">
+          {environments.map((env) => {
+            const isActive = currentEnv === env.name
+            const count = isActive
+              ? secretEntries.length
+              : (envCountMap.get(env.id) ?? 0)
+            return (
+              <button
                 key={env.id}
-                value={env.name}
-                className="gap-1.5 px-3 font-mono text-xs"
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => handleEnvChange(env.name)}
+                className={cn(
+                  'flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 font-mono text-xs transition-all duration-150',
+                  isActive
+                    ? 'border-emerald-500/50 bg-emerald-500/10 text-foreground shadow-sm'
+                    : 'border-border bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground'
+                )}
               >
+                <span
+                  className={cn(
+                    'h-1.5 w-1.5 shrink-0 rounded-full transition-colors duration-150',
+                    isActive
+                      ? 'bg-emerald-500 shadow-[0_0_6px_2px_rgba(16,185,129,0.4)]'
+                      : 'bg-muted-foreground/50'
+                  )}
+                />
                 {env.name}
                 <Badge
                   variant="secondary"
-                  className="h-5 min-w-5 px-1 font-mono text-[10px] tabular-nums"
+                  className="h-4 min-w-[1.25rem] rounded-full px-1 font-mono text-[10px] tabular-nums opacity-80"
                 >
-                  {env.name === currentEnv ? secretEntries.length : '—'}
+                  {count}
                 </Badge>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+              </button>
+            )
+          })}
+        </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <InputGroup className="h-9 w-full min-w-[200px] max-w-sm">

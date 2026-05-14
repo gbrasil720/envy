@@ -8,7 +8,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@envy/ui/components/alert-dialog'
-import { Badge } from '@envy/ui/components/badge'
 import { Button } from '@envy/ui/components/button'
 import {
   Card,
@@ -18,22 +17,17 @@ import {
   CardHeader,
   CardTitle
 } from '@envy/ui/components/card'
-import { Progress } from '@envy/ui/components/progress'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger
 } from '@envy/ui/components/tooltip'
 import { Copy01Icon } from '@hugeicons/core-free-icons'
-import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { useTRPC } from '@/utils/trpc'
-import {
-  dashboardCardClass,
-  dashboardPlanBadgeClass
-} from './dashboard-classes'
+import { dashboardCardClass } from './dashboard-classes'
 import { DashboardIcon } from './dashboard-icon'
+import { EnvironmentsManager } from './environments-manager'
 
 type Props = {
   project: {
@@ -41,22 +35,11 @@ type Props = {
     name: string
     slug: string
     plan: string
+    role: string
     createdAt?: string | Date
   }
-  environments: { id: string; name: string; createdAt?: string | Date }[]
   secretsCount: number
   onUpgrade: () => void
-}
-
-const planLabels: Record<string, string> = {
-  free: 'Free — 1 project, 50 secrets',
-  pro: 'Pro — unlimited projects and secrets',
-  team: 'Team — up to 5 members per project'
-}
-
-const PLAN_LIMITS = {
-  secrets: { free: 50, pro: Infinity, team: Infinity },
-  projects: { free: 1, pro: Infinity, team: Infinity }
 }
 
 async function copyText(text: string, label: string) {
@@ -68,32 +51,8 @@ async function copyText(text: string, label: string) {
   }
 }
 
-export function ProjectSettings({
-  project,
-  environments,
-  secretsCount,
-  onUpgrade
-}: Props) {
-  const trpc = useTRPC()
+export function ProjectSettings({ project }: Props) {
   const [deleteOpen, setDeleteOpen] = useState(false)
-
-  const projectsListQuery = useQuery(trpc.projects.list.queryOptions())
-  const projectCount = projectsListQuery.data?.length ?? 0
-
-  const secretCount = secretsCount
-
-  const plan = project.plan as keyof typeof PLAN_LIMITS.secrets
-  const secretLimit = PLAN_LIMITS.secrets[plan] ?? PLAN_LIMITS.secrets.free
-  const projectLimit = PLAN_LIMITS.projects[plan] ?? PLAN_LIMITS.projects.free
-
-  const secretPct =
-    Number.isFinite(secretLimit) && secretLimit > 0
-      ? Math.min(100, Math.round((secretCount / secretLimit) * 100))
-      : 0
-  const projectPct =
-    Number.isFinite(projectLimit) && projectLimit > 0
-      ? Math.min(100, Math.round((projectCount / projectLimit) * 100))
-      : 0
 
   return (
     <div className="flex flex-col gap-5">
@@ -246,42 +205,11 @@ export function ProjectSettings({
         </CardContent>
       </Card> */}
 
-      <Card className={dashboardCardClass}>
-        <CardHeader>
-          <CardTitle className="text-base">Environments</CardTitle>
-          <CardDescription>
-            Environments are created automatically the first time you push to a
-            new name (e.g. <span className="font-mono">development</span>).
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-0 divide-y divide-border">
-          {environments.length === 0 ? (
-            <p className="py-3 text-sm text-muted-foreground">
-              No environments yet — run{' '}
-              <code className="rounded bg-muted px-1 font-mono text-xs">
-                envy push
-              </code>{' '}
-              to create one.
-            </p>
-          ) : (
-            environments.map((env) => (
-              <div
-                key={env.id}
-                className="flex flex-wrap items-center justify-between gap-2 py-3 first:pt-0"
-              >
-                <span className="font-mono text-sm font-medium">
-                  {env.name}
-                </span>
-                {env.createdAt ? (
-                  <span className="text-xs text-muted-foreground">
-                    Created {new Date(env.createdAt).toLocaleDateString()}
-                  </span>
-                ) : null}
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
+      <EnvironmentsManager
+        projectId={project.id}
+        projectSlug={project.slug}
+        role={project.role}
+      />
 
       <Card className="rounded-xl border-destructive/30 bg-destructive/5 shadow-sm">
         <CardHeader>

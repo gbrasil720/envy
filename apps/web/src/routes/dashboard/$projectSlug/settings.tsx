@@ -31,7 +31,6 @@ function SettingsPage() {
   return (
     <ProjectSettings
       project={{ ...detail, plan: currentProject.plan }}
-      environments={detail.environments}
       secretsCount={currentProject.secretsCount}
       onUpgrade={() => {
         // TODO: checkout
