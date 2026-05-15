@@ -2,11 +2,7 @@
 
 import { Button } from '@envy/ui/components/button'
 import { Card, CardContent } from '@envy/ui/components/card'
-import {
-  ArrowRight01Icon,
-  GithubIcon,
-  TerminalIcon
-} from '@hugeicons/core-free-icons'
+import { GithubIcon, TerminalIcon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
@@ -28,11 +24,12 @@ function LoginCard({ sessionToken }: { sessionToken: string | undefined }) {
 
   const handleGitHub = async () => {
     setLoading(true)
+    const callbackPath = sessionToken
+      ? `/cli-auth?session=${sessionToken}`
+      : '/cli-auth'
     await authClient.signIn.social({
       provider: 'github',
-      callbackURL: sessionToken
-        ? `/cli-auth?session=${sessionToken}`
-        : '/cli-auth'
+      callbackURL: `${window.location.origin}${callbackPath}`
     })
   }
 
@@ -79,21 +76,6 @@ function LoginCard({ sessionToken }: { sessionToken: string | undefined }) {
             </>
           )}
         </Button>
-        <div className="my-6 flex items-center gap-4">
-          <div className="h-[0.5px] flex-1 bg-ghost-border" />
-          <span className="text-[12px] text-text-muted uppercase tracking-widest">
-            or
-          </span>
-          <div className="h-[0.5px] flex-1 bg-ghost-border" />
-        </div>
-        <div className="space-y-4 opacity-50 pointer-events-none">
-          <div className="h-12 bg-ghost-bg border border-border rounded-[10px] px-4 flex items-center text-text-muted text-sm">
-            your@email.com
-          </div>
-          <Button className="w-full h-12 bg-brand/10 text-brand/40 rounded-[10px] font-medium flex items-center justify-center gap-2">
-            Continue <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
-          </Button>
-        </div>
       </CardContent>
     </MotionCard>
   )
