@@ -1,23 +1,27 @@
 import { decrypt, encrypt, hmacValue } from '@envy/crypto'
-import { and, count, eq, sql } from '@envy/db'
-import { member } from '@envy/db/schema/auth'
+import { and, eq, sql } from '@envy/db'
 import { auditLog, environment, project, secret } from '@envy/db/schema/envy'
 import { env } from '@envy/env/server'
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
 import { protectedProcedure, router } from '..'
 import type { Context } from '../context'
+import { assertOrgWritable, requireProjectAccess } from '../lib/org-utils'
 
+/**
+ * Load project master key after enforcing org membership (admin+) and soft-delete.
+ * createdBy is audit metadata only — never used as ACL.
+ */
 async function getProjectMasterKey(
   db: Context['db'],
   projectId: string,
   userId: string
-): Promise<string> {
+): Promise<{ masterKeyBase64: string; organizationId: string }> {
+  const access = await requireProjectAccess(db, projectId, userId, 'admin')
+
   const proj = await db.query.project.findFirst({
     where: eq(project.id, projectId),
     columns: {
-      id: true,
-      createdBy: true,
       encryptedMk: true,
       mkIv: true,
       mkTag: true
@@ -26,22 +30,6 @@ async function getProjectMasterKey(
 
   if (!proj) {
     throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' })
-  }
-
-  const isOwner = proj.createdBy === userId
-
-  if (!isOwner) {
-    const m = await db.query.member.findFirst({
-      where: and(
-        eq(member.organizationId, projectId),
-        eq(member.userId, userId)
-      ),
-      columns: { role: true }
-    })
-
-    if (!m || !['owner', 'admin'].includes(m.role)) {
-      throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' })
-    }
   }
 
   const masterKeyBase64 = await decrypt(
@@ -54,7 +42,10 @@ async function getProjectMasterKey(
     env.SERVER_ENCRYPTION_KEY
   )
 
-  return masterKeyBase64
+  return {
+    masterKeyBase64,
+    organizationId: access.organizationId
+  }
 }
 
 async function findOrCreateEnvironment(
@@ -99,11 +90,13 @@ export const secretsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
-      const masterKeyBase64 = await getProjectMasterKey(
+      const { masterKeyBase64, organizationId } = await getProjectMasterKey(
         ctx.db,
         input.projectId,
         userId
       )
+      await assertOrgWritable(organizationId)
+
       const environmentId = await findOrCreateEnvironment(
         ctx.db,
         input.projectId,
@@ -114,33 +107,6 @@ export const secretsRouter = router({
 
       if (entries.length === 0) {
         return { upserted: 0 }
-      }
-
-      // Enforce per-plan secret quota
-      const org = await ctx.db.query.organization.findFirst({
-        where: (o, { eq }) => eq(o.id, input.projectId),
-        columns: { metadata: true }
-      })
-      const plan = ((org?.metadata as { plan?: string } | null)?.plan ??
-        'free') as 'free' | 'pro' | 'team'
-      const PLAN_SECRET_LIMITS = {
-        free: 50,
-        pro: Infinity,
-        team: Infinity
-      } as const
-      const limit = PLAN_SECRET_LIMITS[plan]
-      if (Number.isFinite(limit)) {
-        const [row] = await ctx.db
-          .select({ cnt: count() })
-          .from(secret)
-          .where(eq(secret.projectId, input.projectId))
-        const existing = row?.cnt ?? 0
-        if (existing + entries.length > limit) {
-          throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: `Secret limit (${limit}) reached for your plan.`
-          })
-        }
       }
 
       const values = await Promise.all(
@@ -207,7 +173,7 @@ export const secretsRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
-      const masterKeyBase64 = await getProjectMasterKey(
+      const { masterKeyBase64 } = await getProjectMasterKey(
         ctx.db,
         input.projectId,
         userId
@@ -352,11 +318,12 @@ export const secretsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
-      const masterKeyBase64 = await getProjectMasterKey(
+      const { masterKeyBase64, organizationId } = await getProjectMasterKey(
         ctx.db,
         input.projectId,
         userId
       )
+      await assertOrgWritable(organizationId)
 
       const environmentRow = await ctx.db.query.environment.findFirst({
         where: and(
@@ -438,8 +405,12 @@ export const secretsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
-
-      await getProjectMasterKey(ctx.db, input.projectId, userId)
+      const { organizationId } = await getProjectMasterKey(
+        ctx.db,
+        input.projectId,
+        userId
+      )
+      await assertOrgWritable(organizationId)
 
       const environmentRow = await ctx.db.query.environment.findFirst({
         where: and(

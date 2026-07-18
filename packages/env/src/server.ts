@@ -2,7 +2,8 @@ import { createEnv } from '@t3-oss/env-core'
 import { config } from 'dotenv'
 import { z } from 'zod'
 
-config()
+config({ path: '.env' })
+config({ path: '.env.local', override: true })
 
 export const env = createEnv({
   server: {

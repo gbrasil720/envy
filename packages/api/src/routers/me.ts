@@ -1,10 +1,13 @@
-import { and, count, eq } from '@envy/db'
-import { member, user } from '@envy/db/schema/auth'
+import { count, eq, inArray } from '@envy/db'
+import { user } from '@envy/db/schema/auth'
 import { project, secret } from '@envy/db/schema/envy'
+import { member } from '@envy/db/schema/organization'
+import { hasRole } from '@envy/db/services'
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { protectedProcedure, publicProcedure, router } from '..'
 import { createOwnedProject } from '../lib/create-project'
+import { getOrgPlan } from '../lib/org-utils'
 
 export const meRouter = router({
   authState: publicProcedure.query(async ({ ctx }) => {
@@ -14,7 +17,7 @@ export const meRouter = router({
     }
 
     const row = await ctx.db.query.user.findFirst({
-      where: (users, { eq }) => eq(users.id, userId),
+      where: (users, { eq: eqCol }) => eqCol(users.id, userId),
       columns: {
         onboardingCompletedAt: true,
         onboardingSkippedAt: true
@@ -34,7 +37,7 @@ export const meRouter = router({
 
   get: protectedProcedure.query(async ({ ctx }) => {
     const currentUser = await ctx.db.query.user.findFirst({
-      where: (users, { eq }) => eq(users.id, ctx.session.user.id),
+      where: (users, { eq: eqCol }) => eqCol(users.id, ctx.session.user.id),
       columns: {
         id: true,
         name: true,
@@ -55,30 +58,43 @@ export const meRouter = router({
       })
     }
 
-    const secretCount = await ctx.db
-      .select({ value: count() })
-      .from(secret)
-      .innerJoin(project, eq(secret.projectId, project.id))
-      .where(eq(project.createdBy, ctx.session.user.id))
-      .then((r) => r[0]?.value ?? 0)
-
-    const ownedProjects = await ctx.db.query.member.findMany({
-      where: and(
-        eq(member.userId, ctx.session.user.id),
-        eq(member.role, 'owner')
-      ),
-      columns: { organizationId: true },
-      with: {
-        organization: { columns: { metadata: true } }
-      }
+    const memberships = await ctx.db.query.member.findMany({
+      where: eq(member.userId, ctx.session.user.id),
+      columns: { organizationId: true, role: true }
     })
 
-    const plan =
-      (ownedProjects[0]?.organization?.metadata as { plan?: string })?.plan ??
-      'free'
-    const projectCount = ownedProjects.length
+    const ownedOrgIds = memberships
+      .filter((m) => hasRole(m.role, 'owner'))
+      .map((m) => m.organizationId)
 
-    return { ...currentUser, plan, projectCount, secretCount }
+    const memberOrgIds = memberships.map((m) => m.organizationId)
+
+    const secretCount =
+      memberOrgIds.length === 0
+        ? 0
+        : await ctx.db
+            .select({ value: count() })
+            .from(secret)
+            .innerJoin(project, eq(secret.projectId, project.id))
+            .where(inArray(project.organizationId, memberOrgIds))
+            .then((r) => r[0]?.value ?? 0)
+
+    const firstOwnedOrgId = ownedOrgIds[0]
+    const accountPlan =
+      firstOwnedOrgId != null
+        ? await getOrgPlan(ctx.db, firstOwnedOrgId)
+        : 'free'
+
+    const projectCount =
+      ownedOrgIds.length === 0
+        ? 0
+        : await ctx.db
+            .select({ value: count() })
+            .from(project)
+            .where(inArray(project.organizationId, ownedOrgIds))
+            .then((r) => r[0]?.value ?? 0)
+
+    return { ...currentUser, plan: accountPlan, projectCount, secretCount }
   }),
 
   completeOnboardingWithProject: protectedProcedure

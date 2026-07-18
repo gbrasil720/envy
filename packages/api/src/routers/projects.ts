@@ -1,10 +1,13 @@
 import { and, count, eq, inArray, isNull, sql } from '@envy/db'
-import { member, organization, user } from '@envy/db/schema/auth'
+import { user } from '@envy/db/schema/auth'
 import { auditLog, environment, project, secret } from '@envy/db/schema/envy'
+import { member, organization } from '@envy/db/schema/organization'
+import { effectiveRole, hasRole } from '@envy/db/services'
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { protectedProcedure, router } from '..'
 import { createOwnedProject } from '../lib/create-project'
+import { getOrgPlan, requireMembership } from '../lib/org-utils'
 
 export const projectsRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
@@ -19,19 +22,37 @@ export const projectsRouter = router({
 
     const orgIds = memberships.map((m) => m.organizationId)
 
-    const ownerMembership = memberships.find((m) => m.role === 'owner')
-    const ownerOrg = ownerMembership
-      ? await ctx.db.query.organization.findFirst({
-          where: (o, { eq }) => eq(o.id, ownerMembership.organizationId),
-          columns: { metadata: true }
-        })
-      : null
-    const accountPlan =
-      (ownerOrg?.metadata as { plan?: string } | null)?.plan ?? 'free'
+    // Filter out soft-deleted organizations
+    const orgs = await ctx.db.query.organization.findMany({
+      where: and(
+        inArray(organization.id, orgIds),
+        isNull(organization.deletedAt)
+      ),
+      columns: { id: true }
+    })
+    const activeOrgIds = orgs.map((o) => o.id)
 
+    if (activeOrgIds.length === 0) return []
+
+    // Plan from first owned org (role contains owner)
+    const ownedOrgId = memberships.find(
+      (m) => activeOrgIds.includes(m.organizationId) && hasRole(m.role, 'owner')
+    )?.organizationId
+
+    const accountPlan = ownedOrgId
+      ? await getOrgPlan(ctx.db, ownedOrgId)
+      : 'free'
+
+    // N:1 — projects belong to orgs via organizationId, not project.id === org.id
     const projects = await ctx.db.query.project.findMany({
-      where: (p, { inArray }) => inArray(p.id, orgIds),
-      columns: { id: true, name: true, slug: true, createdAt: true },
+      where: (p, { inArray: inArr }) => inArr(p.organizationId, activeOrgIds),
+      columns: {
+        id: true,
+        name: true,
+        slug: true,
+        createdAt: true,
+        organizationId: true
+      },
       with: {
         environments: {
           columns: { name: true },
@@ -98,34 +119,29 @@ export const projectsRouter = router({
 
       const proj = await ctx.db.query.project.findFirst({
         where: eq(project.slug, input.slug),
-        columns: { id: true, name: true, slug: true, createdAt: true }
+        columns: {
+          id: true,
+          name: true,
+          slug: true,
+          createdAt: true,
+          organizationId: true
+        }
       })
 
       if (!proj) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' })
       }
 
-      const membership = await ctx.db.query.member.findFirst({
-        where: and(
-          eq(member.organizationId, proj.id),
-          eq(member.userId, userId)
-        ),
-        columns: { role: true }
-      })
+      const membership = await requireMembership(
+        ctx.db,
+        proj.organizationId,
+        userId
+      )
 
-      if (!membership) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' })
-      }
-
-      const orgs = await ctx.db.query.organization.findFirst({
-        where: eq(organization.id, proj.id),
-        columns: { metadata: true }
-      })
-
-      const plan = (orgs?.metadata as { plan?: string } | null)?.plan ?? 'free'
+      const plan = await getOrgPlan(ctx.db, proj.organizationId)
 
       const members = await ctx.db.query.member.findMany({
-        where: eq(member.organizationId, proj.id),
+        where: eq(member.organizationId, proj.organizationId),
         columns: { id: true, userId: true, role: true, createdAt: true }
       })
 
@@ -138,7 +154,10 @@ export const projectsRouter = router({
         ...proj,
         plan,
         role: membership.role,
-        members,
+        members: members.map((m) => ({
+          ...m,
+          role: effectiveRole(m.role)
+        })),
         environments
       }
     })

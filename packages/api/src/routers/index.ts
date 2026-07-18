@@ -5,6 +5,7 @@ import { cliAuthRouter } from './cli-auth'
 import { environmentsRouter } from './environments'
 import { meRouter } from './me'
 import { membersRouter } from './members'
+import { organizationRouter } from './organization'
 import { projectsRouter } from './projects'
 import { secretsRouter } from './secrets'
 
@@ -19,6 +20,7 @@ export const appRouter = router({
   secrets: secretsRouter,
   members: membersRouter,
   auditLog: auditLogRouter,
-  environments: environmentsRouter
+  environments: environmentsRouter,
+  organization: organizationRouter
 })
 export type AppRouter = typeof appRouter

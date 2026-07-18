@@ -19,7 +19,7 @@
     {
       "idx": 2,
       "version": "7",
-      "when": 1745625600000,
+      "when": 1776300000000,
       "tag": "0002_add_onboarding_fields",
       "breakpoints": true
     },
@@ -28,6 +28,13 @@
       "version": "7",
       "when": 1777487935858,
       "tag": "0003_safe_silver_sable",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784347666506,
+      "tag": "0004_premium_bloodstrike",
       "breakpoints": true
     }
   ]

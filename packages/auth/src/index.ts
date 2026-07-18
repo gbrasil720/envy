@@ -1,11 +1,18 @@
 import { dash } from '@better-auth/infra'
 import { and, createDb, eq } from '@envy/db'
-import * as schema from '@envy/db/schema/auth'
 import * as envySchema from '@envy/db/schema/envy'
+// Barrel em schema/index — export map `./*` resolve `schema/index` → src/schema/index.ts
+// (não `@envy/db/schema`, que procuraria src/schema.ts e falha).
+// Adapter precisa do schema INTEIRO pra enxergar organization/member/invitation/subscription.
+import * as schema from '@envy/db/schema/index'
 import { env } from '@envy/env/server'
 import { APIError, betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { openAPI, organization } from 'better-auth/plugins'
+import { nanoid } from 'nanoid' // ajuste pro gerador de ID que o resto do
+// projeto já usa — precisa ser o MESMO padrão usado nas outras tabelas,
+// senão os IDs de organization/member criados aqui ficam inconsistentes
+// com os criados pelas rotas normais do plugin.
 
 export function createAuth() {
   const db = createDb()
@@ -33,6 +40,62 @@ export function createAuth() {
       ...(env.TRUSTED_ORIGINS?.split(',') ?? [])
     ],
     databaseHooks: {
+      user: {
+        create: {
+          // FIX: faltava inteiramente. Sem isso, o modelo de "org pessoal
+          // implícita" que decidimos não existe na prática — usuário
+          // cadastra e não tem organização nenhuma pra sessão apontar.
+          //
+          // Feito via insert direto (não auth.api.createOrganization),
+          // porque neste ponto do ciclo de vida ainda não existe sessão
+          // ativa pro usuário recém-criado — createOrganization do plugin
+          // espera contexto de sessão. Como é uma ação de sistema (não
+          // uma decisão de negócio do usuário), inserir direto é seguro
+          // CONTANTO que os campos batam exatamente com o que o plugin
+          // esperaria ter criado.
+          after: async (user) => {
+            const organizationId = nanoid()
+            const memberId = nanoid()
+            const subscriptionId = nanoid()
+            const now = new Date()
+
+            await db.insert(schema.organization).values({
+              id: organizationId,
+              name: user.name ?? 'Personal',
+              slug: `personal-${user.id}`, // precisa ser único — ajuste
+              // a estratégia de slug se `user.id` não for adequado pra URL
+              type: 'personal',
+              createdAt: now
+            })
+
+            await db.insert(schema.member).values({
+              id: memberId,
+              organizationId,
+              userId: user.id,
+              role: 'owner', // string, não enum — ver organization.ts
+              createdAt: now
+            })
+
+            // Fail-closed seatLimit for assertOrganizationWritable
+            await db.insert(schema.subscription).values({
+              id: subscriptionId,
+              organizationId,
+              plan: 'free',
+              status: 'active',
+              dodoCustomerId: 'free',
+              seatLimit: 1,
+              createdAt: now,
+              updatedAt: now
+            })
+
+            // Nota: NÃO seta session.activeOrganizationId aqui — a sessão
+            // ainda não existe neste hook. O fallback de "sem org ativa
+            // = usa a pessoal" precisa estar na camada de leitura de
+            // sessão (ou setar activeOrganizationId no hook de
+            // session.create.before, buscando a org pessoal do usuário).
+          }
+        }
+      },
       session: {
         create: {
           before: async (session) => {
@@ -41,7 +104,6 @@ export function createAuth() {
             })
 
             if (!dbUser?.email) {
-              // throw new Error('No email associated with this account')
               throw new APIError('FORBIDDEN', {
                 message: 'No email associated with this account'
               })
@@ -59,10 +121,28 @@ export function createAuth() {
               .limit(1)
 
             if (!entry) {
-              // throw new Error('This email is not approved for early access')
               throw new APIError('FORBIDDEN', {
                 message: 'This email is not approved for early access'
               })
+            }
+
+            // FIX: complementa o hook de user.create.after — se a sessão
+            // ainda não tem activeOrganizationId (primeiro login), aponta
+            // pra org pessoal do usuário automaticamente (não arquivada).
+            if (!session.activeOrganizationId) {
+              const personalOrg = await db.query.member.findFirst({
+                where: (m, { eq }) => eq(m.userId, session.userId),
+                with: { organization: true }
+              })
+
+              const org = personalOrg?.organization
+              if (
+                personalOrg &&
+                org?.type === 'personal' &&
+                org.deletedAt == null
+              ) {
+                session.activeOrganizationId = personalOrg.organizationId
+              }
             }
           }
         }
@@ -81,7 +161,15 @@ export function createAuth() {
         domain: env.NODE_ENV === 'development' ? undefined : '.useenvy.dev'
       }
     },
-    plugins: [organization(), dash(), openAPI()]
+    plugins: [
+      organization({
+        // Sem isso, allowUserToCreateOrganization default permite qualquer
+        // usuário criar múltiplas orgs de time à vontade — confirme se é
+        // isso que você quer, ou restrinja aqui (ex: exigir plano pago).
+      }),
+      dash(),
+      openAPI()
+    ]
   })
 }
 

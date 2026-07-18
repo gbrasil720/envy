@@ -1,10 +1,9 @@
 import { and, count, eq } from '@envy/db'
-import { member } from '@envy/db/schema/auth'
 import { auditLog, environment, secret } from '@envy/db/schema/envy'
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { protectedProcedure, router } from '..'
-import type { Context } from '../context'
+import { assertOrgWritable, requireProjectAccess } from '../lib/org-utils'
 
 const envNameSchema = z
   .string()
@@ -15,28 +14,12 @@ const envNameSchema = z
     'Only lowercase letters, numbers, hyphens and underscores'
   )
 
-async function assertAccess(
-  db: Context['db'],
-  projectId: string,
-  userId: string,
-  allowedRoles: string[] = ['owner', 'admin', 'member']
-) {
-  const m = await db.query.member.findFirst({
-    where: and(eq(member.organizationId, projectId), eq(member.userId, userId)),
-    columns: { role: true }
-  })
-  if (!m || !allowedRoles.includes(m.role)) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' })
-  }
-  return m
-}
-
 export const environmentsRouter = router({
   list: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
-      await assertAccess(ctx.db, input.projectId, userId)
+      await requireProjectAccess(ctx.db, input.projectId, userId)
 
       const envs = await ctx.db.query.environment.findMany({
         where: eq(environment.projectId, input.projectId),
@@ -61,7 +44,13 @@ export const environmentsRouter = router({
     .input(z.object({ projectId: z.string(), name: envNameSchema }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
-      await assertAccess(ctx.db, input.projectId, userId, ['owner', 'admin'])
+      const { organizationId } = await requireProjectAccess(
+        ctx.db,
+        input.projectId,
+        userId,
+        'admin'
+      )
+      await assertOrgWritable(organizationId)
 
       const existing = await ctx.db.query.environment.findFirst({
         where: and(
@@ -115,7 +104,13 @@ export const environmentsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
-      await assertAccess(ctx.db, input.projectId, userId, ['owner', 'admin'])
+      const { organizationId } = await requireProjectAccess(
+        ctx.db,
+        input.projectId,
+        userId,
+        'admin'
+      )
+      await assertOrgWritable(organizationId)
 
       const env = await ctx.db.query.environment.findFirst({
         where: and(
@@ -175,7 +170,13 @@ export const environmentsRouter = router({
     .input(z.object({ projectId: z.string(), environmentId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
-      await assertAccess(ctx.db, input.projectId, userId, ['owner', 'admin'])
+      const { organizationId } = await requireProjectAccess(
+        ctx.db,
+        input.projectId,
+        userId,
+        'admin'
+      )
+      await assertOrgWritable(organizationId)
 
       const env = await ctx.db.query.environment.findFirst({
         where: and(
