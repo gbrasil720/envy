@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: envy-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: envy
+      POSTGRES_PASSWORD: envy
+      POSTGRES_DB: envy
+    ports:
+      - "5432:5432"
+    volumes:
+      - envy-db-data:/var/lib/postgresql/data
+
+volumes:
+  envy-db-data:

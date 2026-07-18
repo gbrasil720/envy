@@ -37,6 +37,9 @@
     "db:studio": "turbo -F @envy/db db:studio",
     "db:generate": "turbo -F @envy/db db:generate",
     "db:migrate": "turbo -F @envy/db db:migrate",
+    "db:docker:up": "docker compose up -d",
+    "db:docker:down": "docker compose down",
+    "db:docker:logs": "docker compose logs -f",
     "check": "biome check --write ."
   },
   "dependencies": {
