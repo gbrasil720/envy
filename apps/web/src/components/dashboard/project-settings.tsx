@@ -23,8 +23,11 @@ import {
   TooltipTrigger
 } from '@envy/ui/components/tooltip'
 import { Copy01Icon } from '@hugeicons/core-free-icons'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { useTRPC } from '@/utils/trpc'
 import { dashboardCardClass } from './dashboard-classes'
 import { DashboardIcon } from './dashboard-icon'
 import { EnvironmentsManager } from './environments-manager'
@@ -36,6 +39,7 @@ type Props = {
     slug: string
     plan: string
     role: string
+    organizationId: string
     createdAt?: string | Date
   }
   secretsCount: number
@@ -53,6 +57,24 @@ async function copyText(text: string, label: string) {
 
 export function ProjectSettings({ project }: Props) {
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const trpc = useTRPC()
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const isOwner = project.role === 'owner'
+
+  const archiveMutation = useMutation(
+    trpc.organization.archive.mutationOptions({
+      onSuccess: async () => {
+        toast.success('Project archived')
+        setDeleteOpen(false)
+        await queryClient.invalidateQueries()
+        void navigate({ to: '/dashboard' })
+      },
+      onError: (err) => {
+        toast.error(err.message || 'Failed to archive project')
+      }
+    })
+  )
 
   return (
     <div className="flex flex-col gap-5">
@@ -131,80 +153,6 @@ export function ProjectSettings({ project }: Props) {
         </CardContent>
       </Card>
 
-      {/* <Card className={dashboardCardClass}>
-        <CardHeader>
-          <CardTitle className="text-base">Usage</CardTitle>
-          <CardDescription>
-            Approximate usage against your plan (secrets counted in{' '}
-            <span className="font-mono">{sampleEnv}</span>).
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-5">
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">
-                Secrets ({sampleEnv})
-              </span>
-              <span className="tabular-nums font-mono text-muted-foreground">
-                {Number.isFinite(secretLimit)
-                  ? `${secretCount} / ${secretLimit}`
-                  : `${secretCount}`}
-              </span>
-            </div>
-            {Number.isFinite(secretLimit) ? (
-              <Progress value={secretPct} className="h-2" />
-            ) : (
-              <p className="text-xs text-muted-foreground">Unlimited secrets</p>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Projects</span>
-              <span className="tabular-nums font-mono text-muted-foreground">
-                {Number.isFinite(projectLimit)
-                  ? `${projectCount} / ${projectLimit}`
-                  : `${projectCount}`}
-              </span>
-            </div>
-            {Number.isFinite(projectLimit) ? (
-              <Progress value={projectPct} className="h-2" />
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Unlimited projects
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card> */}
-
-      {/* <Card className={dashboardCardClass}>
-        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
-          <div>
-            <CardTitle className="text-base">Plan</CardTitle>
-            <CardDescription>
-              {planLabels[project.plan] ?? project.plan}
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge className={dashboardPlanBadgeClass(project.plan)}>
-              {project.plan}
-            </Badge>
-            {project.plan === 'free' ? (
-              <Button size="sm" onClick={onUpgrade}>
-                Upgrade
-              </Button>
-            ) : null}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <ul className="list-inside list-disc text-sm text-muted-foreground">
-            <li>Encrypted secrets at rest (AES-256-GCM)</li>
-            <li>CLI and dashboard audit trail</li>
-            <li>Environment-scoped secret stores</li>
-          </ul>
-        </CardContent>
-      </Card> */}
-
       <EnvironmentsManager
         projectId={project.id}
         projectSlug={project.slug}
@@ -217,47 +165,67 @@ export function ProjectSettings({ project }: Props) {
             Danger zone
           </CardTitle>
           <CardDescription>
-            Permanently deletes all secrets and environments. Cannot be undone.
+            Archive this project&apos;s organization. Secrets are retained for
+            compliance and no longer appear in your dashboard.
           </CardDescription>
         </CardHeader>
         <CardFooter className="border-t border-destructive/20 pt-4">
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-destructive/40 text-destructive hover:bg-destructive/10"
-                  onClick={() => setDeleteOpen(true)}
-                />
-              }
+          {isOwner ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-destructive/40 text-destructive hover:bg-destructive/10"
+              onClick={() => setDeleteOpen(true)}
             >
-              Delete project
-            </TooltipTrigger>
-            <TooltipContent>
-              Opens confirmation — server delete not wired yet
-            </TooltipContent>
-          </Tooltip>
+              Archive project
+            </Button>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-destructive/40 text-destructive opacity-60"
+                    disabled
+                  />
+                }
+              >
+                Archive project
+              </TooltipTrigger>
+              <TooltipContent>
+                Only the organization owner can archive
+              </TooltipContent>
+            </Tooltip>
+          )}
         </CardFooter>
       </Card>
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete project</AlertDialogTitle>
+            <AlertDialogTitle>Archive project</AlertDialogTitle>
             <AlertDialogDescription>
-              Deleting <strong>{project.name}</strong> is not available from the
-              dashboard yet. This confirmation is a preview only.
+              Archive <strong>{project.name}</strong>? It will disappear from
+              your dashboard. Data is soft-deleted (not permanently erased) for
+              billing/compliance retention.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Close</AlertDialogCancel>
+            <AlertDialogCancel disabled={archiveMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled
-              title="Not available yet"
+              disabled={archiveMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault()
+                archiveMutation.mutate({
+                  organizationId: project.organizationId
+                })
+              }}
             >
-              Delete project
+              {archiveMutation.isPending ? 'Archiving…' : 'Archive project'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
