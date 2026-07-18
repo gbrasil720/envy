@@ -7,13 +7,20 @@ import {
   timestamp,
   uniqueIndex
 } from 'drizzle-orm/pg-core'
-import { organization, user } from './auth'
+import { user } from './auth'
+import { organization } from './organization'
 
 export const project = pgTable(
   'project',
   {
-    id: text('id')
-      .primaryKey()
+    // FIX: antes era `.primaryKey().references(() => organization.id)` —
+    // isso forçava 1 organização = exatamente 1 projeto, sempre.
+    // Agora project tem PK própria; organizationId é FK normal (N:1).
+    // Uma org (pessoal ou team) pode ter N projetos.
+    id: text('id').primaryKey(),
+
+    organizationId: text('organization_id')
+      .notNull()
       .references(() => organization.id, { onDelete: 'cascade' }),
 
     name: text('name').notNull(),
@@ -35,6 +42,7 @@ export const project = pgTable(
   },
   (table) => [
     uniqueIndex('project_slug_uidx').on(table.slug),
+    index('project_organizationId_idx').on(table.organizationId),
     index('project_createdBy_idx').on(table.createdBy)
   ]
 )
@@ -176,13 +184,12 @@ export const waitlist = pgTable(
 
 export const projectRelations = relations(project, ({ one, many }) => ({
   organization: one(organization, {
-    fields: [project.id],
+    fields: [project.organizationId],
     references: [organization.id]
   }),
   creator: one(user, { fields: [project.createdBy], references: [user.id] }),
   environments: many(environment),
   secrets: many(secret),
-  apiKeys: many(apiKey),
   auditLogs: many(auditLog)
 }))
 
