@@ -1,58 +1,17 @@
 import { and, eq } from '@envy/db'
-import { invitation, member, organization, user } from '@envy/db/schema/auth'
+import { user } from '@envy/db/schema/auth'
+import { invitation, member } from '@envy/db/schema/organization'
+import { effectiveRole } from '@envy/db/services'
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { protectedProcedure, router } from '..'
-import type { Context } from '../context'
-
-const PLAN_MEMBER_LIMITS = {
-  free: 1,
-  pro: 1,
-  team: 5
-} as const
-
-async function requireMembership(
-  db: Context['db'],
-  organizationId: string,
-  userId: string,
-  requiredRole: 'owner' | 'admin' | 'member' = 'member'
-) {
-  const m = await db.query.member.findFirst({
-    where: and(
-      eq(member.organizationId, organizationId),
-      eq(member.userId, userId)
-    ),
-    columns: { role: true }
-  })
-
-  if (!m) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' })
-  }
-
-  const hierarchy = { owner: 3, admin: 2, member: 1 }
-  if (hierarchy[m.role as keyof typeof hierarchy] < hierarchy[requiredRole]) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Insufficient permissions'
-    })
-  }
-
-  return m
-}
-
-async function getOrgPlan(
-  db: Context['db'],
-  organizationId: string
-): Promise<'free' | 'pro' | 'team'> {
-  const org = await db.query.organization.findFirst({
-    where: eq(organization.id, organizationId),
-    columns: { metadata: true }
-  })
-  const metadata = org?.metadata as { plan?: string } | null
-  const plan = metadata?.plan
-  if (plan === 'pro' || plan === 'team') return plan
-  return 'free'
-}
+import {
+  assertOrgWritable,
+  getOrgSeatLimit,
+  requireMembership,
+  requireProjectAccess,
+  safeRemoveMember
+} from '../lib/org-utils'
 
 export const membersRouter = router({
   list: protectedProcedure
@@ -60,10 +19,14 @@ export const membersRouter = router({
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
 
-      await requireMembership(ctx.db, input.projectId, userId)
+      const { organizationId } = await requireProjectAccess(
+        ctx.db,
+        input.projectId,
+        userId
+      )
 
       const members = await ctx.db.query.member.findMany({
-        where: eq(member.organizationId, input.projectId),
+        where: eq(member.organizationId, organizationId),
         columns: { id: true, userId: true, role: true, createdAt: true },
         with: {
           user: {
@@ -72,7 +35,10 @@ export const membersRouter = router({
         }
       })
 
-      return members
+      return members.map((m) => ({
+        ...m,
+        role: effectiveRole(m.role)
+      }))
     }),
 
   pending: protectedProcedure
@@ -80,11 +46,16 @@ export const membersRouter = router({
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
 
-      await requireMembership(ctx.db, input.projectId, userId, 'admin')
+      const { organizationId } = await requireProjectAccess(
+        ctx.db,
+        input.projectId,
+        userId,
+        'admin'
+      )
 
       return ctx.db.query.invitation.findMany({
         where: and(
-          eq(invitation.organizationId, input.projectId),
+          eq(invitation.organizationId, organizationId),
           eq(invitation.status, 'pending')
         ),
         columns: {
@@ -108,41 +79,39 @@ export const membersRouter = router({
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
 
-      await requireMembership(ctx.db, input.projectId, userId, 'admin')
+      const { organizationId } = await requireProjectAccess(
+        ctx.db,
+        input.projectId,
+        userId,
+        'admin'
+      )
+      await assertOrgWritable(organizationId)
 
-      const plan = await getOrgPlan(ctx.db, input.projectId)
-
-      if (plan !== 'team') {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'Member invitations require the Team plan.'
-        })
-      }
+      const seatLimit = await getOrgSeatLimit(ctx.db, organizationId)
 
       const currentMembers = await ctx.db.query.member.findMany({
-        where: eq(member.organizationId, input.projectId),
+        where: eq(member.organizationId, organizationId),
         columns: { id: true }
       })
 
       const pendingInvites = await ctx.db.query.invitation.findMany({
         where: and(
-          eq(invitation.organizationId, input.projectId),
+          eq(invitation.organizationId, organizationId),
           eq(invitation.status, 'pending')
         ),
         columns: { id: true }
       })
 
-      const limit = PLAN_MEMBER_LIMITS[plan]
-      if (currentMembers.length + pendingInvites.length >= limit) {
+      if (currentMembers.length + pendingInvites.length >= seatLimit) {
         throw new TRPCError({
           code: 'FORBIDDEN',
-          message: `Team plan allows up to ${limit} members.`
+          message: `Seat limit (${seatLimit}) reached. Remove members or upgrade.`
         })
       }
 
       const existingInvite = await ctx.db.query.invitation.findFirst({
         where: and(
-          eq(invitation.organizationId, input.projectId),
+          eq(invitation.organizationId, organizationId),
           eq(invitation.email, input.email),
           eq(invitation.status, 'pending')
         ),
@@ -163,7 +132,7 @@ export const membersRouter = router({
 
       await ctx.db.insert(invitation).values({
         id: inviteId,
-        organizationId: input.projectId,
+        organizationId,
         email: input.email,
         role: input.role,
         status: 'pending',
@@ -245,11 +214,33 @@ export const membersRouter = router({
         })
       }
 
+      await assertOrgWritable(invite.organizationId)
+
+      const seatLimit = await getOrgSeatLimit(ctx.db, invite.organizationId)
+      const currentMembers = await ctx.db.query.member.findMany({
+        where: eq(member.organizationId, invite.organizationId),
+        columns: { id: true }
+      })
+
+      if (currentMembers.length >= seatLimit) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: `Seat limit (${seatLimit}) reached.`
+        })
+      }
+
+      // Custom invite accept — insert allowed only for admin|member.
+      // Ownership must never be granted via invite; use Better Auth for that.
+      const role =
+        invite.role === 'admin' || invite.role === 'member'
+          ? invite.role
+          : 'member'
+
       await ctx.db.insert(member).values({
         id: crypto.randomUUID(),
         organizationId: invite.organizationId,
         userId,
-        role: invite.role ?? 'member',
+        role,
         createdAt: new Date()
       })
 
@@ -258,7 +249,15 @@ export const membersRouter = router({
         .set({ status: 'accepted' })
         .where(eq(invitation.id, input.invitationId))
 
-      return { projectId: invite.organizationId }
+      // Return a project in this org for client navigation (first by createdAt)
+      const proj = await ctx.db.query.project.findFirst({
+        where: (p, { eq: eqCol }) =>
+          eqCol(p.organizationId, invite.organizationId),
+        columns: { id: true },
+        orderBy: (p, { asc }) => [asc(p.createdAt)]
+      })
+
+      return { projectId: proj?.id ?? invite.organizationId }
     }),
 
   remove: protectedProcedure
@@ -271,35 +270,30 @@ export const membersRouter = router({
     .mutation(async ({ ctx, input }) => {
       const requesterId = ctx.session.user.id
 
-      await requireMembership(ctx.db, input.projectId, requesterId, 'admin')
+      const { organizationId } = await requireProjectAccess(
+        ctx.db,
+        input.projectId,
+        requesterId,
+        'admin'
+      )
 
+      // Resolve member row so Better Auth gets memberId (not userId)
       const target = await ctx.db.query.member.findFirst({
         where: and(
-          eq(member.organizationId, input.projectId),
+          eq(member.organizationId, organizationId),
           eq(member.userId, input.userId)
         ),
-        columns: { role: true }
+        columns: { id: true }
       })
 
       if (!target) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Member not found.' })
-      }
-
-      if (target.role === 'owner') {
         throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'The project owner cannot be removed.'
+          code: 'NOT_FOUND',
+          message: 'Member not found'
         })
       }
 
-      await ctx.db
-        .delete(member)
-        .where(
-          and(
-            eq(member.organizationId, input.projectId),
-            eq(member.userId, input.userId)
-          )
-        )
+      await safeRemoveMember(ctx, organizationId, target.id)
 
       return { success: true }
     }),
@@ -321,6 +315,7 @@ export const membersRouter = router({
         })
       }
 
+      // Cancel is a recovery path when over seat limit — no assertOrgWritable
       await requireMembership(ctx.db, invite.organizationId, userId, 'admin')
 
       await ctx.db

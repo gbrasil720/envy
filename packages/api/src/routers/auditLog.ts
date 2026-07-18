@@ -1,9 +1,9 @@
 import { and, desc, eq, inArray } from '@envy/db'
-import { member, user } from '@envy/db/schema/auth'
+import { user } from '@envy/db/schema/auth'
 import { auditLog } from '@envy/db/schema/envy'
-import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { protectedProcedure, router } from '..'
+import { requireProjectAccess } from '../lib/org-utils'
 
 export const auditLogRouter = router({
   list: protectedProcedure
@@ -19,17 +19,7 @@ export const auditLogRouter = router({
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
 
-      const membership = await ctx.db.query.member.findFirst({
-        where: and(
-          eq(member.organizationId, input.projectId),
-          eq(member.userId, userId)
-        ),
-        columns: { role: true }
-      })
-
-      if (!membership) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' })
-      }
+      await requireProjectAccess(ctx.db, input.projectId, userId)
 
       const conditions = [eq(auditLog.projectId, input.projectId)]
       if (input.environment) {
