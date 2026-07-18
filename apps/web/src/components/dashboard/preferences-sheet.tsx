@@ -14,6 +14,7 @@ import {
   StarIcon,
   UserIcon
 } from '@hugeicons/core-free-icons'
+import { PLAN_LIMITS } from '@envy/api/lib/plan-limits'
 import { useQuery } from '@tanstack/react-query'
 import { initials } from '@/utils/initials'
 import { useTRPC } from '@/utils/trpc'
@@ -43,27 +44,27 @@ const PLAN_CONFIG: Record<
   free: {
     label: 'Free',
     price: '$0/mo',
-    projectLimit: 1,
-    secretLimit: 50,
-    memberLimit: 1,
+    projectLimit: Number.isFinite(PLAN_LIMITS.free.projects) ? PLAN_LIMITS.free.projects : null,
+    secretLimit: Number.isFinite(PLAN_LIMITS.free.secrets) ? PLAN_LIMITS.free.secrets : null,
+    memberLimit: Number.isFinite(PLAN_LIMITS.free.members) ? PLAN_LIMITS.free.members : null,
     color: 'text-muted-foreground',
     badgeClass: 'bg-muted text-muted-foreground border-0'
   },
   pro: {
     label: 'Pro',
     price: '$9/mo',
-    projectLimit: null,
-    secretLimit: null,
-    memberLimit: 1,
+    projectLimit: Number.isFinite(PLAN_LIMITS.pro.projects) ? PLAN_LIMITS.pro.projects : null,
+    secretLimit: Number.isFinite(PLAN_LIMITS.pro.secrets) ? PLAN_LIMITS.pro.secrets : null,
+    memberLimit: Number.isFinite(PLAN_LIMITS.pro.members) ? PLAN_LIMITS.pro.members : null,
     color: 'text-brand',
     badgeClass: 'bg-brand/10 text-brand border-0'
   },
   team: {
     label: 'Team',
     price: '$19/mo',
-    projectLimit: null,
-    secretLimit: null,
-    memberLimit: 5,
+    projectLimit: Number.isFinite(PLAN_LIMITS.team.projects) ? PLAN_LIMITS.team.projects : null,
+    secretLimit: Number.isFinite(PLAN_LIMITS.team.secrets) ? PLAN_LIMITS.team.secrets : null,
+    memberLimit: Number.isFinite(PLAN_LIMITS.team.members) ? PLAN_LIMITS.team.members : null,
     color: 'text-blue-400',
     badgeClass: 'bg-blue-500/10 text-blue-400 border-0'
   }

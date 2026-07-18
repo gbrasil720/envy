@@ -5,15 +5,16 @@ import {
   DashboardSpeed01Icon,
   Key01Icon
 } from '@hugeicons/core-free-icons'
+import { PLAN_LIMITS } from '@envy/api/lib/plan-limits'
 import { useQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/utils/trpc'
 import { dashboardCardClass } from './dashboard-classes'
 import { DashboardIcon } from './dashboard-icon'
 
 const PLAN_SECRET_LIMIT: Record<string, number> = {
-  free: 50,
-  pro: Number.POSITIVE_INFINITY,
-  team: Number.POSITIVE_INFINITY
+  free: PLAN_LIMITS.free.secrets,
+  pro: PLAN_LIMITS.pro.secrets,
+  team: PLAN_LIMITS.team.secrets
 }
 
 type Props = {

@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, readdirSync, readFileSync } from 'node:fs'
+import { lstatSync } from 'node:fs'
 import { join } from 'node:path'
 import checkbox from '@inquirer/checkbox'
 import confirm from '@inquirer/confirm'
@@ -6,6 +6,8 @@ import type { Command } from 'commander'
 import { api } from '../lib/api'
 import { requireAuth } from '../lib/auth'
 import { printWelcomeBanner } from '../lib/banner'
+import { requireConfig } from '../lib/config'
+import { parseEnvFile, scanEnvFiles } from '../lib/env-file'
 import { EnvyError, EXIT } from '../lib/errors'
 import { output } from '../lib/output'
 
@@ -22,47 +24,6 @@ const theme = {
     highlight: (t: string) => `${GREEN}${t}${RESET}`,
     selectedChoice: (t: string) => `${GREEN}${t}${RESET}`
   }
-}
-
-function scanEnvFiles(dir: string): string[] {
-  return readdirSync(dir)
-    .filter((f) => {
-      if (!/^\.env(\..+)?$/.test(f)) return false
-      try {
-        return lstatSync(join(dir, f)).isFile()
-      } catch {
-        return false
-      }
-    })
-    .sort()
-}
-
-export function parseEnvFile(filePath: string): Record<string, string> {
-  const content = readFileSync(filePath, 'utf-8')
-  const result: Record<string, string> = {}
-
-  for (const line of content.split('\n')) {
-    const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith('#')) continue
-    const eqIndex = trimmed.indexOf('=')
-    if (eqIndex === -1) continue
-    const key = trimmed.slice(0, eqIndex).trim()
-    let value = trimmed.slice(eqIndex + 1).trim()
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value
-        .slice(1, -1)
-        .replace(/\\n/g, '\n')
-        .replace(/\\r/g, '\r')
-        .replace(/\\"/g, '"')
-        .replace(/\\\\/g, '\\')
-    }
-    if (key) result[key] = value
-  }
-
-  return result
 }
 
 function maskSecret(v: string): string {
@@ -178,29 +139,10 @@ export type PushOptions = {
 export async function pushCommand(options: PushOptions): Promise<void> {
   requireAuth()
 
-  const configPath = join(process.cwd(), '.envy.json')
-  if (!existsSync(configPath)) {
-    throw new EnvyError('No project linked', {
-      suggestion: 'Run "envy init" to link this directory to a project',
-      code: 'NO_CONFIG',
-      exitCode: EXIT.USAGE
-    })
-  }
-
-  let config: { project_id: string; project_slug: string; environment: string }
-  try {
-    config = JSON.parse(readFileSync(configPath, 'utf-8'))
-  } catch {
-    throw new EnvyError(`Could not read ${configPath}`, {
-      suggestion: 'Run "envy init" to reinitialise this directory',
-      code: 'INVALID_CONFIG',
-      exitCode: EXIT.USAGE
-    })
-  }
-
-  const projectId: string = config.project_id
-  const projectSlug: string = config.project_slug
-  const environment: string = options.env ?? config.environment
+  const config = requireConfig()
+  const projectId = config.project_id
+  const projectSlug = config.project_slug
+  const environment = options.env ?? config.environment
 
   printWelcomeBanner()
 

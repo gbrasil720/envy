@@ -1,7 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
+import { useCurrentProject } from '@/components/dashboard/project-context'
 import { SecretsTable } from '@/components/dashboard/secrets-table'
-import { useTRPC } from '@/utils/trpc'
 
 export const Route = createFileRoute('/dashboard/$projectSlug/secrets')({
   head: ({ params }) => ({
@@ -14,25 +13,13 @@ export const Route = createFileRoute('/dashboard/$projectSlug/secrets')({
 })
 
 function SecretsPage() {
-  const { projectSlug } = Route.useParams()
-  const trpc = useTRPC()
-
-  const projectsQuery = useQuery(trpc.projects.list.queryOptions())
-  const projectDetailQuery = useQuery(
-    trpc.projects.get.queryOptions({ slug: projectSlug })
-  )
-
-  const currentProject =
-    projectsQuery.data?.find((p) => p.slug === projectSlug) ?? null
-  const detail = projectDetailQuery.data
-
-  if (!detail || !currentProject) return null
+  const detail = useCurrentProject()
 
   return (
     <SecretsTable
       projectId={detail.id}
       environments={detail.environments}
-      projectPlan={currentProject.plan}
+      projectPlan={detail.plan}
     />
   )
 }

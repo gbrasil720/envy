@@ -1,10 +1,4 @@
-import {
-  existsSync,
-  lstatSync,
-  readdirSync,
-  readFileSync,
-  writeFileSync
-} from 'node:fs'
+import { existsSync, lstatSync } from 'node:fs'
 import { join, resolve, sep } from 'node:path'
 import confirm from '@inquirer/confirm'
 import input from '@inquirer/input'
@@ -13,9 +7,14 @@ import type { Command } from 'commander'
 import { api } from '../lib/api'
 import { requireAuth } from '../lib/auth'
 import { printWelcomeBanner } from '../lib/banner'
+import { requireConfig } from '../lib/config'
+import {
+  listEnvFilenames,
+  parseEnvFile,
+  writeEnvFile
+} from '../lib/env-file'
 import { EnvyError, EXIT } from '../lib/errors'
 import { output } from '../lib/output'
-import { parseEnvFile } from './push'
 
 const GREEN = '\x1b[38;2;61;214;140m'
 const GRAY = '\x1b[38;5;240m'
@@ -28,27 +27,6 @@ const theme = {
     highlight: (t: string) => `${GREEN}${t}${RESET}`,
     selectedChoice: (t: string) => `${GREEN}${t}${RESET}`
   }
-}
-
-function scanEnvFiles(dir: string): string[] {
-  return readdirSync(dir)
-    .filter((f) => /^\.env(\..+)?$/.test(f))
-    .sort()
-}
-
-function writeEnvFile(filePath: string, secrets: Record<string, string>): void {
-  const lines = Object.entries(secrets).map(([key, value]) => {
-    const escaped = value
-      .replace(/\\/g, '\\\\')
-      .replace(/\n/g, '\\n')
-      .replace(/\r/g, '\\r')
-      .replace(/"/g, '\\"')
-    return `${key}="${escaped}"`
-  })
-  writeFileSync(filePath, lines.join('\n') + '\n', {
-    encoding: 'utf-8',
-    mode: 0o600
-  })
 }
 
 function validateTargetPath(targetFile: string): string {
@@ -77,29 +55,10 @@ export type PullOptions = {
 export async function pullCommand(options: PullOptions): Promise<void> {
   requireAuth()
 
-  const configPath = join(process.cwd(), '.envy.json')
-  if (!existsSync(configPath)) {
-    throw new EnvyError('No project linked', {
-      suggestion: 'Run "envy init" to link this directory to a project',
-      code: 'NO_CONFIG',
-      exitCode: EXIT.USAGE
-    })
-  }
-
-  let config: { project_id: string; project_slug: string; environment: string }
-  try {
-    config = JSON.parse(readFileSync(configPath, 'utf-8'))
-  } catch {
-    throw new EnvyError(`Could not read ${configPath}`, {
-      suggestion: 'Run "envy init" to reinitialise this directory',
-      code: 'INVALID_CONFIG',
-      exitCode: EXIT.USAGE
-    })
-  }
-
-  const projectId: string = config.project_id
-  const projectSlug: string = config.project_slug
-  const environment: string = options.env ?? config.environment
+  const config = requireConfig()
+  const projectId = config.project_id
+  const projectSlug = config.project_slug
+  const environment = options.env ?? config.environment
 
   printWelcomeBanner()
 
@@ -119,7 +78,7 @@ export async function pullCommand(options: PullOptions): Promise<void> {
 
   output.blank()
 
-  const envFiles = scanEnvFiles(process.cwd())
+  const envFiles = listEnvFilenames(process.cwd())
 
   let targetFile: string
 
