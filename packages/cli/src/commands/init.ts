@@ -1,9 +1,4 @@
-import {
-  appendFileSync,
-  existsSync,
-  readFileSync,
-  writeFileSync
-} from 'node:fs'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import confirm from '@inquirer/confirm'
 import input from '@inquirer/input'
@@ -12,6 +7,7 @@ import type { Command } from 'commander'
 import { api } from '../lib/api'
 import { requireAuth } from '../lib/auth'
 import { printWelcomeBanner } from '../lib/banner'
+import { type EnvyConfig, saveConfig } from '../lib/config'
 import { CONFIG_FILENAME } from '../lib/constants'
 import { EnvyError, EXIT } from '../lib/errors'
 import { output } from '../lib/output'
@@ -23,12 +19,6 @@ const theme = {
     highlight: (t: string) => `\x1b[38;2;61;214;140m${t}\x1b[0m`,
     selectedChoice: (t: string) => `\x1b[38;2;61;214;140m${t}\x1b[0m`
   }
-}
-
-export type EnvyConfig = {
-  project_id: string
-  project_slug: string
-  environment: string
 }
 
 export type InitOptions = {
@@ -117,22 +107,9 @@ export async function initCommand(options: InitOptions): Promise<void> {
     environment
   }
 
-  writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8')
+  saveConfig(config)
+  output.dim(`Wrote ${CONFIG_FILENAME} (and ensured .gitignore entry)`)
 
-  const gitignorePath = join(process.cwd(), '.gitignore')
-  if (existsSync(gitignorePath)) {
-    const gitignore = readFileSync(gitignorePath, 'utf-8')
-    if (!gitignore.includes(CONFIG_FILENAME)) {
-      appendFileSync(gitignorePath, `\n${CONFIG_FILENAME}\n`)
-      output.dim(`Added ${CONFIG_FILENAME} to .gitignore`)
-    } else {
-      output.dim(`${CONFIG_FILENAME} already in .gitignore`)
-    }
-  } else {
-    output.warn(
-      `No .gitignore found — add ${CONFIG_FILENAME} manually to avoid committing it`
-    )
-  }
 
   const lines = [
     { label: 'Project', value: projectName },
