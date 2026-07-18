@@ -3,8 +3,10 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import pc from 'picocolors'
 import { output } from './output'
+import { isNewerVersion } from './semver'
 
 function stripAnsi(str: string): string {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: strip ANSI CSI sequences
   return str.replace(/\x1b\[[0-9;]*m/g, '')
 }
 
@@ -64,9 +66,9 @@ export async function checkForUpdate(currentVersion: string): Promise<void> {
       writeCache({ lastChecked: now, latestVersion })
     }
 
-    if (latestVersion !== currentVersion) {
+    if (isNewerVersion(latestVersion, currentVersion)) {
       const line1 = `Update available  ${pc.dim(currentVersion)} → ${pc.green(latestVersion)}`
-      const line2 = `Run: ${pc.cyan('npm install -g useenvy')}`
+      const line2 = `Run: ${pc.cyan('envy update')}`
 
       const width =
         Math.max(stripAnsi(line1).length, stripAnsi(line2).length) + 4
@@ -75,10 +77,10 @@ export async function checkForUpdate(currentVersion: string): Promise<void> {
       output.blank()
       output.raw(pc.yellow(`┌${border}┐`))
       output.raw(
-        pc.yellow('│') + '  ' + padLine(line1, width - 2) + pc.yellow('│')
+        `${pc.yellow('│')}  ${padLine(line1, width - 2)}${pc.yellow('│')}`
       )
       output.raw(
-        pc.yellow('│') + '  ' + padLine(line2, width - 2) + pc.yellow('│')
+        `${pc.yellow('│')}  ${padLine(line2, width - 2)}${pc.yellow('│')}`
       )
       output.raw(pc.yellow(`└${border}┘`))
       output.blank()
