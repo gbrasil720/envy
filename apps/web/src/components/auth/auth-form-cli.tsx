@@ -8,7 +8,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
 import { authClient } from '@/lib/auth-client'
-import { trpc } from '@/lib/trpc'
+import { useTRPC } from '@/utils/trpc'
 import { AuthorizationExpiredCard } from '../cli/authorization-expired-card'
 import { AuthorizeProjectCard } from '../cli/authorize-project-card'
 import { ProjectAuthorizedCard } from '../cli/project-authorized-card'
@@ -82,6 +82,7 @@ function LoginCard({ sessionToken }: { sessionToken: string | undefined }) {
 }
 
 export function AuthFormCli({ sessionToken }: Props) {
+  const trpc = useTRPC()
   const { data: sessionData, isPending } = authClient.useSession()
   const [approved, setApproved] = useState(false)
   const [expired, setExpired] = useState(false)

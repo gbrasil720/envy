@@ -37,6 +37,7 @@ import {
 import type { IconSvgElement } from '@hugeicons/react'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
+import { SECRET_AUDIT_ACTIONS } from '@envy/api/lib/audit-actions'
 import { useTRPC } from '@/utils/trpc'
 import { DashboardIcon } from './dashboard-icon'
 
@@ -47,12 +48,7 @@ type Props = {
 
 type ActionFilter = 'all' | 'secrets'
 
-const SECRET_ACTIONS = new Set([
-  'pushed',
-  'revealed',
-  'secrets_updated',
-  'secrets_deleted'
-])
+const SECRET_ACTIONS = SECRET_AUDIT_ACTIONS
 
 function capitalizeLabel(text: string) {
   const t = text.trim()

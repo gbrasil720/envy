@@ -1,18 +1,9 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { getAuthState } from '@/functions/get-auth-state'
+import { requireWebAuth } from '@/functions/require-web-auth'
 
 export const Route = createFileRoute('/auth/callback')({
   beforeLoad: async () => {
-    const auth = await getAuthState()
-
-    if (!auth) {
-      throw redirect({ to: '/login' })
-    }
-
-    if (!auth.onboardingCompletedAt && !auth.onboardingSkippedAt) {
-      throw redirect({ to: '/onboarding' })
-    }
-
+    await requireWebAuth('onboarding-required')
     throw redirect({
       to: '/dashboard',
       search: { project: '', section: 'secrets' as const }

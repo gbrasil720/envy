@@ -28,6 +28,7 @@ import {
   UserAdd01Icon,
   UserGroupIcon
 } from '@hugeicons/core-free-icons'
+import { PLAN_LIMITS } from '@envy/api/lib/plan-limits'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTRPC } from '@/utils/trpc'
@@ -70,9 +71,9 @@ function initialsFromId(userId: string) {
 }
 
 const MEMBER_CAP: Record<string, number> = {
-  free: 1,
-  pro: 1,
-  team: 5
+  free: PLAN_LIMITS.free.members,
+  pro: PLAN_LIMITS.pro.members,
+  team: PLAN_LIMITS.team.members
 }
 
 export function MembersList({

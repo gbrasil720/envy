@@ -9,11 +9,11 @@ import {
 } from '@envy/ui/components/field'
 import { InputGroup, InputGroupInput } from '@envy/ui/components/input-group'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
 import { MeshBackground } from '@/components/mesh-background'
-import { getAuthState } from '@/functions/get-auth-state'
+import { requireWebAuth } from '@/functions/require-web-auth'
 import { useTRPC } from '@/utils/trpc'
 
 const MotionCard = motion.create(Card)
@@ -28,15 +28,7 @@ function toSlug(val: string) {
 
 export const Route = createFileRoute('/onboarding')({
   beforeLoad: async () => {
-    const auth = await getAuthState()
-    if (!auth) throw redirect({ to: '/login' })
-
-    if (auth.onboardingCompletedAt || auth.onboardingSkippedAt) {
-      throw redirect({
-        to: '/dashboard',
-        search: { project: '', section: 'secrets' as const }
-      })
-    }
+    await requireWebAuth('onboarding-forbidden')
   },
   head: () => ({
     meta: [

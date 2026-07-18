@@ -9,6 +9,7 @@ import {
 import { Skeleton } from '@envy/ui/components/skeleton'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { ProjectProvider } from '@/components/dashboard/project-context'
 import { useTRPC } from '@/utils/trpc'
 
 export const Route = createFileRoute('/dashboard/$projectSlug')({
@@ -65,5 +66,9 @@ function ProjectLayout() {
 
   if (!projectDetailQuery.data) return null
 
-  return <Outlet />
+  return (
+    <ProjectProvider project={projectDetailQuery.data}>
+      <Outlet />
+    </ProjectProvider>
+  )
 }

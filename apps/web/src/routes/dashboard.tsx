@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query'
 import {
   createFileRoute,
   Outlet,
-  redirect,
   useLocation,
   useNavigate,
   useParams
@@ -18,7 +17,7 @@ import type {
 } from '@/components/dashboard/dashboard-types'
 import { NewProjectDialog } from '@/components/dashboard/new-project-dialog'
 import { MeshBackground } from '@/components/mesh-background'
-import { getAuthState } from '@/functions/get-auth-state'
+import { requireWebAuth } from '@/functions/require-web-auth'
 import { useTRPC } from '@/utils/trpc'
 
 function deriveSection(pathname: string): DashboardSection {
@@ -30,15 +29,7 @@ function deriveSection(pathname: string): DashboardSection {
 
 export const Route = createFileRoute('/dashboard')({
   beforeLoad: async () => {
-    const auth = await getAuthState()
-
-    if (!auth) {
-      throw redirect({ to: '/login' })
-    }
-
-    if (!auth.onboardingCompletedAt && !auth.onboardingSkippedAt) {
-      throw redirect({ to: '/onboarding' })
-    }
+    await requireWebAuth('onboarding-required')
   },
   head: () => ({
     meta: [
