@@ -1,7 +1,9 @@
 {
-  "extends": "@envy/config/tsconfig.base.json",
-  "compilerOptions": {
-    "outDir": "dist"
-  },
-  "include": ["src"]
+	"extends": "@envy/config/tsconfig.base.json",
+	"compilerOptions": {
+		"outDir": "dist",
+		"jsx": "react-jsx",
+		"lib": ["ESNext", "DOM"]
+	},
+	"include": ["src"]
 }

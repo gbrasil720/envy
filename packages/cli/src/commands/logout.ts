@@ -1,17 +1,18 @@
 import type { Command } from 'commander'
-import { api } from '../lib/api'
-import { clearAuth, requireAuth } from '../lib/auth'
-import { output } from '../lib/output'
+import { output } from '../core/output'
+import { runLogout } from '../core/services/logout'
 
-export type LogoutOptions = Record<string, never>
+export type LogoutOptions = {
+  yes?: boolean
+}
 
-export async function logoutCommand(): Promise<void> {
-  requireAuth()
-
-  output.spinner('Revoking token...')
-  await api.auth.logout.mutate()
-  clearAuth()
-  output.stopSpinner()
+export async function logoutCommand(
+  _options: LogoutOptions = {}
+): Promise<void> {
+  await runLogout({
+    onStart: () => output.spinner('Revoking token...'),
+    onDone: () => output.stopSpinner()
+  })
 
   output.blank()
   output.success('Logged out successfully')
@@ -24,7 +25,8 @@ export function registerLogout(program: Command): void {
   program
     .command('logout')
     .description('Revoke your CLI token and remove local credentials')
-    .action(async () => {
-      await logoutCommand()
+    .option('-y, --yes', 'Skip confirmation')
+    .action(async (options: LogoutOptions) => {
+      await logoutCommand(options)
     })
 }

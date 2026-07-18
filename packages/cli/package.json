@@ -1,6 +1,6 @@
 {
   "name": "useenvy",
-  "version": "1.1.1",
+  "version": "2.1.0",
   "type": "module",
   "description": "Secrets and environment variable management for developers",
   "homepage": "https://useenvy.dev",
@@ -19,9 +19,33 @@
     "dist"
   ],
   "scripts": {
-    "build": "bun build ./src/index.ts --outfile dist/cli.js --target node --format esm"
+    "build": "bun build ./src/index.ts --outfile dist/cli.js --target node --format esm",
+    "dev": "bun run src/index.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
   },
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "@inquirer/checkbox": "^5.2.1",
+    "@inquirer/confirm": "^6.1.1",
+    "@inquirer/input": "^5.1.2",
+    "@inquirer/select": "^5.2.1",
+    "@trpc/client": "catalog:",
+    "commander": "catalog:",
+    "gradient-string": "2.0.2",
+    "ink": "^6.8.0",
+    "ink-select-input": "^6.2.0",
+    "ink-spinner": "^5.0.0",
+    "picocolors": "1.1.1",
+    "react": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@envy/api": "workspace:*",
+    "@envy/config": "workspace:*",
+    "@types/react": "catalog:",
+    "typescript": "^5"
   }
 }
