@@ -1,198 +1,85 @@
-import { existsSync, lstatSync } from 'node:fs'
-import { join, resolve, sep } from 'node:path'
 import confirm from '@inquirer/confirm'
 import input from '@inquirer/input'
 import select from '@inquirer/select'
 import type { Command } from 'commander'
-import { api } from '../lib/api'
-import { requireAuth } from '../lib/auth'
-import { printWelcomeBanner } from '../lib/banner'
-import { requireConfig } from '../lib/config'
-import {
-  listEnvFilenames,
-  parseEnvFile,
-  writeEnvFile
-} from '../lib/env-file'
-import { EnvyError, EXIT } from '../lib/errors'
-import { output } from '../lib/output'
-
-const GREEN = '\x1b[38;2;61;214;140m'
-const GRAY = '\x1b[38;5;240m'
-const RESET = '\x1b[0m'
-
-const theme = {
-  prefix: { idle: `${GREEN}?${RESET}` },
-  style: {
-    answer: (t: string) => `${GREEN}${t}${RESET}`,
-    highlight: (t: string) => `${GREEN}${t}${RESET}`,
-    selectedChoice: (t: string) => `${GREEN}${t}${RESET}`
-  }
-}
-
-function validateTargetPath(targetFile: string): string {
-  const targetPath = join(process.cwd(), targetFile.trim())
-  const resolvedPath = resolve(targetPath)
-  const resolvedCwd = resolve(process.cwd())
-
-  if (
-    !resolvedPath.startsWith(resolvedCwd + sep) &&
-    resolvedPath !== resolvedCwd
-  ) {
-    throw new EnvyError('Invalid file path', {
-      suggestion: 'Use a valid .env filename in the current directory',
-      code: 'INVALID_PATH',
-      exitCode: EXIT.USAGE
-    })
-  }
-
-  return targetPath
-}
+import { printWelcomeBanner } from '../core/banner'
+import { formatInfoBox } from '../core/format'
+import { output } from '../core/output'
+import { runPull } from '../core/services/pull'
+import { GRAY, inquirerTheme, RESET } from '../core/theme'
 
 export type PullOptions = {
   env?: string
+  yes?: boolean
+  output?: string
 }
 
 export async function pullCommand(options: PullOptions): Promise<void> {
-  requireAuth()
-
-  const config = requireConfig()
-  const projectId = config.project_id
-  const projectSlug = config.project_slug
-  const environment = options.env ?? config.environment
-
   printWelcomeBanner()
 
-  output.spinner(`Fetching secrets from "${environment}"...`)
-  const result = await api.secrets.reveal.query({ projectId, environment })
-  output.stopSpinner()
-
-  const remoteSecrets = result.secrets
-  const remoteCount = Object.keys(remoteSecrets).length
-
-  if (remoteCount === 0) {
-    output.blank()
-    output.info(`No secrets found in "${environment}"`)
-    output.dim('Run "envy push" to upload your secrets first')
-    return
-  }
-
-  output.blank()
-
-  const envFiles = listEnvFilenames(process.cwd())
-
-  let targetFile: string
-
-  if (envFiles.length === 0) {
-    targetFile = await input({
-      message: 'No .env files found. Enter filename to create:',
-      default: '.env.local',
-      theme,
-      validate: (v) =>
-        /^\.env(\..+)?$/.test(v.trim()) || 'Must be a valid .env filename'
-    })
-  } else {
-    const choices = [
-      ...envFiles.map((f) => ({ name: f, value: f })),
-      { name: `${GRAY}+ Create new file${RESET}`, value: '__new__' }
-    ]
-
-    const selected = await select({
-      message: 'Write secrets to:',
-      theme,
-      choices
-    })
-
-    if (selected === '__new__') {
-      targetFile = await input({
-        message: 'Filename:',
+  await runPull(options, {
+    promptNewFilename: () =>
+      input({
+        message: 'No .env files found. Enter filename to create:',
         default: '.env.local',
-        theme,
+        theme: inquirerTheme,
         validate: (v) =>
-          /^\.env(\.[a-z0-9._-]+)?$/.test(v.trim()) ||
-          'Must be a valid .env filename'
-      })
-    } else {
-      targetFile = selected
-    }
-  }
-
-  const targetPath = validateTargetPath(targetFile)
-  let finalSecrets = { ...remoteSecrets }
-
-  if (existsSync(targetPath) && lstatSync(targetPath).isSymbolicLink()) {
-    throw new EnvyError(
-      'Target file is a symlink — refusing to write secrets to it',
-      {
-        suggestion:
-          'Remove the symlink and create a regular file, or choose a different filename',
-        code: 'SYMLINK_TARGET',
-        exitCode: EXIT.USAGE
-      }
-    )
-  }
-
-  if (existsSync(targetPath)) {
-    const localSecrets = parseEnvFile(targetPath)
-    const localOnly = Object.keys(localSecrets).filter((k) => !remoteSecrets[k])
-
-    if (localOnly.length > 0) {
+          /^\.env(\..+)?$/.test(v.trim()) || 'Must be a valid .env filename'
+      }),
+    selectTarget: (files) =>
+      select({
+        message: 'Write secrets to:',
+        theme: inquirerTheme,
+        choices: [
+          ...files.map((f) => ({ name: f, value: f })),
+          { name: `${GRAY}+ Create new file${RESET}`, value: '__new__' }
+        ]
+      }),
+    confirmKeepLocal: async () =>
+      confirm({
+        message: 'Keep local-only keys? (No = overwrite completely)',
+        default: true,
+        theme: inquirerTheme
+      }),
+    confirmOverwrite: (file) =>
+      confirm({
+        message: `Overwrite "${file}"?`,
+        default: true,
+        theme: inquirerTheme
+      }),
+    onSpinner: (msg) => output.spinner(msg),
+    onStopSpinner: () => output.stopSpinner(),
+    onEmpty: (environment) => {
+      output.blank()
+      output.info(`No secrets found in "${environment}"`)
+      output.dim('Run "envy push" to upload your secrets first')
+    },
+    onLocalOnly: (file, keys) => {
       output.blank()
       output.raw(
-        `  ${GRAY}"${targetFile}" has ${localOnly.length} local key(s) not in remote:${RESET}`
+        `  ${GRAY}"${file}" has ${keys.length} local key(s) not in remote:${RESET}`
       )
-      for (const key of localOnly) {
+      for (const key of keys) {
         output.raw(`${GRAY}    · ${key}${RESET}`)
       }
       output.blank()
-
-      const merge = await confirm({
-        message: 'Keep local-only keys? (No = overwrite completely)',
-        default: true,
-        theme
-      })
-
-      if (merge) {
-        finalSecrets = { ...localSecrets, ...remoteSecrets }
-      }
-    } else {
-      const overwrite = await confirm({
-        message: `Overwrite "${targetFile}"?`,
-        default: true,
-        theme
-      })
-
-      if (!overwrite) {
-        output.info('Aborted.')
-        return
-      }
+    },
+    onAbort: (reason) => output.info(reason),
+    onSuccess: (summary) => {
+      output.blank()
+      output.raw(
+        formatInfoBox([
+          { label: 'Project', value: summary.projectSlug },
+          { label: 'Environment', value: summary.environment },
+          { label: 'Secrets', value: `${summary.secretsCount} pulled` },
+          { label: 'File', value: summary.file }
+        ])
+      )
+      output.blank()
+      output.success('Secrets pulled successfully')
+      output.dim('Run "envy push" to sync changes back')
     }
-  }
-
-  writeEnvFile(targetPath, finalSecrets)
-
-  const lines = [
-    { label: 'Project', value: projectSlug },
-    { label: 'Environment', value: environment },
-    { label: 'Secrets', value: `${remoteCount} pulled` },
-    { label: 'File', value: targetFile }
-  ]
-
-  const labelWidth = Math.max(...lines.map((l) => l.label.length))
-  const valueWidth = Math.max(...lines.map((l) => l.value.length))
-  const innerWidth = labelWidth + valueWidth + 6
-  const border = '─'.repeat(innerWidth)
-
-  const rows = lines.map(({ label, value }) => {
-    const paddedLabel = `\x1b[38;5;240m${label.padEnd(labelWidth)}\x1b[0m`
-    const paddedValue = `\x1b[38;2;61;214;140m${value.padEnd(valueWidth)}\x1b[0m`
-    return `│  ${paddedLabel}  ${paddedValue}  │`
   })
-
-  output.blank()
-  output.raw([`┌${border}┐`, ...rows, `└${border}┘`].join('\n'))
-  output.blank()
-  output.success('Secrets pulled successfully')
-  output.dim('Run "envy push" to sync changes back')
 }
 
 export function registerPull(program: Command): void {
@@ -200,6 +87,8 @@ export function registerPull(program: Command): void {
     .command('pull')
     .description('Pull secrets from Envy to a local .env file')
     .option('--env <environment>', 'Source environment (overrides .envy.json)')
+    .option('-y, --yes', 'Skip confirmation prompts')
+    .option('-o, --output <file>', 'Target .env file')
     .action(async (options: PullOptions) => {
       await pullCommand(options)
     })
