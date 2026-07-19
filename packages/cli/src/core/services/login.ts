@@ -17,10 +17,14 @@ export type LoginUI = {
 }
 
 async function pollForApiKey(sessionToken: string): Promise<string> {
-  const deadline = Date.now() + POLL_TIMEOUT_MS
+  // Read env at call time so tests can shrink the interval without reloading modules.
+  const intervalMs =
+    Number(process.env.ENVY_POLL_INTERVAL_MS) || POLL_INTERVAL_MS
+  const timeoutMs = Number(process.env.ENVY_POLL_TIMEOUT_MS) || POLL_TIMEOUT_MS
+  const deadline = Date.now() + timeoutMs
 
   while (Date.now() < deadline) {
-    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS))
+    await new Promise((resolve) => setTimeout(resolve, intervalMs))
 
     const result = await api.cliAuth.poll.query({ token: sessionToken })
 

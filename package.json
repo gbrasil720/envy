@@ -31,6 +31,8 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "check-types": "turbo check-types",
+    "test": "turbo test",
+    "test:ci": "bunx biome check packages/crypto packages/db/src/roles.ts packages/db/src/roles.test.ts packages/db/src/services.ts packages/api packages/cli/src/core apps/web/src/utils && bun run check-types && bun run test",
     "dev:web": "turbo -F web dev",
     "dev:server": "turbo -F server dev",
     "db:push": "turbo -F @envy/db db:push",

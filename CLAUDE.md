@@ -24,6 +24,13 @@ bun run check-types    # TypeScript type checking across all packages
 
 # Code quality
 bun run check          # Biome format + lint with auto-fix
+bunx biome check .     # Lint/format check without writing (CI)
+
+# Tests
+bun run test           # Unit + integration tests (turbo); API needs Postgres
+bun run test:ci        # biome check + types + tests (local CI gate)
+bun test               # Or run bun:test from a package directory
+# See TESTING.md for harness, ENVY_HOME, and what to cover
 
 # Database (Drizzle)
 bun run db:push        # Push schema changes (no migration files)

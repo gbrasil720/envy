@@ -6,29 +6,29 @@ import type { Context } from '../context'
 import { recordAudit } from './audit'
 
 export const envNameSchema = z
-	.string()
-	.min(1)
-	.max(64)
-	.regex(
-		/^[a-z0-9_-]+$/,
-		'Only lowercase letters, numbers, hyphens and underscores'
-	)
+  .string()
+  .min(1)
+  .max(64)
+  .regex(
+    /^[a-z0-9_-]+$/,
+    'Only lowercase letters, numbers, hyphens and underscores'
+  )
 
 type Db = Context['db']
 
 export async function findEnvironmentId(
-	db: Db,
-	projectId: string,
-	name: string
+  db: Db,
+  projectId: string,
+  name: string
 ): Promise<string | null> {
-	const existing = await db.query.environment.findFirst({
-		where: and(
-			eq(environment.projectId, projectId),
-			eq(environment.name, name)
-		),
-		columns: { id: true }
-	})
-	return existing?.id ?? null
+  const existing = await db.query.environment.findFirst({
+    where: and(
+      eq(environment.projectId, projectId),
+      eq(environment.name, name)
+    ),
+    columns: { id: true }
+  })
+  return existing?.id ?? null
 }
 
 /**
@@ -37,53 +37,53 @@ export async function findEnvironmentId(
  * Push path omits audit to preserve current product behavior.
  */
 export async function findOrCreateEnvironment(
-	db: Db,
-	projectId: string,
-	name: string,
-	opts?: { auditUserId?: string }
+  db: Db,
+  projectId: string,
+  name: string,
+  opts?: { auditUserId?: string }
 ): Promise<string> {
-	const existingId = await findEnvironmentId(db, projectId, name)
-	if (existingId) return existingId
+  const existingId = await findEnvironmentId(db, projectId, name)
+  if (existingId) return existingId
 
-	const [created] = await db
-		.insert(environment)
-		.values({
-			id: crypto.randomUUID(),
-			projectId,
-			name
-		})
-		.returning({ id: environment.id })
+  const [created] = await db
+    .insert(environment)
+    .values({
+      id: crypto.randomUUID(),
+      projectId,
+      name
+    })
+    .returning({ id: environment.id })
 
-	const id = created?.id ?? ''
-	if (id && opts?.auditUserId) {
-		await recordAudit(db, {
-			projectId,
-			userId: opts.auditUserId,
-			action: 'environment_created',
-			environment: name
-		})
-	}
-	return id
+  const id = created?.id ?? ''
+  if (id && opts?.auditUserId) {
+    await recordAudit(db, {
+      projectId,
+      userId: opts.auditUserId,
+      action: 'environment_created',
+      environment: name
+    })
+  }
+  return id
 }
 
 export async function getEnvironmentInProject(
-	db: Db,
-	projectId: string,
-	environmentId: string
+  db: Db,
+  projectId: string,
+  environmentId: string
 ): Promise<{ id: string; name: string }> {
-	const env = await db.query.environment.findFirst({
-		where: and(
-			eq(environment.id, environmentId),
-			eq(environment.projectId, projectId)
-		),
-		columns: { id: true, name: true }
-	})
+  const env = await db.query.environment.findFirst({
+    where: and(
+      eq(environment.id, environmentId),
+      eq(environment.projectId, projectId)
+    ),
+    columns: { id: true, name: true }
+  })
 
-	if (!env) {
-		throw new TRPCError({
-			code: 'NOT_FOUND',
-			message: 'Environment not found'
-		})
-	}
-	return env
+  if (!env) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: 'Environment not found'
+    })
+  }
+  return env
 }

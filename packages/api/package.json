@@ -9,7 +9,11 @@
       "default": "./src/*.ts"
     }
   },
-  "scripts": {},
+  "scripts": {
+    "test": "bun test",
+    "test:unit": "bun test src/lib/plan-limits.test.ts",
+    "test:integration": "bun test src/lib src/routers src/context.test.ts src/index.test.ts"
+  },
   "dependencies": {
     "@envy/auth": "workspace:*",
     "@envy/db": "workspace:*",
