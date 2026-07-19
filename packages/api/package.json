@@ -21,6 +21,7 @@
     "@envy/crypto": "workspace:*",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
+    "better-auth": "catalog:",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },
