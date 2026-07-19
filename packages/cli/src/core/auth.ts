@@ -9,8 +9,6 @@ import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { EnvyError, EXIT } from './errors'
 
-const CREDENTIALS_PATH = join(homedir(), '.envy', 'credentials.json')
-
 export type Credentials = {
   token: string
   user: string
@@ -18,11 +16,21 @@ export type Credentials = {
   created_at: string
 }
 
+/** Override with ENVY_HOME in tests or custom installs. */
+export function getEnvyHome(): string {
+  return process.env.ENVY_HOME ?? join(homedir(), '.envy')
+}
+
+export function getCredentialsPath(): string {
+  return join(getEnvyHome(), 'credentials.json')
+}
+
 export function getAuth(): Credentials | null {
-  if (!existsSync(CREDENTIALS_PATH)) return null
+  const path = getCredentialsPath()
+  if (!existsSync(path)) return null
 
   try {
-    const raw = readFileSync(CREDENTIALS_PATH, 'utf-8')
+    const raw = readFileSync(path, 'utf-8')
     return JSON.parse(raw) as Credentials
   } catch {
     return null
@@ -46,7 +54,8 @@ export function requireAuth(): Credentials {
 export async function saveAuth(
   credentials: Omit<Credentials, 'created_at'>
 ): Promise<void> {
-  const dir = dirname(CREDENTIALS_PATH)
+  const path = getCredentialsPath()
+  const dir = dirname(path)
 
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true })
@@ -57,14 +66,15 @@ export async function saveAuth(
     created_at: new Date().toISOString()
   }
 
-  writeFileSync(CREDENTIALS_PATH, JSON.stringify(payload, null, 2), {
+  writeFileSync(path, JSON.stringify(payload, null, 2), {
     encoding: 'utf-8',
     mode: 0o600
   })
 }
 
 export function clearAuth(): void {
-  if (existsSync(CREDENTIALS_PATH)) {
-    rmSync(CREDENTIALS_PATH)
+  const path = getCredentialsPath()
+  if (existsSync(path)) {
+    rmSync(path)
   }
 }

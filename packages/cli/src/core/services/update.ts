@@ -6,8 +6,12 @@ import pkg from '../../../package.json'
 import { EnvyError, EXIT } from '../errors'
 import { isNewerVersion } from '../semver'
 
-const CACHE_DIR = join(homedir(), '.envy')
-const CACHE_FILE = join(CACHE_DIR, 'update-check.json')
+function cacheDir(): string {
+  return process.env.ENVY_HOME ?? join(homedir(), '.envy')
+}
+function cacheFile(): string {
+  return join(cacheDir(), 'update-check.json')
+}
 const ONE_DAY = 1000 * 60 * 60 * 24
 const PACKAGE_NAME = 'useenvy'
 
@@ -42,7 +46,7 @@ type UpdateCache = {
 
 function readCache(): UpdateCache | null {
   try {
-    return JSON.parse(readFileSync(CACHE_FILE, 'utf-8')) as UpdateCache
+    return JSON.parse(readFileSync(cacheFile(), 'utf-8')) as UpdateCache
   } catch {
     return null
   }
@@ -50,8 +54,8 @@ function readCache(): UpdateCache | null {
 
 function writeCache(data: UpdateCache): void {
   try {
-    mkdirSync(CACHE_DIR, { recursive: true })
-    writeFileSync(CACHE_FILE, JSON.stringify(data))
+    mkdirSync(cacheDir(), { recursive: true })
+    writeFileSync(cacheFile(), JSON.stringify(data))
   } catch {
     // ignore
   }

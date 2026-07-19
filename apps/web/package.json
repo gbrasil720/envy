@@ -5,7 +5,8 @@
   "scripts": {
     "build": "vite build",
     "serve": "vite preview",
-    "dev": "vite dev"
+    "dev": "vite dev",
+    "test": "bun test"
   },
   "dependencies": {
     "@better-auth/infra": "catalog:",

@@ -22,6 +22,8 @@
     "build": "bun build ./src/index.ts --outfile dist/cli.js --target node --format esm",
     "dev": "bun run src/index.ts",
     "test": "bun test",
+    "test:unit": "bun test src/core --exclude '**/services/**'",
+    "test:services": "bun test src/core/services",
     "typecheck": "tsc --noEmit"
   },
   "engines": {

@@ -1,14 +1,25 @@
 import { describe, expect, test } from 'bun:test'
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
+  assertNotSymlink,
   collectMergesAndConflicts,
   isValidEnvFilename,
+  loadProjectConfig,
   maskSecret,
   parseEnvFile,
-  scanEnvFiles
+  scanEnvFiles,
+  validateTargetPath,
+  writeEnvFile
 } from './env-files'
+import { EnvyError } from './errors'
 
 describe('parseEnvFile', () => {
   const dir = join(tmpdir(), `envy-test-${Date.now()}`)
@@ -82,5 +93,110 @@ describe('isValidEnvFilename', () => {
     expect(isValidEnvFilename('.env.production')).toBe(true)
     expect(isValidEnvFilename('env')).toBe(false)
     expect(isValidEnvFilename('../.env')).toBe(false)
+  })
+})
+
+describe('writeEnvFile / parseEnvFile round-trip', () => {
+  test('writes quoted values and parses them back', () => {
+    const dir = join(tmpdir(), `envy-write-${Date.now()}`)
+    mkdirSync(dir, { recursive: true })
+    const path = join(dir, '.env.local')
+    writeEnvFile(path, {
+      SIMPLE: 'bar',
+      QUOTED: 'hello "world"',
+      MULTILINE: 'a\nb'
+    })
+    const content = readFileSync(path, 'utf-8')
+    expect(content).toContain('SIMPLE="bar"')
+    const parsed = parseEnvFile(path)
+    expect(parsed.SIMPLE).toBe('bar')
+    expect(parsed.QUOTED).toBe('hello "world"')
+    expect(parsed.MULTILINE).toBe('a\nb')
+    rmSync(dir, { recursive: true, force: true })
+  })
+})
+
+describe('validateTargetPath', () => {
+  test('allows files under cwd', () => {
+    const cwd = join(tmpdir(), `envy-path-${Date.now()}`)
+    mkdirSync(cwd, { recursive: true })
+    const path = validateTargetPath(cwd, '.env.local')
+    expect(path).toBe(join(cwd, '.env.local'))
+    rmSync(cwd, { recursive: true, force: true })
+  })
+
+  test('rejects path traversal', () => {
+    const cwd = join(tmpdir(), `envy-path-bad-${Date.now()}`)
+    mkdirSync(cwd, { recursive: true })
+    expect(() => validateTargetPath(cwd, '../.env')).toThrow(EnvyError)
+    try {
+      validateTargetPath(cwd, '../.env')
+    } catch (err) {
+      expect(err).toMatchObject({ code: 'INVALID_PATH' })
+    }
+    rmSync(cwd, { recursive: true, force: true })
+  })
+})
+
+describe('assertNotSymlink', () => {
+  test('allows regular files and missing paths', () => {
+    const dir = join(tmpdir(), `envy-sym-${Date.now()}`)
+    mkdirSync(dir, { recursive: true })
+    const file = join(dir, '.env')
+    writeFileSync(file, 'A=1')
+    expect(() => assertNotSymlink(file, '.env')).not.toThrow()
+    expect(() =>
+      assertNotSymlink(join(dir, 'missing'), 'missing')
+    ).not.toThrow()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  test('refuses symlinks', () => {
+    const dir = join(tmpdir(), `envy-sym-bad-${Date.now()}`)
+    mkdirSync(dir, { recursive: true })
+    const target = join(dir, 'real.env')
+    const link = join(dir, '.env')
+    writeFileSync(target, 'A=1')
+    symlinkSync(target, link)
+    expect(() => assertNotSymlink(link, '.env')).toThrow(EnvyError)
+    try {
+      assertNotSymlink(link, '.env')
+    } catch (err) {
+      expect(err).toMatchObject({ code: 'SYMLINK_REFUSED' })
+    }
+    rmSync(dir, { recursive: true, force: true })
+  })
+})
+
+describe('loadProjectConfig', () => {
+  test('loads .envy.json from cwd', () => {
+    const dir = join(tmpdir(), `envy-cfg-${Date.now()}`)
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(
+      join(dir, '.envy.json'),
+      JSON.stringify({
+        project_id: 'p1',
+        project_slug: 'demo',
+        environment: 'development'
+      })
+    )
+    expect(loadProjectConfig(dir)).toEqual({
+      project_id: 'p1',
+      project_slug: 'demo',
+      environment: 'development'
+    })
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  test('throws when config is missing', () => {
+    const dir = join(tmpdir(), `envy-cfg-missing-${Date.now()}`)
+    mkdirSync(dir, { recursive: true })
+    expect(() => loadProjectConfig(dir)).toThrow(EnvyError)
+    try {
+      loadProjectConfig(dir)
+    } catch (err) {
+      expect(err).toMatchObject({ code: 'NO_CONFIG' })
+    }
+    rmSync(dir, { recursive: true, force: true })
   })
 })
