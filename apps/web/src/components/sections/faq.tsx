@@ -1,5 +1,6 @@
 'use client'
 
+import { cn } from '@envy/ui/lib/utils'
 import { useState } from 'react'
 
 const FAQ_ITEMS = [
@@ -49,15 +50,29 @@ export function FAQ() {
                 <span className="pr-4 text-[15px] font-semibold text-text-primary">
                   {item.q}
                 </span>
-                <span className="shrink-0 font-mono text-[13px] text-text-muted">
-                  {isOpen ? '−' : '+'}
+                <span
+                  className={cn(
+                    'shrink-0 font-mono text-[13px] text-text-muted transition-transform duration-200 ease-snappy motion-reduce:transition-none',
+                    isOpen && 'rotate-45'
+                  )}
+                >
+                  +
                 </span>
               </button>
-              {isOpen ? (
-                <p className="max-w-[560px] px-6 pb-6 text-[14px] leading-[1.65] text-text-secondary sm:px-8">
-                  {item.a}
-                </p>
-              ) : null}
+              <div
+                className={cn(
+                  'grid transition-[grid-template-rows,opacity] duration-200 ease-snappy motion-reduce:transition-none',
+                  isOpen
+                    ? 'grid-rows-[1fr] opacity-100'
+                    : 'grid-rows-[0fr] opacity-0'
+                )}
+              >
+                <div className="overflow-hidden">
+                  <p className="max-w-[560px] px-6 pb-6 text-[14px] leading-[1.65] text-text-secondary sm:px-8">
+                    {item.a}
+                  </p>
+                </div>
+              </div>
             </div>
           )
         })}

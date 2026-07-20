@@ -205,6 +205,10 @@
   --shadow-md: var(--custom-shadow-md);
   --shadow-brand: var(--custom-shadow-brand);
 
+  --ease-snappy: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-smooth: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
   @keyframes spin-slow {
     from {
       transform: rotate(0deg);
@@ -400,19 +404,19 @@
 
 @layer components {
   .btn-primary {
-    @apply rounded bg-primary px-5 py-2.5 font-semibold text-primary-foreground transition-all hover:brightness-110 active:scale-95;
+    @apply rounded bg-primary px-5 py-2.5 font-semibold text-primary-foreground transition-[color,background-color,border-color,box-shadow,transform] duration-150 ease-snappy hover:brightness-110 active:scale-95;
   }
 
   .btn-ghost {
-    @apply rounded border border-ghost-border bg-transparent px-5 py-2.5 font-medium text-text-primary transition-all hover:bg-ghost-bg active:scale-95;
+    @apply rounded border border-ghost-border bg-transparent px-5 py-2.5 font-medium text-text-primary transition-[color,background-color,border-color,box-shadow,transform] duration-150 ease-snappy hover:bg-ghost-bg active:scale-95;
   }
 
   .btn-danger {
-    @apply rounded border border-danger bg-transparent px-5 py-2.5 font-medium text-danger transition-all hover:bg-danger/5 active:scale-95;
+    @apply rounded border border-danger bg-transparent px-5 py-2.5 font-medium text-danger transition-[color,background-color,border-color,box-shadow,transform] duration-150 ease-snappy hover:bg-danger/5 active:scale-95;
   }
 
   .input-base {
-    @apply rounded border border-border bg-surface-2 px-3.5 py-2.5 font-mono text-sm text-text-primary outline-none transition-all focus:border-border-focus focus:shadow-brand;
+    @apply rounded border border-border bg-surface-2 px-3.5 py-2.5 font-mono text-sm text-text-primary outline-none transition-[color,border-color,box-shadow] duration-150 ease-snappy focus:border-border-focus focus:shadow-brand;
   }
 
   .card-base {

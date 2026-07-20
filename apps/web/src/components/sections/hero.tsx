@@ -1,5 +1,6 @@
 'use client'
 
+import { cn } from '@envy/ui/lib/utils'
 import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { WAITLIST_MODE } from '@/lib/env'
@@ -115,8 +116,24 @@ export function Hero() {
             <span>
               <span className="text-text-muted">$ </span>npm i -g useenvy
             </span>
-            <span className="text-[11px] text-text-muted">
-              {copied ? 'copied ✓' : 'copy ⧉'}
+            <span className="relative inline-grid text-[11px] text-text-muted">
+              <span
+                className={cn(
+                  'col-start-1 row-start-1 transition-opacity duration-150 ease-snappy motion-reduce:transition-none',
+                  copied ? 'opacity-0' : 'opacity-100'
+                )}
+              >
+                copy ⧉
+              </span>
+              <span
+                className={cn(
+                  'col-start-1 row-start-1 transition-opacity duration-150 ease-snappy motion-reduce:transition-none',
+                  copied ? 'opacity-100' : 'opacity-0'
+                )}
+                aria-hidden={!copied}
+              >
+                copied ✓
+              </span>
             </span>
           </button>
           <div className="flex flex-col gap-2.5 sm:flex-row">

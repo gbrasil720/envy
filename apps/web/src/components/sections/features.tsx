@@ -1,4 +1,10 @@
+import { motion, useReducedMotion } from 'motion/react'
+
+const REVEAL_EASE = [0.23, 1, 0.32, 1] as const
+
 export function Features() {
+  const reduce = useReducedMotion()
+
   return (
     <section
       id="features"
@@ -15,7 +21,13 @@ export function Features() {
       </div>
 
       <div className="grid border-t border-border md:grid-cols-2">
-        <div className="border-b border-border px-6 py-9 sm:px-10 md:border-r">
+        <motion.div
+          initial={reduce ? false : { opacity: 0, y: 8 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.3, delay: 0 * 0.04, ease: REVEAL_EASE }}
+          className="border-b border-border px-6 py-9 sm:px-10 md:border-r"
+        >
           <h3 className="mb-1.5 text-[17px] font-semibold text-text-primary">
             Runtime injection
           </h3>
@@ -33,9 +45,15 @@ export function Features() {
             </div>
             <div className="text-brand">▶ starting server on :3000</div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="border-b border-border px-6 py-9 sm:px-10">
+        <motion.div
+          initial={reduce ? false : { opacity: 0, y: 8 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.3, delay: 1 * 0.04, ease: REVEAL_EASE }}
+          className="border-b border-border px-6 py-9 sm:px-10"
+        >
           <h3 className="mb-1.5 text-[17px] font-semibold text-text-primary">
             Environment diff
           </h3>
@@ -65,9 +83,15 @@ export function Features() {
               <span className="text-[10px] text-danger">MISSING</span>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="border-b border-border px-6 py-9 sm:px-10 md:border-r md:border-b-0">
+        <motion.div
+          initial={reduce ? false : { opacity: 0, y: 8 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.3, delay: 2 * 0.04, ease: REVEAL_EASE }}
+          className="border-b border-border px-6 py-9 sm:px-10 md:border-r md:border-b-0"
+        >
           <h3 className="mb-1.5 text-[17px] font-semibold text-text-primary">
             Audit log
           </h3>
@@ -98,9 +122,15 @@ export function Features() {
               <span className="text-text-muted">1d</span>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="px-6 py-9 sm:px-10">
+        <motion.div
+          initial={reduce ? false : { opacity: 0, y: 8 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.3, delay: 3 * 0.04, ease: REVEAL_EASE }}
+          className="px-6 py-9 sm:px-10"
+        >
           <h3 className="mb-1.5 text-[17px] font-semibold text-text-primary">
             Encryption we can&apos;t undo
           </h3>
@@ -117,7 +147,7 @@ export function Features() {
             <span className="flex-1 border-t border-dashed border-ghost-border" />
             <span className="text-brand">ciphertext</span>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   )

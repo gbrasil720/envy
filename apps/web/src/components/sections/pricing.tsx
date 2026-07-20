@@ -1,8 +1,11 @@
 'use client'
 
 import { Link } from '@tanstack/react-router'
+import { motion, useReducedMotion } from 'motion/react'
 import { WAITLIST_MODE } from '@/lib/env'
 import { scrollToSection } from '@/lib/smooth-scroll'
+
+const REVEAL_EASE = [0.23, 1, 0.32, 1] as const
 
 type Plan = {
   name: string
@@ -47,6 +50,8 @@ function ctaLabel(plan: Plan) {
 }
 
 export function Pricing() {
+  const reduce = useReducedMotion()
+
   return (
     <section
       id="pricing"
@@ -64,8 +69,12 @@ export function Pricing() {
 
       <div className="grid border-t border-border md:grid-cols-3">
         {PLANS.map((plan, i) => (
-          <div
+          <motion.div
             key={plan.name}
+            initial={reduce ? false : { opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 0.3, delay: i * 0.04, ease: REVEAL_EASE }}
             className={`px-6 py-9 sm:px-10 ${
               i < PLANS.length - 1
                 ? 'border-b border-border md:border-r md:border-b-0'
@@ -118,7 +127,7 @@ export function Pricing() {
                 {ctaLabel(plan)}
               </Link>
             )}
-          </div>
+          </motion.div>
         ))}
       </div>
       <div className="border-t border-border px-6 py-4 font-mono text-[11px] text-text-muted sm:px-10">
