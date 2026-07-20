@@ -6,11 +6,14 @@ type AuthShellProps = {
   children: ReactNode
   /** Mono hint in the header, e.g. "// auth" */
   headerHint?: string
+  /** Optional right-side header action (e.g. skip onboarding) */
+  headerAction?: ReactNode
 }
 
 export function AuthShell({
   children,
-  headerHint = '// auth'
+  headerHint = '// auth',
+  headerAction
 }: AuthShellProps) {
   return (
     <div className="flex min-h-svh flex-col bg-bg text-text-primary">
@@ -18,9 +21,11 @@ export function AuthShell({
         <Link to="/">
           <EnvyWordmark markSize={20} className="text-[15px]" />
         </Link>
-        <span className="font-mono text-[11px] text-text-muted">
-          {headerHint}
-        </span>
+        {headerAction ?? (
+          <span className="font-mono text-[11px] text-text-muted">
+            {headerHint}
+          </span>
+        )}
       </header>
 
       <main className="flex flex-1 items-center justify-center px-6 py-12">

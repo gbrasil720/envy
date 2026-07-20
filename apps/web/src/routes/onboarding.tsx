@@ -1,22 +1,11 @@
-import { Button } from '@envy/ui/components/button'
-import { Card, CardContent } from '@envy/ui/components/card'
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel
-} from '@envy/ui/components/field'
-import { InputGroup, InputGroupInput } from '@envy/ui/components/input-group'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+'use client'
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
-import { MeshBackground } from '@/components/mesh-background'
+import { AuthShell } from '@/components/auth/auth-shell'
 import { requireWebAuth } from '@/functions/require-web-auth'
 import { useTRPC } from '@/utils/trpc'
-
-const MotionCard = motion.create(Card)
 
 function toSlug(val: string) {
   return val
@@ -44,10 +33,13 @@ function OnboardingPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [step, setStep] = useState<1 | 2>(1)
-  const [orgName, setOrgName] = useState('')
+  const [projectName, setProjectName] = useState('')
   const [nameError, setNameError] = useState('')
+  const [createdSlug, setCreatedSlug] = useState('')
+  const [copied, setCopied] = useState(false)
 
   const meQueryOpts = trpc.me.get.queryOptions()
+  const meQuery = useQuery(meQueryOpts)
 
   const onboardingCompleteMutation = useMutation(
     trpc.me.completeOnboardingWithProject.mutationOptions({
@@ -61,10 +53,8 @@ function OnboardingPage() {
             : prev
         )
         queryClient.invalidateQueries(trpc.projects.list.queryOptions())
-        navigate({
-          to: '/dashboard',
-          search: { project: '', section: 'secrets' as const }
-        })
+        setCreatedSlug(data.project.slug)
+        setStep(2)
       }
     })
   )
@@ -91,11 +81,16 @@ function OnboardingPage() {
 
   const isPending =
     onboardingCompleteMutation.isPending || skipMutation.isPending
+  const slug = toSlug(projectName)
+  const canCreate = !!slug && !isPending
 
-  function handleContinue() {
-    const trimmed = orgName.trim()
+  const workspaceLabel =
+    meQuery.data?.name?.trim() || meQuery.data?.email?.split('@')[0] || 'you'
+
+  function handleCreate() {
+    const trimmed = projectName.trim()
     if (!trimmed) {
-      setNameError('Workspace name is required')
+      setNameError('Project name is required')
       return
     }
     if (trimmed.length > 64) {
@@ -107,188 +102,212 @@ function OnboardingPage() {
       return
     }
     setNameError('')
-    setStep(2)
-  }
-
-  function handleCreate() {
-    onboardingCompleteMutation.mutate({ name: orgName.trim() })
+    onboardingCompleteMutation.mutate({ name: trimmed })
   }
 
   function handleSkip() {
     skipMutation.mutate()
   }
 
-  const slugPreview = orgName ? toSlug(orgName) : ''
+  function goToDashboard() {
+    navigate({
+      to: '/dashboard',
+      search: { project: '', section: 'secrets' as const }
+    })
+  }
+
+  async function copyCommands() {
+    try {
+      await navigator.clipboard.writeText(
+        'npm i -g useenvy\nenvy login\nenvy push'
+      )
+    } catch {
+      // ignore
+    }
+    setCopied(true)
+    window.setTimeout(() => setCopied(false), 1600)
+  }
+
+  const stepMeta = [
+    { label: '01 PROJECT', active: step === 1, done: step > 1 },
+    { label: '02 SYNC', active: step === 2, done: false }
+  ]
 
   return (
-    <MeshBackground>
-      <div className="relative z-10 w-full max-w-[480px] px-6 md:px-0">
-        <div className="flex items-center justify-center gap-2 mb-8">
-          {([1, 2] as const).map((s) => (
+    <AuthShell
+      headerAction={
+        step === 1 ? (
+          <button
+            type="button"
+            onClick={handleSkip}
+            disabled={isPending}
+            className="cursor-pointer font-mono text-[11px] text-text-muted transition-colors hover:text-text-primary disabled:opacity-50"
+          >
+            {skipMutation.isPending ? 'skipping…' : 'skip onboarding →'}
+          </button>
+        ) : (
+          <span className="font-mono text-[11px] text-text-muted">
+            {'// onboarding'}
+          </span>
+        )
+      }
+    >
+      <div className="w-full max-w-[460px]">
+        <div className="mb-5 flex items-center gap-2 font-mono text-[10px] tracking-[0.08em]">
+          {stepMeta.map((s, i) => (
             <div
-              key={s}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                s === step
-                  ? 'w-8 bg-brand'
-                  : s < step
-                    ? 'w-4 bg-brand/40'
-                    : 'w-4 bg-surface-2'
-              }`}
-            />
+              key={s.label}
+              className="flex min-w-0 flex-1 items-center gap-2"
+            >
+              <span
+                className={
+                  s.active
+                    ? 'text-text-primary'
+                    : s.done
+                      ? 'text-brand'
+                      : 'text-text-muted'
+                }
+              >
+                {s.label}
+              </span>
+              {i < stepMeta.length - 1 ? (
+                <span className="h-px flex-1 bg-ghost-border" />
+              ) : null}
+            </div>
           ))}
         </div>
 
-        <AnimatePresence mode="wait">
-          {step === 1 && (
-            <MotionCard
-              key="step-1"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.2 }}
-              className="bg-surface border border-border rounded-[20px] shadow-[0_8px_40px_rgba(0,0,0,0.6)] overflow-hidden py-0"
-            >
-              <CardContent className="p-10 md:p-12">
-                <div className="mb-8">
-                  <p className="text-[11px] font-medium uppercase tracking-wider text-text-muted mb-1">
-                    Step 1 of 2
-                  </p>
-                  <h1 className="font-display font-semibold text-[26px] md:text-[28px] text-text-primary mb-2 tracking-tight leading-tight">
-                    Name your workspace
-                  </h1>
-                  <p className="font-sans text-[15px] text-text-secondary leading-relaxed">
-                    Your workspace is where your projects and secrets live.
-                  </p>
+        {step === 1 ? (
+          <div className="rounded-md border border-ghost-border bg-surface">
+            <div className="p-9">
+              <h1 className="mb-1.5 text-[22px] font-bold tracking-[-0.015em] text-text-primary">
+                Create your first project
+                <span className="text-brand">.</span>
+              </h1>
+              <p className="mb-5 text-[13px] leading-[1.6] text-text-secondary">
+                Your personal workspace was created with your account. Every
+                project gets three environments out of the box.
+              </p>
+
+              <div className="mb-5 rounded border border-ghost-border bg-surface-2 px-[18px] py-4 font-mono text-[12px] leading-[2] text-text-primary">
+                <div>
+                  <span className="text-text-muted">workspace&nbsp;&nbsp;</span>
+                  {workspaceLabel}{' '}
+                  <span className="text-text-muted">
+                    (personal) · created automatically
+                  </span>
                 </div>
-
-                <FieldGroup className="py-2">
-                  <Field data-invalid={nameError ? true : undefined}>
-                    <FieldLabel htmlFor="org-name">Workspace name</FieldLabel>
-                    <InputGroup>
-                      <InputGroupInput
-                        id="org-name"
-                        value={orgName}
-                        onChange={(e) => {
-                          setOrgName(e.target.value)
-                          if (nameError) setNameError('')
-                        }}
-                        placeholder="Acme Inc"
-                        autoFocus
-                        aria-invalid={!!nameError}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleContinue()
-                        }}
-                      />
-                    </InputGroup>
-                    {slugPreview ? (
-                      <FieldDescription>
-                        Slug:{' '}
-                        <span className="font-mono text-foreground">
-                          {slugPreview}
-                        </span>
-                      </FieldDescription>
-                    ) : (
-                      <FieldDescription>
-                        A URL-friendly slug will be generated from the name.
-                      </FieldDescription>
-                    )}
-                    {nameError ? <FieldError>{nameError}</FieldError> : null}
-                  </Field>
-                </FieldGroup>
-
-                <div className="mt-6 flex flex-col gap-3">
-                  <Button
-                    className="w-full h-11"
-                    onClick={handleContinue}
-                    disabled={!orgName.trim()}
-                  >
-                    Next Step
-                  </Button>
-                  <button
-                    type="button"
-                    onClick={handleSkip}
-                    disabled={isPending}
-                    className="text-[13px] text-text-muted hover:text-text-secondary transition-colors text-center py-1"
-                  >
-                    {skipMutation.isPending ? 'Skipping…' : 'Skip onboarding'}
-                  </button>
+                <div>
+                  <span className="text-text-muted">
+                    envs&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                  </span>
+                  development · staging · production
                 </div>
-              </CardContent>
-            </MotionCard>
-          )}
+              </div>
 
-          {step === 2 && (
-            <MotionCard
-              key="step-2"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.2 }}
-              className="bg-surface border border-border rounded-[20px] shadow-[0_8px_40px_rgba(0,0,0,0.6)] overflow-hidden py-0"
-            >
-              <CardContent className="p-10 md:p-12">
-                <div className="mb-8">
-                  <p className="text-[11px] font-medium uppercase tracking-wider text-text-muted mb-1">
-                    Step 2 of 2
-                  </p>
-                  <h1 className="font-display font-semibold text-[26px] md:text-[28px] text-text-primary mb-2 tracking-tight leading-tight">
-                    Create your first project
-                  </h1>
-                  <p className="font-sans text-[15px] text-text-secondary leading-relaxed">
-                    Your workspace and first project will be created together.
-                  </p>
+              <label
+                htmlFor="project-name"
+                className="mb-1.5 block font-mono text-[10px] tracking-[0.08em] text-text-muted uppercase"
+              >
+                PROJECT NAME
+              </label>
+              <input
+                id="project-name"
+                value={projectName}
+                onChange={(e) => {
+                  setProjectName(e.target.value)
+                  if (nameError) setNameError('')
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCreate()
+                }}
+                placeholder="my-saas"
+                // biome-ignore lint/a11y/noAutofocus: first field of a single-step form
+                autoFocus
+                disabled={isPending}
+                aria-invalid={!!nameError}
+                className="w-full rounded border border-input bg-surface-2 px-3 py-3 font-mono text-[14px] text-text-primary outline-none transition-colors placeholder:text-text-muted focus:border-border-focus disabled:opacity-60"
+              />
+              {slug ? (
+                <p className="mt-2 font-mono text-[11px] text-text-muted">
+                  slug: <span className="text-text-secondary">{slug}</span>
+                </p>
+              ) : null}
+              {nameError ? (
+                <p className="mt-2 text-[12px] text-danger">{nameError}</p>
+              ) : null}
+              {onboardingCompleteMutation.isError ? (
+                <p className="mt-2 text-[12px] text-danger">
+                  {onboardingCompleteMutation.error.message}
+                </p>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={handleCreate}
+                disabled={!canCreate}
+                className={`mt-5 w-full rounded py-3.5 text-[14px] font-semibold transition-colors ${
+                  canCreate
+                    ? 'cursor-pointer bg-primary text-primary-foreground hover:bg-white'
+                    : 'cursor-not-allowed bg-primary/15 text-text-muted'
+                }`}
+              >
+                {onboardingCompleteMutation.isPending
+                  ? 'Creating…'
+                  : 'Create project'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-md border border-brand/30 bg-surface">
+            <div className="p-9">
+              <div className="mb-3.5 font-mono text-[12px] text-brand">
+                ✓ {createdSlug || slug} created
+              </div>
+              <h1 className="mb-1.5 text-[22px] font-bold tracking-[-0.015em] text-text-primary">
+                Now sync your first secret
+                <span className="text-brand">.</span>
+              </h1>
+              <p className="mb-5 text-[13px] leading-[1.6] text-text-secondary">
+                From the repo that owns your .env — three commands and your team
+                is synced.
+              </p>
+
+              <div className="mb-6 rounded border border-ghost-border bg-surface-2 px-5 py-[18px] font-mono text-[13px] leading-[2.3] text-text-primary">
+                <div>
+                  <span className="text-text-muted">$ </span>npm i -g useenvy
                 </div>
-
-                <div className="rounded-xl border border-border bg-surface-2 px-5 py-4 mb-6">
-                  <p className="text-[11px] font-medium uppercase tracking-wider text-text-muted mb-1">
-                    Workspace
-                  </p>
-                  <p className="font-display font-semibold text-[18px] text-text-primary">
-                    {orgName}
-                  </p>
-                  <p className="font-mono text-[12px] text-text-muted mt-0.5">
-                    {slugPreview}
-                  </p>
+                <div>
+                  <span className="text-text-muted">$ </span>envy login
                 </div>
-
-                {onboardingCompleteMutation.isError && (
-                  <p className="text-[13px] text-danger mb-4">
-                    {onboardingCompleteMutation.error.message}
-                  </p>
-                )}
-
-                <div className="flex flex-col gap-3">
-                  <Button
-                    className="w-full h-11"
-                    onClick={handleCreate}
-                    disabled={isPending}
-                  >
-                    {onboardingCompleteMutation.isPending
-                      ? 'Creating…'
-                      : 'Create project'}
-                  </Button>
-                  <button
-                    type="button"
-                    onClick={() => setStep(1)}
-                    disabled={isPending}
-                    className="text-[13px] text-text-muted hover:text-text-secondary transition-colors text-center py-1"
-                  >
-                    ← Edit workspace name
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSkip}
-                    disabled={isPending}
-                    className="text-[13px] text-text-muted hover:text-text-secondary transition-colors text-center py-1"
-                  >
-                    {skipMutation.isPending ? 'Skipping…' : 'Skip onboarding'}
-                  </button>
+                <div>
+                  <span className="text-text-muted">$ </span>envy push{' '}
+                  <span className="text-text-muted">
+                    ← uploads your .env, encrypted
+                  </span>
                 </div>
-              </CardContent>
-            </MotionCard>
-          )}
-        </AnimatePresence>
+              </div>
+
+              <div className="flex flex-col gap-2.5 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={copyCommands}
+                  className="cursor-pointer rounded border border-ghost-border px-4 py-3 font-mono text-[12px] text-text-secondary transition-colors hover:border-border-focus hover:text-text-primary"
+                >
+                  {copied ? 'copied ✓' : 'copy commands ⧉'}
+                </button>
+                <button
+                  type="button"
+                  onClick={goToDashboard}
+                  className="flex-1 cursor-pointer rounded bg-primary py-3 text-[14px] font-semibold text-primary-foreground transition-colors hover:bg-white"
+                >
+                  Go to dashboard →
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </MeshBackground>
+    </AuthShell>
   )
 }
