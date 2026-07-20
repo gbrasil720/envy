@@ -3,6 +3,7 @@ import { protectedProcedure, router } from '..'
 import {
   deleteSecret,
   diffSecrets,
+  listSecretKeys,
   pushSecrets,
   revealSecrets,
   updateSecret
@@ -68,5 +69,11 @@ export const secretsRouter = router({
     )
     .mutation(async ({ ctx, input }) =>
       deleteSecret(ctx.db, ctx.session.user.id, input)
+    ),
+
+  listKeys: protectedProcedure
+    .input(z.object({ projectId: z.string(), environment: envName }))
+    .query(async ({ ctx, input }) =>
+      listSecretKeys(ctx.db, ctx.session.user.id, input)
     )
 })

@@ -20,6 +20,7 @@ import {
 import {
   deleteSecret,
   diffSecrets,
+  listSecretKeys,
   pushSecrets,
   revealSecrets,
   updateSecret
@@ -333,5 +334,43 @@ describe('secrets-vault', () => {
       environment: 'production'
     })
     expect(revealed.secrets).toEqual({})
+  })
+
+  test('listSecretKeys returns keys without values', async () => {
+    const owner = await createTestUser()
+    const proj = await createTestProject(owner.id, 'List Keys Project')
+    const db = getTestDb()
+
+    await pushSecrets(db, owner.id, {
+      projectId: proj.id,
+      environment: 'development',
+      secrets: { KEY_A: 'val1', KEY_B: 'val2', KEY_C: 'val3' }
+    })
+
+    const result = await listSecretKeys(db, owner.id, {
+      projectId: proj.id,
+      environment: 'development'
+    })
+    expect(result.keys.sort()).toEqual(['KEY_A', 'KEY_B', 'KEY_C'])
+  })
+
+  test('listSecretKeys returns empty array for missing environment', async () => {
+    const owner = await createTestUser()
+    const proj = await createTestProject(owner.id, 'No Env Keys')
+    const result = await listSecretKeys(getTestDb(), owner.id, {
+      projectId: proj.id,
+      environment: 'nonexistent'
+    })
+    expect(result.keys).toEqual([])
+  })
+
+  test('listSecretKeys requires member access', async () => {
+    const owner = await createTestUser()
+    const proj = await createTestProject(owner.id, 'Acl Keys')
+    const result = await listSecretKeys(getTestDb(), owner.id, {
+      projectId: proj.id,
+      environment: 'development'
+    })
+    expect(result.keys).toEqual([])
   })
 })

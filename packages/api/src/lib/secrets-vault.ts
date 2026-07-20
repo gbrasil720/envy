@@ -377,3 +377,32 @@ export async function deleteSecret(
 
   return { success: true }
 }
+
+export async function listSecretKeys(
+  db: Db,
+  userId: string,
+  input: { projectId: string; environment: string }
+): Promise<{ keys: string[] }> {
+  await requireProjectAccess(db, input.projectId, userId, 'member')
+
+  const environmentId = await findEnvironmentId(
+    db,
+    input.projectId,
+    input.environment
+  )
+  if (!environmentId) {
+    return { keys: [] }
+  }
+
+  const rows = await db
+    .select({ key: secret.key })
+    .from(secret)
+    .where(
+      and(
+        eq(secret.projectId, input.projectId),
+        eq(secret.environmentId, environmentId)
+      )
+    )
+
+  return { keys: rows.map((r) => r.key) }
+}
