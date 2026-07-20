@@ -30,7 +30,8 @@ bunx biome check .     # Lint/format check without writing (CI)
 bun run test           # Unit + integration tests (turbo); API needs Postgres
 bun run test:ci        # biome check + types + tests (local CI gate)
 bun test               # Or run bun:test from a package directory
-# See TESTING.md for harness, ENVY_HOME, and what to cover
+# Agent testing policy (where/how/what to test): docs/agent-testing.md
+# Quick run commands: TESTING.md
 
 # Database (Drizzle)
 bun run db:push        # Push schema changes (no migration files)
