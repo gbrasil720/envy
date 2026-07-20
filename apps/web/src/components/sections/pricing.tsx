@@ -1,370 +1,128 @@
-import { Button } from '@envy/ui/components/button'
-import { Card, CardContent, CardFooter } from '@envy/ui/components/card'
-import { Tick01Icon } from '@hugeicons/core-free-icons'
-import { HugeiconsIcon } from '@hugeicons/react'
+'use client'
+
 import { Link } from '@tanstack/react-router'
-import { motion, useInView } from 'motion/react'
-import { useRef, useState } from 'react'
 import { WAITLIST_MODE } from '@/lib/env'
 import { scrollToSection } from '@/lib/smooth-scroll'
 
-const MotionCard = motion.create(Card)
+type Plan = {
+  name: string
+  price: string
+  desc: string
+  tag?: string
+  features: string
+  popular?: boolean
+}
 
-const PLANS = [
+const PLANS: Plan[] = [
   {
-    name: 'Free',
+    name: 'FREE',
     price: '$0',
-    desc: '1 project · 50 secrets',
-    features: [
-      '1 project',
-      '50 secrets',
-      '1 user',
-      'Full CLI access',
-      'Import/Export .env'
-    ]
+    desc: 'For the side project',
+    features:
+      '1 project\n50 secrets\n1 user\nfull CLI access\nimport / export .env'
   },
   {
-    name: 'Pro',
+    name: 'PRO',
     price: '$9',
-    desc: 'Unlimited projects · 1 user',
-    features: [
-      'Unlimited projects',
-      'Unlimited secrets',
-      '1 user',
-      '90-day secret history',
-      'Priority support',
-      'Everything in Free'
-    ]
+    desc: 'For the one shipping every week',
+    tag: 'MOST POPULAR',
+    popular: true,
+    features:
+      'unlimited projects\nunlimited secrets\n90-day history\npriority support\neverything in free'
   },
   {
-    name: 'Team',
+    name: 'TEAM',
     price: '$19',
     desc: 'Up to 5 members',
-    features: [
-      'Unlimited projects',
-      'Up to 5 members',
-      'Full audit log',
-      'Environment diff',
-      'Member permissions',
-      'Everything in Pro'
-    ]
+    features:
+      'up to 5 members\nfull audit log\nenvironment diff\nmember permissions\neverything in pro'
   }
 ]
 
-function PricingWaitlist({ isInView }: { isInView: boolean }) {
-  const [selected, setSelected] = useState(0)
-  const plan = PLANS[selected]
-
-  return (
-    <div className="max-w-2xl mx-auto">
-      <MotionCard
-        initial={{ opacity: 0, y: 30 }}
-        animate={isInView ? { opacity: 1, y: 0 } : {}}
-        transition={{
-          delay: 0.2,
-          duration: 0.5,
-          ease: [0.25, 0.46, 0.45, 0.94]
-        }}
-        className="border border-brand/40 bg-surface shadow-brand rounded-3xl gap-0 py-0"
-      >
-        <CardContent className="p-8 md:p-12 flex-1">
-          <div className="text-center mb-8">
-            <span className="inline-block px-3 py-1 bg-brand/20 text-brand text-[10px] font-bold uppercase rounded-full tracking-widest">
-              Early Access
-            </span>
-            <h3 className="text-2xl md:text-3xl font-semibold mt-4 mb-3">
-              Pricing that grows with your team
-            </h3>
-            <p className="text-text-secondary max-w-md mx-auto">
-              Start free and pay only when you need more. No credit card
-              required, no surprise bills.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3 mb-8">
-            {PLANS.map((p, i) => (
-              <button
-                key={p.name}
-                type="button"
-                onClick={() => setSelected(i)}
-                className={`p-4 rounded-2xl border text-center transition-all cursor-pointer ${
-                  selected === i
-                    ? 'border-brand/50 bg-brand/5 shadow-sm shadow-brand/10'
-                    : 'border-border bg-bg hover:border-border/80 hover:bg-surface'
-                }`}
-              >
-                <div className="text-sm font-bold text-text-primary">
-                  {p.name}
-                </div>
-                <div className="text-2xl font-bold mt-1">
-                  {p.price}
-                  <span className="text-xs text-text-muted font-normal">
-                    /mo
-                  </span>
-                </div>
-                <div className="text-xs text-text-muted mt-1 leading-tight">
-                  {p.desc}
-                </div>
-              </button>
-            ))}
-          </div>
-
-          <ul className="space-y-3">
-            {plan.features.map((feat) => (
-              <li
-                key={feat}
-                className="flex items-center gap-3 text-sm text-text-secondary"
-              >
-                <HugeiconsIcon
-                  icon={Tick01Icon}
-                  size={16}
-                  className="text-brand shrink-0"
-                />
-                {feat}
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-
-        <CardFooter className="border-t border-border px-8 pb-8 md:px-12 md:pb-12 pt-6 flex flex-col gap-3">
-          <p className="text-center text-sm text-text-muted">
-            Join the waitlist to lock in early-access pricing.
-          </p>
-          <Button
-            render={
-              <a
-                href="#waitlist"
-                onClick={(e) => {
-                  e.preventDefault()
-                  scrollToSection('waitlist')
-                }}
-              />
-            }
-            className="bg-brand text-bg font-semibold rounded-lg px-5 py-2.5 transition-all hover:brightness-110 active:scale-95 w-full text-center"
-          >
-            Join the waitlist
-          </Button>
-        </CardFooter>
-      </MotionCard>
-    </div>
-  )
-}
-
-function PricingFull({ isInView }: { isInView: boolean }) {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-      <article aria-labelledby="plan-free" className="contents">
-        <MotionCard
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{
-            delay: 0.2,
-            duration: 0.45,
-            ease: [0.25, 0.46, 0.45, 0.94]
-          }}
-          className="bg-surface border border-border rounded-3xl transition-all duration-300 hover:border-brand/30 hover:shadow-brand relative ring-0 gap-0 py-0"
-        >
-          <CardContent className="p-8 md:p-10 flex-1">
-            <h3 id="plan-free" className="text-lg font-semibold mb-2">
-              Free
-            </h3>
-            <div className="flex items-baseline gap-1 mb-6">
-              <span className="text-4xl font-bold">$0</span>
-              <span className="text-text-muted">/mo</span>
-            </div>
-            <ul className="space-y-4">
-              {[
-                '1 project',
-                '50 secrets',
-                '1 user',
-                'Full CLI access',
-                'Import/Export .env'
-              ].map((feat) => (
-                <li
-                  key={feat}
-                  className="flex items-center gap-3 text-sm text-text-secondary"
-                >
-                  <HugeiconsIcon
-                    icon={Tick01Icon}
-                    size={16}
-                    className="text-brand"
-                  />
-                  {feat}
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-          <CardFooter className="border-0 px-8 pb-8 md:px-10 md:pb-10 pt-0">
-            <Button
-              render={<Link to="/login" />}
-              className="bg-transparent border border-ghost-border text-text-primary font-medium rounded-lg px-5 py-2.5 transition-all hover:border-border hover:bg-ghost-bg hover:text-bg active:scale-95 w-full"
-            >
-              Start for free
-            </Button>
-          </CardFooter>
-        </MotionCard>
-      </article>
-
-      <article aria-labelledby="plan-pro" className="contents">
-        <MotionCard
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{
-            delay: 0.32,
-            duration: 0.45,
-            ease: [0.25, 0.46, 0.45, 0.94]
-          }}
-          className="border rounded-3xl transition-all duration-300 hover:border-brand/30 hover:shadow-brand relative border-brand/40 bg-surface shadow-brand ring-0 gap-0 py-0"
-        >
-          <div className="absolute top-4 right-4">
-            <span className="px-2 py-1 bg-brand/20 text-brand text-[10px] font-bold uppercase rounded">
-              Most Popular
-            </span>
-          </div>
-          <CardContent className="p-8 md:p-10 pt-12 md:pt-12 flex-1">
-            <h3 id="plan-pro" className="text-lg font-semibold mb-2">
-              Pro
-            </h3>
-            <div className="flex items-baseline gap-1 mb-6">
-              <span className="text-4xl font-bold">$9</span>
-              <span className="text-text-muted">/mo</span>
-            </div>
-            <ul className="space-y-4">
-              {[
-                'Unlimited projects',
-                'Unlimited secrets',
-                '1 user',
-                'Everything in Free',
-                '90-day history',
-                'Priority support'
-              ].map((feat) => (
-                <li
-                  key={feat}
-                  className="flex items-center gap-3 text-sm text-text-secondary"
-                >
-                  <HugeiconsIcon
-                    icon={Tick01Icon}
-                    size={16}
-                    className="text-brand"
-                  />
-                  {feat}
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-          <CardFooter className="border-0 px-8 pb-8 md:px-10 md:pb-10 pt-0">
-            <Button
-              render={<Link to="/login" />}
-              className="bg-brand text-bg font-semibold rounded-lg px-5 py-2.5 transition-all hover:brightness-110 active:scale-95 w-full"
-            >
-              Start Pro trial
-            </Button>
-          </CardFooter>
-        </MotionCard>
-      </article>
-
-      <article aria-labelledby="plan-team" className="contents">
-        <MotionCard
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{
-            delay: 0.44,
-            duration: 0.45,
-            ease: [0.25, 0.46, 0.45, 0.94]
-          }}
-          className="bg-surface border border-border rounded-3xl transition-all duration-300 hover:border-brand/30 hover:shadow-brand relative ring-0 gap-0 py-0"
-        >
-          <CardContent className="p-8 md:p-10 flex-1">
-            <h3 id="plan-team" className="text-lg font-semibold mb-2">
-              Team
-            </h3>
-            <div className="flex items-baseline gap-1 mb-6">
-              <span className="text-4xl font-bold">$19</span>
-              <span className="text-text-muted">/mo</span>
-            </div>
-            <ul className="space-y-4">
-              {[
-                'Unlimited projects',
-                'Up to 5 members',
-                'Full audit log',
-                'Environment diff',
-                'Member permissions',
-                'Everything in Pro'
-              ].map((feat) => (
-                <li
-                  key={feat}
-                  className="flex items-center gap-3 text-sm text-text-secondary"
-                >
-                  <HugeiconsIcon
-                    icon={Tick01Icon}
-                    size={16}
-                    className="text-brand"
-                  />
-                  {feat}
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-          <CardFooter className="border-0 px-8 pb-8 md:px-10 md:pb-10 pt-0">
-            <Button
-              render={<Link to="/login" />}
-              className="bg-transparent border border-ghost-border text-text-primary font-medium rounded-lg px-5 py-2.5 transition-all hover:border-border hover:bg-ghost-bg hover:text-bg active:scale-95 w-full"
-            >
-              Start Team trial
-            </Button>
-          </CardFooter>
-        </MotionCard>
-      </article>
-    </div>
-  )
+function ctaLabel(plan: Plan) {
+  if (WAITLIST_MODE) return 'Join waitlist'
+  if (plan.name === 'FREE') return 'Start free'
+  if (plan.name === 'PRO') return 'Start Pro trial'
+  return 'Start Team trial'
 }
 
 export function Pricing() {
-  const sectionRef = useRef<HTMLElement>(null)
-  const isInView = useInView(sectionRef, { once: true, margin: '-80px' })
-
   return (
     <section
-      ref={sectionRef}
       id="pricing"
-      className="py-14 sm:py-20 md:py-28 px-4 sm:px-6 bg-bg scroll-mt-20"
+      className="mx-auto max-w-7xl scroll-mt-16 border-x border-b border-border"
     >
-      <div className="max-w-7xl w-full min-w-0 mx-auto">
-        <div className="text-center mb-16">
-          <motion.h2
-            initial={{ opacity: 0, y: 24 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5 }}
-            className="text-3xl md:text-5xl font-display font-semibold mb-4"
-          >
-            Simple pricing. Scales with your team.
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ delay: 0.15, duration: 0.5 }}
-            className="text-text-secondary"
-          >
-            {WAITLIST_MODE
-              ? 'Plans are ready. Doors open soon.'
-              : 'Start free today. Pay only when you need more.'}
-          </motion.p>
-        </div>
+      <div className="px-6 pt-14 pb-10 sm:px-10 sm:pt-16 sm:pb-12">
+        <p className="mb-4 font-mono text-[11px] text-text-muted">
+          03 / PRICING
+        </p>
+        <h2 className="text-[28px] leading-[1.08] font-bold tracking-[-0.02em] text-text-primary sm:text-[36px]">
+          Free until it isn&apos;t a side project
+          <span className="text-brand">.</span>
+        </h2>
+      </div>
 
-        {WAITLIST_MODE ? (
-          <PricingWaitlist isInView={isInView} />
-        ) : (
-          <PricingFull isInView={isInView} />
-        )}
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : {}}
-          transition={{ delay: 0.6, duration: 0.5 }}
-          className="text-center mt-12 text-text-muted text-sm"
-        >
-          No credit card required. Cancel anytime.
-        </motion.p>
+      <div className="grid border-t border-border md:grid-cols-3">
+        {PLANS.map((plan, i) => (
+          <div
+            key={plan.name}
+            className={`px-6 py-9 sm:px-10 ${
+              i < PLANS.length - 1
+                ? 'border-b border-border md:border-r md:border-b-0'
+                : ''
+            } ${plan.popular ? 'bg-ghost-bg' : ''}`}
+          >
+            <div className="mb-1 flex items-baseline justify-between">
+              <span className="font-mono text-[12px] tracking-[0.08em] text-text-secondary">
+                {plan.name}
+              </span>
+              {plan.tag ? (
+                <span className="font-mono text-[10px] text-brand">
+                  {plan.tag}
+                </span>
+              ) : null}
+            </div>
+            <div className="mb-0.5 text-[40px] font-bold tracking-[-0.02em] text-text-primary">
+              {plan.price}
+              <span className="text-[14px] font-normal text-text-muted">
+                /mo
+              </span>
+            </div>
+            <div className="mb-6 text-[12.5px] text-text-secondary">
+              {plan.desc}
+            </div>
+            <div className="mb-7 whitespace-pre-line font-mono text-[12px] leading-[2.15] text-text-secondary">
+              {plan.features}
+            </div>
+            {WAITLIST_MODE ? (
+              <button
+                type="button"
+                onClick={() => scrollToSection('waitlist')}
+                className={`block w-full cursor-pointer rounded py-3 text-center text-[13.5px] font-semibold transition-colors ${
+                  plan.popular
+                    ? 'bg-primary text-primary-foreground hover:bg-white'
+                    : 'border border-ghost-border text-text-primary hover:border-border-focus'
+                }`}
+              >
+                {ctaLabel(plan)}
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                className={`block rounded py-3 text-center text-[13.5px] font-semibold transition-colors ${
+                  plan.popular
+                    ? 'bg-primary text-primary-foreground hover:bg-white'
+                    : 'border border-ghost-border text-text-primary hover:border-border-focus'
+                }`}
+              >
+                {ctaLabel(plan)}
+              </Link>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="border-t border-border px-6 py-4 font-mono text-[11px] text-text-muted sm:px-10">
+        no credit card required · cancel anytime · open-source CLI
       </div>
     </section>
   )

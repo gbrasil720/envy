@@ -1,95 +1,66 @@
-import { Card, CardContent } from '@envy/ui/components/card'
-import { motion, useInView } from 'motion/react'
-import { useRef } from 'react'
-import { FAQItem } from '../faq-item'
+'use client'
 
-const MotionCard = motion.create(Card)
+import { useState } from 'react'
 
-const faqs = [
+const FAQ_ITEMS = [
   {
-    question: 'Can you read my secrets?',
-    answer:
-      "No. Your secrets are encrypted with AES-256-GCM before they leave your machine. We never see them in plain text — and neither does anyone who shouldn't."
+    q: 'Can you read my secrets?',
+    a: 'No. Values are encrypted with AES-256-GCM using a per-project master key that is itself encrypted server-side. Decryption only happens when you pull — we store ciphertext.'
   },
   {
-    question: 'What happens if Envy goes down?',
-    answer:
-      'The CLI caches secrets locally in an encrypted vault. If our servers go down, your local and production environments keep running on cached values — no interruption to your work.'
+    q: 'What happens if I stop paying?',
+    a: 'Your secrets stay readable and exportable. Paid limits stop applying to new writes, never to reads. No hostage data.'
   },
   {
-    question: 'How is Envy different from Doppler or Infisical?',
-    answer:
-      "Doppler charges $21 per user, per month. Envy's Team plan is $19 flat for up to 5 people. We're also CLI-first — no complex dashboards, no YAML to wrestle with. Three commands and you're syncing."
+    q: 'Does it work in CI?',
+    a: 'Yes — create a token, set it as ENVY_TOKEN, and envy pull / envy run work in any pipeline.'
   },
   {
-    question: 'Can I self-host Envy?',
-    answer:
-      "Not yet — we're focused on making the cloud version excellent first. A self-hosted option is on the roadmap. If that's a hard requirement for you, reach out and we'll keep you posted."
-  },
-  {
-    question: 'What happens when my team grows beyond 5 people?',
-    answer:
-      "Our Team plan covers up to 5 members. Growing past that? We have an Enterprise plan with custom pricing, SSO, and granular access controls. Reach out and we'll get you sorted."
+    q: 'Why not just use 1Password or Vault?',
+    a: "Password managers aren't built for .env workflows; Vault is built for platform teams. envy is the middle: one CLI, per-environment sync, audit log — running in two minutes."
   }
-]
+] as const
 
 export function FAQ() {
-  const sectionRef = useRef<HTMLElement>(null)
-  const isInView = useInView(sectionRef, { once: true, margin: '-80px' })
+  const [open, setOpen] = useState<number | null>(null)
 
   return (
     <section
-      ref={sectionRef}
-      className="min-w-0 py-14 sm:py-20 md:py-28 px-4 sm:px-6 bg-bg"
+      id="faq"
+      className="mx-auto grid max-w-7xl scroll-mt-16 border-x border-b border-border lg:grid-cols-[5fr_7fr]"
     >
-      <div className="max-w-4xl w-full min-w-0 mx-auto">
-        <MotionCard
-          initial={{ opacity: 0, y: 40 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="min-w-0 bg-surface border border-border rounded-[2rem] shadow-2xl relative overflow-hidden ring-0 gap-0 py-0"
-        >
-          <div className="absolute top-0 right-0 w-1/2 h-full bg-linear-to-l from-brand/5 to-transparent pointer-events-none" />
-          <div className="absolute top-0 left-0 w-full h-full grid-bg opacity-[0.02] pointer-events-none" />
-
-          <CardContent className="min-w-0 p-6 sm:p-10 md:p-16 relative z-10">
-            <div className="text-center mb-16">
-              <motion.h2
-                initial={{ opacity: 0, y: 24 }}
-                animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: 0.15, duration: 0.5 }}
-                className="text-3xl sm:text-4xl md:text-5xl font-display font-semibold mb-6 tracking-tight"
+      <div className="border-b border-border px-6 py-14 sm:px-10 sm:py-16 lg:border-r lg:border-b-0">
+        <p className="mb-4 font-mono text-[11px] text-text-muted">04 / FAQ</p>
+        <h2 className="text-[28px] leading-[1.08] font-bold tracking-[-0.02em] text-text-primary sm:text-[36px]">
+          Fair questions
+          <span className="text-brand">.</span>
+        </h2>
+      </div>
+      <div>
+        {FAQ_ITEMS.map((item, i) => {
+          const isOpen = open === i
+          return (
+            <div key={item.q} className="border-b border-ghost-divider">
+              <button
+                type="button"
+                onClick={() => setOpen(isOpen ? null : i)}
+                className="flex w-full cursor-pointer items-center justify-between bg-transparent px-6 py-5 text-left transition-colors hover:bg-ghost-bg sm:px-8"
               >
-                Questions we get a lot.
-              </motion.h2>
-              <motion.p
-                initial={{ opacity: 0, y: 16 }}
-                animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: 0.25, duration: 0.5 }}
-                className="text-text-secondary text-lg"
-              >
-                Honest answers — no marketing fluff.
-              </motion.p>
+                <span className="pr-4 text-[15px] font-semibold text-text-primary">
+                  {item.q}
+                </span>
+                <span className="shrink-0 font-mono text-[13px] text-text-muted">
+                  {isOpen ? '−' : '+'}
+                </span>
+              </button>
+              {isOpen ? (
+                <p className="max-w-[560px] px-6 pb-6 text-[14px] leading-[1.65] text-text-secondary sm:px-8">
+                  {item.a}
+                </p>
+              ) : null}
             </div>
-
-            <div className="grid md:grid-cols-1 gap-4">
-              {faqs.map((faq, i) => (
-                <motion.div
-                  key={faq.question}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={isInView ? { opacity: 1, y: 0 } : {}}
-                  transition={{
-                    delay: 0.35 + i * 0.08,
-                    duration: 0.4,
-                    ease: [0.25, 0.46, 0.45, 0.94]
-                  }}
-                >
-                  <FAQItem question={faq.question} answer={faq.answer} />
-                </motion.div>
-              ))}
-            </div>
-          </CardContent>
-        </MotionCard>
+          )
+        })}
       </div>
     </section>
   )
