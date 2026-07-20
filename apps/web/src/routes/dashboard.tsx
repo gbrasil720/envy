@@ -6,17 +6,16 @@ import {
   useNavigate,
   useParams
 } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { AppSidebar } from '@/components/dashboard/app-sidebar'
 import { AppTopbar } from '@/components/dashboard/app-topbar'
 import { CommandPalette } from '@/components/dashboard/command-palette'
-import { DashboardActionsContext } from '@/components/dashboard/dashboard-context'
+import { DashboardActionsProvider } from '@/components/dashboard/dashboard-context'
 import type {
   DashboardProject,
   DashboardSection
 } from '@/components/dashboard/dashboard-types'
 import { NewProjectDialog } from '@/components/dashboard/new-project-dialog'
-import { MeshBackground } from '@/components/mesh-background'
 import { requireWebAuth } from '@/functions/require-web-auth'
 import { useTRPC } from '@/utils/trpc'
 
@@ -55,6 +54,9 @@ function DashboardLayout() {
   const currentProject =
     projectsQuery.data?.find((p) => p.slug === projectSlug) ?? null
   const section = deriveSection(pathname)
+  const isHome = !projectSlug
+
+  const openNewProject = useCallback(() => setNewProjectOpen(true), [])
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -100,17 +102,24 @@ function DashboardLayout() {
     })
   }
 
+  function goHome() {
+    navigate({
+      to: '/dashboard',
+      search: { project: '', section: 'secrets' as const }
+    })
+  }
+
   return (
-    <DashboardActionsContext
-      value={{ openNewProject: () => setNewProjectOpen(true) }}
-    >
-      <MeshBackground className="flex h-dvh overflow-hidden" intensity="strong">
+    <DashboardActionsProvider openNewProject={openNewProject}>
+      <div className="flex h-dvh overflow-hidden bg-bg text-text-primary">
         <AppSidebar
           currentProject={currentProject}
           section={section}
+          isHome={isHome}
           onSectionChange={handleSectionChange}
           onSelectProject={handleSelectProject}
-          onNewProject={() => setNewProjectOpen(true)}
+          onNewProject={openNewProject}
+          onGoHome={goHome}
           mobileOpen={mobileSidebarOpen}
           onMobileClose={() => setMobileSidebarOpen(false)}
         />
@@ -119,11 +128,12 @@ function DashboardLayout() {
           <AppTopbar
             currentProject={currentProject}
             section={section}
+            isHome={isHome}
             onOpenCommand={() => setCommandOpen(true)}
             onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
           />
 
-          <main className="flex-1 overflow-y-auto p-4 md:p-5">
+          <main className="flex-1 overflow-y-auto">
             <Outlet />
           </main>
         </div>
@@ -135,7 +145,7 @@ function DashboardLayout() {
           section={section}
           onSectionChange={handleSectionChange}
           onSelectProject={handleSelectProject}
-          onNewProject={() => setNewProjectOpen(true)}
+          onNewProject={openNewProject}
         />
 
         <NewProjectDialog
@@ -143,7 +153,7 @@ function DashboardLayout() {
           onClose={() => setNewProjectOpen(false)}
           onSuccess={handleNewProjectSuccess}
         />
-      </MeshBackground>
-    </DashboardActionsContext>
+      </div>
+    </DashboardActionsProvider>
   )
 }
