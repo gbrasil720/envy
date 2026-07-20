@@ -1,19 +1,14 @@
 'use client'
 
-import { Button } from '@envy/ui/components/button'
-import { Card, CardContent } from '@envy/ui/components/card'
-import { GithubIcon, TerminalIcon } from '@hugeicons/core-free-icons'
+import { GithubIcon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
 import { authClient } from '@/lib/auth-client'
 import { useTRPC } from '@/utils/trpc'
 import { AuthorizationExpiredCard } from '../cli/authorization-expired-card'
 import { AuthorizeProjectCard } from '../cli/authorize-project-card'
 import { ProjectAuthorizedCard } from '../cli/project-authorized-card'
-
-const MotionCard = motion.create(Card)
 
 type Props = {
   sessionToken: string | undefined
@@ -34,50 +29,41 @@ function LoginCard({ sessionToken }: { sessionToken: string | undefined }) {
   }
 
   return (
-    <MotionCard
-      key="unauth"
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      className="bg-surface border border-border rounded-[20px] shadow-[0_8px_40px_rgba(0,0,0,0.6)] ring-0 gap-0 py-0 overflow-hidden relative"
-    >
-      <div className="absolute top-0 left-0 right-0 bg-brand/5 border-b border-brand/20 px-6 py-3 flex items-center gap-2">
-        <HugeiconsIcon icon={TerminalIcon} size={16} className="text-brand" />
-        <span className="text-brand text-[13px] font-medium">
-          CLI Authorization Request detected. Login to continue.
+    <div className="w-full max-w-[400px] overflow-hidden rounded-md border border-ghost-border bg-surface">
+      <div className="flex items-center gap-2.5 border-b border-border px-7 py-3.5">
+        <span className="size-[7px] shrink-0 rounded-full bg-warning" />
+        <span className="font-mono text-[11px] text-text-secondary">
+          CLI AUTHORIZATION REQUEST · login required
         </span>
       </div>
-      <CardContent className="p-10 mt-10">
-        <div className="flex flex-col items-center mb-8">
-          <h2 className="font-display font-semibold text-2xl text-text-primary mb-2">
-            Welcome back.
-          </h2>
-          <p className="text-text-secondary text-sm text-center">
-            Authenticate to grant CLI access.
-          </p>
-        </div>
-        <Button
+      <div className="px-9 pt-8 pb-7">
+        <h1 className="mb-1.5 text-[20px] font-bold tracking-[-0.015em] text-text-primary">
+          A terminal wants in
+          <span className="text-brand">.</span>
+        </h1>
+        <p className="mb-6 text-[13px] leading-[1.6] text-text-secondary">
+          Authenticate to approve the CLI handshake. Your password is never
+          shared with the terminal.
+        </p>
+        <button
+          type="button"
           onClick={handleGitHub}
           disabled={loading}
-          className="w-full h-12 bg-surface-2 border border-ghost-border rounded-[10px] flex items-center justify-center gap-3 hover:bg-ghost-bg transition-all active:scale-[0.98] disabled:opacity-70"
+          className="flex w-full cursor-pointer items-center justify-center gap-2.5 rounded bg-primary py-3 text-[13.5px] font-semibold text-primary-foreground transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
         >
           {loading ? (
-            <div className="size-5 border-2 border-text-muted/30 border-t-text-muted rounded-full animate-spin" />
+            <span className="size-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
           ) : (
-            <>
-              <HugeiconsIcon
-                icon={GithubIcon}
-                size={20}
-                className="text-white"
-              />
-              <span className="font-medium text-text-primary">
-                Continue with GitHub
-              </span>
-            </>
+            <HugeiconsIcon
+              icon={GithubIcon}
+              size={16}
+              className="text-primary-foreground"
+            />
           )}
-        </Button>
-      </CardContent>
-    </MotionCard>
+          {loading ? 'Connecting…' : 'Continue with GitHub'}
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -90,7 +76,7 @@ export function AuthFormCli({ sessionToken }: Props) {
 
   const { data: sessionInfo, isError: sessionNotFound } = useQuery(
     trpc.cliAuth.getSession.queryOptions(
-      { token: sessionToken! },
+      { token: sessionToken ?? '' },
       { enabled: !!sessionToken && !!sessionData?.user, retry: false }
     )
   )
@@ -127,46 +113,37 @@ export function AuthFormCli({ sessionToken }: Props) {
 
   if (isPending) {
     return (
-      <div className="relative z-10 w-full max-w-[480px] px-6 flex items-center justify-center py-20">
-        <div className="size-8 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />
+      <div className="flex items-center justify-center py-20">
+        <div className="size-7 animate-spin rounded-full border-2 border-brand/30 border-t-brand" />
       </div>
     )
   }
 
+  if (!sessionData?.user) {
+    return <LoginCard sessionToken={sessionToken} />
+  }
+
+  if (expired || sessionNotFound || cancelled) {
+    return <AuthorizationExpiredCard />
+  }
+
+  if (approved) {
+    return <ProjectAuthorizedCard />
+  }
+
   return (
-    <div className="relative z-10 w-full max-w-[480px] px-6">
-      <AnimatePresence mode="wait">
-        {!sessionData?.user && <LoginCard sessionToken={sessionToken} />}
-        {sessionData?.user && (expired || sessionNotFound) && (
-          <AuthorizationExpiredCard key="expired" />
-        )}
-        {sessionData?.user && cancelled && (
-          <AuthorizationExpiredCard key="cancelled" />
-        )}
-        {sessionData?.user && approved && (
-          <ProjectAuthorizedCard key="success" />
-        )}
-        {sessionData?.user &&
-          !approved &&
-          !expired &&
-          !cancelled &&
-          !sessionNotFound && (
-            <AuthorizeProjectCard
-              key="authorize"
-              sessionToken={sessionToken || ''}
-              expiresAt={
-                sessionInfo?.expiresAt ??
-                new Date(Date.now() + 5 * 60 * 1000).toISOString()
-              }
-              onAuthorize={() => approve.mutate({ token: sessionToken || '' })}
-              onCancel={() => cancel.mutate({ token: sessionToken || '' })}
-              isAuthorizing={approve.isPending}
-              isCancelling={cancel.isPending}
-              error={approve.error?.message}
-              user={sessionData.user}
-            />
-          )}
-      </AnimatePresence>
-    </div>
+    <AuthorizeProjectCard
+      sessionToken={sessionToken || ''}
+      expiresAt={
+        sessionInfo?.expiresAt ??
+        new Date(Date.now() + 5 * 60 * 1000).toISOString()
+      }
+      onAuthorize={() => approve.mutate({ token: sessionToken || '' })}
+      onCancel={() => cancel.mutate({ token: sessionToken || '' })}
+      isAuthorizing={approve.isPending}
+      isCancelling={cancel.isPending}
+      error={approve.error?.message}
+      user={sessionData.user}
+    />
   )
 }

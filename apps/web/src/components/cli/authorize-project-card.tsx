@@ -1,17 +1,4 @@
-import { Button } from '@envy/ui/components/button'
-import { Card, CardContent, CardFooter } from '@envy/ui/components/card'
-import {
-  Clock01Icon,
-  Shield01Icon,
-  TerminalIcon,
-  Tick01Icon
-} from '@hugeicons/core-free-icons'
-import { HugeiconsIcon } from '@hugeicons/react'
-import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
-import { EnvyMark } from '@/components/brand'
-
-const MotionCard = motion.create(Card)
 
 type User = {
   name?: string | null
@@ -30,6 +17,18 @@ type Props = {
   user?: User
 }
 
+function formatRemaining(ms: number) {
+  const totalSecs = Math.max(0, Math.ceil(ms / 1000))
+  const mins = Math.floor(totalSecs / 60)
+  const secs = totalSecs % 60
+  return `${mins}m ${secs.toString().padStart(2, '0')}s`
+}
+
+function shortSession(token: string) {
+  if (token.length <= 8) return token
+  return `${token.slice(0, 4)}…${token.slice(-4)}`
+}
+
 export function AuthorizeProjectCard({
   sessionToken,
   expiresAt,
@@ -40,7 +39,6 @@ export function AuthorizeProjectCard({
   error,
   user
 }: Props) {
-  const totalMs = 5 * 60 * 1000 // 5 min
   const [remainingMs, setRemainingMs] = useState(() =>
     Math.max(0, new Date(expiresAt).getTime() - Date.now())
   )
@@ -52,190 +50,90 @@ export function AuthorizeProjectCard({
     return () => clearInterval(interval)
   }, [expiresAt])
 
-  const progressPct = (remainingMs / totalMs) * 100
-  const remainingSecs = Math.ceil(remainingMs / 1000)
-
-  const progressColor =
-    remainingSecs > 60
-      ? 'var(--color-brand)'
-      : remainingSecs > 30
-        ? '#f59e0b'
-        : '#ef4444'
+  const expired = remainingMs === 0
+  const displayName = user?.name ?? user?.email ?? 'you'
 
   return (
-    <MotionCard
-      key="authorizing"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="bg-surface border border-border rounded-[20px] shadow-[0_8px_40px_rgba(0,0,0,0.6)] ring-0 gap-0 py-0"
-    >
-      <CardContent className="p-6 sm:p-10 md:p-12">
-        <div className="flex items-center justify-center gap-6 mb-10">
-          <div className="size-12 bg-ghost-bg border border-border rounded-xl flex items-center justify-center">
-            <HugeiconsIcon
-              icon={TerminalIcon}
-              size={16}
-              className="text-brand"
-            />
+    <div className="w-full max-w-[440px] overflow-hidden rounded-md border border-ghost-border bg-surface">
+      <div className="flex items-center gap-2.5 border-b border-border px-7 py-3.5">
+        <span className="size-[7px] shrink-0 rounded-full bg-warning" />
+        <span className="font-mono text-[11px] text-text-secondary">
+          CLI AUTHORIZATION REQUEST · expires in {formatRemaining(remainingMs)}
+        </span>
+      </div>
+
+      <div className="px-7 pt-8 pb-7">
+        <h1 className="mb-1.5 text-[20px] font-bold tracking-[-0.015em] text-text-primary">
+          A terminal wants in
+          <span className="text-brand">.</span>
+        </h1>
+        <p className="mb-6 text-[13px] leading-[1.6] text-text-secondary">
+          Someone ran{' '}
+          <span className="font-mono text-text-primary">envy login</span>. If it
+          was you, approve below — the CLI gets a scoped API key, never your
+          password.
+        </p>
+
+        <div className="mb-6 rounded border border-ghost-border bg-surface-2 px-[18px] py-4 font-mono text-[12px] leading-[2] text-text-primary">
+          <div>
+            <span className="text-text-muted">account&nbsp;&nbsp;</span>
+            {displayName}
           </div>
-          <div className="text-text-muted font-display text-xl">→</div>
-          <div className="flex size-12 items-center justify-center rounded-xl border border-brand/20 bg-brand/10 text-brand">
-            <EnvyMark size={28} />
+          {user?.email && user.name ? (
+            <div>
+              <span className="text-text-muted">
+                email&nbsp;&nbsp;&nbsp;&nbsp;
+              </span>
+              {user.email}
+            </div>
+          ) : null}
+          <div>
+            <span className="text-text-muted">session&nbsp;&nbsp;</span>
+            {shortSession(sessionToken)}
+          </div>
+          <div>
+            <span className="text-text-muted">expires&nbsp;&nbsp;</span>
+            {expired ? (
+              <span className="text-danger">expired</span>
+            ) : (
+              formatRemaining(remainingMs)
+            )}
           </div>
         </div>
 
-        <div className="text-center mb-8">
-          <h1 className="font-display font-semibold text-[26px] text-text-primary leading-tight mb-2">
-            Authorize CLI access
-          </h1>
-          <p className="text-text-secondary text-sm">
-            A CLI session is requesting access to your Envy account.
+        {error ? (
+          <p className="mb-4 text-center font-mono text-[12px] text-danger">
+            {error}
           </p>
+        ) : null}
+
+        <div className="flex gap-2.5">
+          <button
+            type="button"
+            onClick={onAuthorize}
+            disabled={isAuthorizing || isCancelling || expired}
+            className="flex flex-1 cursor-pointer items-center justify-center rounded bg-primary py-3 text-[13.5px] font-semibold text-primary-foreground transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isAuthorizing ? (
+              <span className="size-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
+            ) : (
+              'Approve access'
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isAuthorizing || isCancelling}
+            className="flex flex-1 cursor-pointer items-center justify-center rounded border border-danger/40 py-3 text-[13.5px] font-semibold text-danger transition-colors hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isCancelling ? (
+              <span className="size-4 animate-spin rounded-full border-2 border-danger/30 border-t-danger" />
+            ) : (
+              'Deny'
+            )}
+          </button>
         </div>
-
-        {user && (
-          <div className="flex items-center gap-3 bg-surface-2 border border-ghost-divider rounded-[10px] p-3.5 mb-6">
-            <div
-              className="shrink-0 size-9 rounded-full bg-brand/10 border border-brand/20 flex items-center justify-center overflow-hidden"
-              aria-hidden="true"
-            >
-              {user.image ? (
-                <img
-                  src={user.image}
-                  alt=""
-                  className="size-full object-cover"
-                />
-              ) : (
-                <span className="text-brand text-[13px] font-bold font-mono select-none">
-                  {(user.name ?? user.email).charAt(0).toUpperCase()}
-                </span>
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] text-text-muted uppercase tracking-widest mb-0.5">
-                Authorizing as
-              </p>
-              {user.name ? (
-                <>
-                  <p className="text-text-primary text-[13px] font-medium truncate leading-tight">
-                    {user.name}
-                  </p>
-                  <p className="text-text-muted text-[12px] truncate leading-tight">
-                    {user.email}
-                  </p>
-                </>
-              ) : (
-                <p className="text-text-primary text-[13px] font-medium truncate leading-tight">
-                  {user.email}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
-        <div className="bg-surface-2 border border-ghost-divider rounded-[10px] p-4 mb-8 space-y-3">
-          <div className="flex justify-between items-center text-[12px]">
-            <span className="text-text-muted flex items-center gap-1.5">
-              <HugeiconsIcon icon={Clock01Icon} size={12} /> Requested
-            </span>
-            <span className="text-text-primary font-mono">Just now</span>
-          </div>
-          <div className="flex justify-between items-center text-[12px]">
-            <span className="text-text-muted flex items-center gap-1.5">
-              <HugeiconsIcon icon={Shield01Icon} size={12} /> Expires
-            </span>
-            <span className="font-mono" style={{ color: progressColor }}>
-              {remainingSecs > 0 ? `${remainingSecs}s` : 'Expired'}
-            </span>
-          </div>
-          <div className="flex justify-between items-center text-[12px]">
-            <span className="text-text-muted flex items-center gap-1.5">
-              <HugeiconsIcon
-                icon={TerminalIcon}
-                size={12}
-                className="text-brand"
-              />{' '}
-              Session
-            </span>
-            <span className="text-text-primary font-mono">
-              {sessionToken.slice(0, 8)}...
-            </span>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          {[
-            'Read and write secrets in selected project',
-            'Pull secrets to local environment',
-            'Push secrets from local files'
-          ].map((perm) => (
-            <div
-              key={perm}
-              className="flex items-start gap-3 text-[13px] text-text-secondary"
-            >
-              <div className="mt-0.5 text-brand">
-                <HugeiconsIcon icon={Tick01Icon} size={14} />
-              </div>
-              <span>{perm}</span>
-            </div>
-          ))}
-        </div>
-
-        {error && (
-          <p className="mt-6 text-center text-[13px] text-danger">{error}</p>
-        )}
-      </CardContent>
-
-      <CardFooter className="flex-col gap-3 border-0 px-6 pb-6 sm:px-10 sm:pb-10 md:px-12 md:pb-12 pt-0">
-        <Button
-          onClick={onAuthorize}
-          disabled={isAuthorizing || isCancelling || remainingSecs === 0}
-          className="w-full h-12 bg-brand text-bg font-bold rounded-[10px] flex items-center justify-center gap-2 hover:brightness-110 transition-all active:scale-[0.98] disabled:opacity-70"
-        >
-          {isAuthorizing ? (
-            <div className="size-5 border-2 border-bg/30 border-t-bg rounded-full animate-spin" />
-          ) : (
-            <>
-              <HugeiconsIcon
-                icon={TerminalIcon}
-                size={18}
-                className="text-bg"
-              />
-              Authorize CLI access →
-            </>
-          )}
-        </Button>
-
-        <Button
-          onClick={onCancel}
-          disabled={isAuthorizing || isCancelling}
-          className="w-full h-12 bg-transparent text-text-muted font-medium rounded-[10px] flex items-center justify-center hover:text-danger transition-colors disabled:opacity-50"
-        >
-          {isCancelling ? (
-            <div className="size-4 border-2 border-danger/30 border-t-danger rounded-full animate-spin" />
-          ) : (
-            'Cancel and revoke session'
-          )}
-        </Button>
-
-        <div className="w-full mt-4">
-          <div className="h-[2px] w-full bg-ghost-bg rounded-full overflow-hidden mb-3">
-            <motion.div
-              className="h-full rounded-full"
-              animate={{
-                width: `${progressPct}%`,
-                backgroundColor: progressColor
-              }}
-              transition={{ duration: 1, ease: 'linear' }}
-            />
-          </div>
-          <p className="text-center text-[11px] text-text-muted uppercase tracking-widest">
-            This session expires in{' '}
-            {remainingSecs > 0 ? `${remainingSecs} seconds` : 'now'}
-          </p>
-        </div>
-      </CardFooter>
-    </MotionCard>
+      </div>
+    </div>
   )
 }
