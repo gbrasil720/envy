@@ -51,12 +51,11 @@ export function SecretsStats({
     trpc.auditLog.list.queryOptions({
       projectId,
       environment,
-      limit: 1,
-      offset: 0
+      limit: 1
     })
   )
 
-  const lastLog = lastQuery.data?.[0]
+  const lastLog = lastQuery.data?.logs?.[0]
   const limit = PLAN_SECRET_LIMIT[projectPlan] ?? PLAN_SECRET_LIMIT.free
   const pct =
     Number.isFinite(limit) && limit! > 0

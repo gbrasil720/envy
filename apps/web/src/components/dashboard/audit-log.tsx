@@ -1,7 +1,6 @@
-import { SECRET_AUDIT_ACTIONS } from '@envy/api/lib/audit-actions'
-import { useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
-import { useTRPC } from '@/utils/trpc'
+import { useInfiniteQuery } from '@tanstack/react-query'
+import { useCallback, useMemo, useState } from 'react'
+import { useTRPCClient } from '@/utils/trpc'
 
 type Props = {
   projectId: string
@@ -10,10 +9,19 @@ type Props = {
 
 type ActionFilter = 'all' | 'secrets' | 'members' | 'cli'
 
-const SECRET_ACTIONS = SECRET_AUDIT_ACTIONS
-
-const MEMBER_ACTIONS = new Set(['member_invited', 'member_removed'])
-const CLI_ACTIONS = new Set(['pushed', 'pulled', 'revealed'])
+type AuditPage = {
+  logs: {
+    id: string
+    createdAt: string
+    user: { id: string; name: string; image: string | null } | null
+    environment: string | null
+    userId: string | null
+    action: string
+    targetKey: string | null
+    metadata?: unknown
+  }[]
+  nextCursor?: string | undefined
+}
 
 function actionVerb(action: string): { verb: string; color: string } {
   switch (action) {
@@ -65,37 +73,41 @@ const FILTERS: { id: ActionFilter; label: string }[] = [
   { id: 'cli', label: 'cli' }
 ]
 
+const PAGE_SIZE = 50
+
 export function AuditLog({ projectId, environments }: Props) {
-  const trpc = useTRPC()
+  const trpc = useTRPCClient()
   const [envFilter, setEnvFilter] = useState<string>('all')
   const [actionFilter, setActionFilter] = useState<ActionFilter>('all')
-  const [limit, setLimit] = useState(50)
 
-  const auditQuery = useQuery(
-    trpc.auditLog.list.queryOptions({
-      projectId,
-      limit,
-      offset: 0,
-      ...(envFilter !== 'all' ? { environment: envFilter } : {})
-    })
-  )
+  const auditQuery = useInfiniteQuery<AuditPage, Error>({
+    queryKey: ['auditLog:list', projectId, envFilter, actionFilter],
+    queryFn: async ({ pageParam }) => {
+      const result = await trpc.auditLog.list.query({
+        projectId,
+        limit: PAGE_SIZE,
+        ...(envFilter !== 'all' ? { environment: envFilter } : {}),
+        ...(actionFilter !== 'all' ? { actionCategory: actionFilter } : {}),
+        ...(pageParam ? { cursor: pageParam as string } : {})
+      })
+      return result
+    },
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    initialPageParam: undefined,
+    staleTime: 30_000
+  })
 
-  const logs = auditQuery.data ?? []
+  const allLogs = useMemo(() => {
+    return auditQuery.data?.pages.flatMap((page) => page.logs) ?? []
+  }, [auditQuery.data])
 
-  const filtered = useMemo(() => {
-    return logs.filter((log) => {
-      if (actionFilter === 'secrets' && !SECRET_ACTIONS.has(log.action)) {
-        return false
-      }
-      if (actionFilter === 'members' && !MEMBER_ACTIONS.has(log.action)) {
-        return false
-      }
-      if (actionFilter === 'cli' && !CLI_ACTIONS.has(log.action)) {
-        return false
-      }
-      return true
-    })
-  }, [logs, actionFilter])
+  const isLoading = auditQuery.isLoading
+  const isFetchingNext = auditQuery.isFetchingNextPage
+  const hasMore = auditQuery.data?.pages.some((p) => p.nextCursor) ?? false
+
+  const loadMore = useCallback(() => {
+    auditQuery.fetchNextPage()
+  }, [auditQuery])
 
   return (
     <div className="flex min-h-full flex-col">
@@ -134,7 +146,7 @@ export function AuditLog({ projectId, environments }: Props) {
         </div>
       </div>
 
-      {auditQuery.isLoading ? (
+      {isLoading ? (
         Array.from({ length: 6 }).map((_, i) => (
           <div
             // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
@@ -144,7 +156,7 @@ export function AuditLog({ projectId, environments }: Props) {
             <div className="h-3.5 w-3/4 max-w-lg animate-pulse rounded bg-ghost-bg" />
           </div>
         ))
-      ) : logs.length === 0 ? (
+      ) : allLogs.length === 0 ? (
         <div className="px-7 py-16 text-center">
           <p className="mb-2 text-[15px] font-semibold text-text-primary">
             No activity yet
@@ -153,54 +165,53 @@ export function AuditLog({ projectId, environments }: Props) {
             $ envy push · CLI and dashboard actions land here
           </p>
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="px-7 py-12 text-center font-mono text-[12px] text-text-muted">
-          no entries match this filter
-        </div>
       ) : (
-        filtered.map((log) => {
-          const { verb, color } = actionVerb(log.action)
-          const who = log.user?.name ?? 'system'
-          const target = log.targetKey
-            ? log.targetKey
-            : log.environment
-              ? `[${log.environment}]`
-              : ''
-          return (
-            <div
-              key={log.id}
-              className="grid grid-cols-[110px_1fr_90px_70px] items-baseline gap-4 border-b border-ghost-divider px-7 py-3 font-mono text-[12px] transition-colors hover:bg-ghost-bg sm:grid-cols-[110px_1fr_90px_110px]"
-            >
-              <span className="truncate text-text-primary">{who}</span>
-              <span className="min-w-0 truncate text-text-secondary">
-                <span className={color}>{verb}</span>
-                {target ? ` ${target}` : ''}
-              </span>
-              <span className="truncate text-[10.5px] text-text-muted">
-                {log.environment ?? '—'}
-              </span>
-              <span
-                className="text-right text-[10.5px] text-text-muted"
-                title={new Date(log.createdAt).toISOString()}
+        <>
+          {allLogs.map((log) => {
+            const { verb, color } = actionVerb(log.action)
+            const who = log.user?.name ?? 'system'
+            const target = log.targetKey
+              ? log.targetKey
+              : log.environment
+                ? `[${log.environment}]`
+                : ''
+            return (
+              <div
+                key={log.id}
+                className="grid grid-cols-[110px_1fr_90px_70px] items-baseline gap-4 border-b border-ghost-divider px-7 py-3 font-mono text-[12px] transition-colors hover:bg-ghost-bg sm:grid-cols-[110px_1fr_90px_110px]"
               >
-                {timeAgo(log.createdAt)}
-              </span>
-            </div>
-          )
-        })
-      )}
+                <span className="truncate text-text-primary">{who}</span>
+                <span className="min-w-0 truncate text-text-secondary">
+                  <span className={color}>{verb}</span>
+                  {target ? ` ${target}` : ''}
+                </span>
+                <span className="truncate text-[10.5px] text-text-muted">
+                  {log.environment ?? '—'}
+                </span>
+                <span
+                  className="text-right text-[10.5px] text-text-muted"
+                  title={new Date(log.createdAt).toISOString()}
+                >
+                  {timeAgo(log.createdAt)}
+                </span>
+              </div>
+            )
+          })}
 
-      {auditQuery.data && auditQuery.data.length >= limit ? (
-        <div className="flex justify-center py-5">
-          <button
-            type="button"
-            onClick={() => setLimit((l) => l + 50)}
-            className="cursor-pointer rounded border border-ghost-border px-4 py-2 font-mono text-[11px] text-text-secondary transition-colors hover:border-border-focus hover:text-text-primary"
-          >
-            load more
-          </button>
-        </div>
-      ) : null}
+          {hasMore && (
+            <div className="flex justify-center py-5">
+              <button
+                type="button"
+                onClick={loadMore}
+                disabled={isFetchingNext}
+                className="cursor-pointer rounded border border-ghost-border px-4 py-2 font-mono text-[11px] text-text-secondary transition-colors hover:border-border-focus hover:text-text-primary disabled:opacity-50"
+              >
+                {isFetchingNext ? 'loading...' : 'load more'}
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }

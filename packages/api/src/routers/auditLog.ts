@@ -1,9 +1,15 @@
-import { and, desc, eq, inArray } from '@envy/db'
+import { and, desc, eq, inArray, lt } from '@envy/db'
 import { user } from '@envy/db/schema/auth'
 import { auditLog } from '@envy/db/schema/envy'
 import { z } from 'zod'
 import { protectedProcedure, router } from '..'
 import { requireProjectAccess } from '../lib/org-utils'
+
+const ACTION_CATEGORIES = {
+  secrets: new Set(['pushed', 'revealed', 'secrets_updated', 'secrets_deleted']),
+  members: new Set(['member_invited', 'member_removed']),
+  cli: new Set(['pushed', 'pulled', 'revealed'])
+} as const
 
 export const auditLogRouter = router({
   list: protectedProcedure
@@ -12,8 +18,9 @@ export const auditLogRouter = router({
         projectId: z.string(),
         environment: z.string().optional(),
         userId: z.string().optional(),
+        actionCategory: z.enum(['secrets', 'members', 'cli']).optional(),
         limit: z.number().min(1).max(100).default(50),
-        offset: z.number().default(0)
+        cursor: z.string().optional()
       })
     )
     .query(async ({ ctx, input }) => {
@@ -28,6 +35,13 @@ export const auditLogRouter = router({
       if (input.userId) {
         conditions.push(eq(auditLog.userId, input.userId))
       }
+      if (input.actionCategory) {
+        const actions = ACTION_CATEGORIES[input.actionCategory]
+        conditions.push(inArray(auditLog.action, [...actions] as string[]))
+      }
+      if (input.cursor) {
+        conditions.push(lt(auditLog.createdAt, new Date(input.cursor)))
+      }
 
       const logs = await ctx.db.query.auditLog.findMany({
         where: and(...conditions),
@@ -41,11 +55,14 @@ export const auditLogRouter = router({
           createdAt: true
         },
         orderBy: [desc(auditLog.createdAt)],
-        limit: input.limit,
-        offset: input.offset
+        limit: input.limit + 1,
+        offset: 0
       })
 
-      const userIds = [...new Set(logs.map((l) => l.userId).filter(Boolean))]
+      const hasMore = logs.length > input.limit
+      const items = hasMore ? logs.slice(0, -1) : logs
+
+      const userIds = [...new Set(items.map((l) => l.userId).filter(Boolean))]
 
       const users =
         userIds.length > 0
@@ -57,9 +74,16 @@ export const auditLogRouter = router({
 
       const userMap = new Map(users.map((u) => [u.id, u]))
 
-      return logs.map((l) => ({
+      const enriched = items.map((l) => ({
         ...l,
         user: l.userId ? (userMap.get(l.userId) ?? null) : null
       }))
+
+      const nextCursor = hasMore ? items[items.length - 1]?.createdAt.toISOString() : undefined
+
+      return {
+        logs: enriched,
+        nextCursor
+      }
     })
 })
