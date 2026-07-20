@@ -42,7 +42,7 @@ export function SecretAddDialog({
   const pushMutation = useMutation(
     trpc.secrets.push.mutationOptions({
       onSuccess: () => {
-        invalidateSecretScope(queryClient, projectId, environment)
+        invalidateSecretScope(queryClient, trpc, projectId, environment)
         onClose()
         setKey('')
         setValue('')

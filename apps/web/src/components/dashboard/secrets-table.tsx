@@ -104,7 +104,7 @@ export function SecretsTable({
   const deleteMutation = useMutation(
     trpc.secrets.delete.mutationOptions({
       onSuccess: () => {
-        invalidateSecretScope(queryClient, projectId, currentEnv)
+        invalidateSecretScope(queryClient, trpc, projectId, currentEnv)
         queryClient.invalidateQueries(
           trpc.environments.list.queryOptions({ projectId })
         )
