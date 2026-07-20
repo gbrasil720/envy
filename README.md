@@ -59,7 +59,7 @@ Envy enables teams to:
 | sonner | 2.0.5+ | Toast notifications |
 | next-themes | 0.4.6+ | Theme provider |
 | **Code Quality** | | |
-| Biome | 2.2.0+ | Linter & formatter (tabs, double quotes) |
+| Biome | 2.2.0+ | Linter & formatter (2-space indent, single quotes, no semicolons, no trailing commas) |
 
 ---
 

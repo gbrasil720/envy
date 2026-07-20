@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Package manager**: Bun 1.3.0+
 - **Monorepo tool**: Turborepo
-- **Linter/formatter**: Biome (tabs, double quotes)
+- **Linter/formatter**: Biome (2-space indent, single quotes, no semicolons, no trailing commas)
 
 ## Commands
 
@@ -24,7 +24,7 @@ bun run check-types    # TypeScript type checking across all packages
 
 # Code quality
 bun run check          # Biome format + lint with auto-fix
-bunx biome check .     # Lint/format check without writing (CI)
+bunx biome check .     # Full-repo lint/format check (CI gates a scoped subset via test:ci)
 
 # Tests
 bun run test           # Unit + integration tests (turbo); API needs Postgres
@@ -57,5 +57,5 @@ bun run db:studio      # Open Drizzle Studio UI
 ### Key patterns
 - **End-to-end type safety**: tRPC connects `packages/api` to the web client with no code generation
 - **Auth flow**: Better-Auth session extracted per-request in tRPC context via `auth.api.getSession()`; cross-origin cookies use `SameSite=none`
-- **Environment**: Server env = `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `CORS_ORIGIN`; Web env = `VITE_SERVER_URL`
+- **Environment**: Server env = `DATABASE_URL`, `SERVER_URL`, `APP_URL`, `SERVER_ENCRYPTION_KEY`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_API_KEY`, `BETTER_AUTH_URL`, `CORS_ORIGIN`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`; Web env = `VITE_SERVER_URL`
 - **Biome**: Tailwind class sorting is enabled for `clsx`, `cva`, and `cn` call sites
