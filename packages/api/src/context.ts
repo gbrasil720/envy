@@ -1,8 +1,9 @@
 import { hashToken } from '@envy/crypto'
 import type { db as DbInstance } from '@envy/db'
-import { eq } from '@envy/db'
+import { eq, lt, or } from '@envy/db'
 import { apiKey } from '@envy/db/schema/envy'
 import type { Context as ElysiaContext } from 'elysia'
+import { TRPCError } from '@trpc/server'
 
 export type CreateContextOptions = {
   context: ElysiaContext
@@ -24,6 +25,8 @@ export type CreateTRPCContextInput = {
   ) => Promise<{ user: { id: string } } | null>
 }
 
+const API_KEY_EXPIRY_DAYS = 90
+
 /**
  * Dual identity: Bearer API key (CLI) or cookie session (web).
  */
@@ -40,10 +43,22 @@ export async function createTRPCContext(
     if (token) {
       const key = await db.query.apiKey.findFirst({
         where: eq(apiKey.keyHash, await hashToken(token)),
-        columns: { id: true, userId: true, revokedAt: true }
+        columns: { id: true, userId: true, revokedAt: true, expiresAt: true }
       })
 
-      if (key && !key.revokedAt) {
+      if (key && !key.revokedAt && key.expiresAt > new Date()) {
+        // Throttle lastUsedAt updates: only write if >1h since last update
+        const needsLastUsedUpdate =
+          !key.lastUsedAt ||
+          (key.lastUsedAt as Date).getTime() < Date.now() - 3600_000
+
+        if (needsLastUsedUpdate) {
+          await db
+            .update(apiKey)
+            .set({ lastUsedAt: new Date() })
+            .where(eq(apiKey.id, key.id))
+        }
+
         return {
           db,
           authHeader,
@@ -53,6 +68,14 @@ export async function createTRPCContext(
             user: { id: key.userId }
           }
         }
+      }
+
+      // Expired or revoked key — reject
+      if (key && key.expiresAt <= new Date()) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'API key has expired. Generate a new key.'
+        })
       }
     }
   }
@@ -77,4 +100,8 @@ export async function createTRPCContext(
     apiKeyId: null,
     session: null
   }
+}
+
+export function getApiKeyExpiryDate(): Date {
+  return new Date(Date.now() + API_KEY_EXPIRY_DAYS * 24 * 60 * 60 * 1000)
 }

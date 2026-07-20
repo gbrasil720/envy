@@ -7,8 +7,9 @@ import {
   test
 } from 'bun:test'
 import { generateApiToken, hashToken, tokenPrefix } from '@envy/crypto'
+import { eq } from '@envy/db'
 import { apiKey } from '@envy/db/schema/envy'
-import { createTRPCContext } from './context'
+import { createTRPCContext, getApiKeyExpiryDate } from './context'
 import { assertDbReady, getTestDb, truncateAll } from './test/db'
 import { createTestUser } from './test/factories'
 
@@ -46,7 +47,8 @@ describe('createTRPCContext', () => {
         userId: user.id,
         name: 'CLI',
         keyHash: await hashToken(raw),
-        keyPrefix: tokenPrefix(raw)
+        keyPrefix: tokenPrefix(raw),
+        expiresAt: getApiKeyExpiryDate()
       })
 
     const headers = new Headers({ Authorization: `Bearer ${raw}` })
@@ -74,7 +76,8 @@ describe('createTRPCContext', () => {
         name: 'CLI',
         keyHash: await hashToken(raw),
         keyPrefix: tokenPrefix(raw),
-        revokedAt: new Date()
+        revokedAt: new Date(),
+        expiresAt: getApiKeyExpiryDate()
       })
 
     const revoked = await createTRPCContext({
@@ -119,7 +122,8 @@ describe('createTRPCContext', () => {
         userId: apiUser.id,
         name: 'CLI',
         keyHash: await hashToken(raw),
-        keyPrefix: tokenPrefix(raw)
+        keyPrefix: tokenPrefix(raw),
+        expiresAt: getApiKeyExpiryDate()
       })
 
     const ctx = await createTRPCContext({
@@ -133,5 +137,84 @@ describe('createTRPCContext', () => {
 
     expect(ctx.session?.user.id).toBe(apiUser.id)
     expect(ctx.apiKeyId).toBe(keyId)
+  })
+
+  test('rejects expired API key', async () => {
+    const user = await createTestUser()
+    const raw = generateApiToken()
+    await getTestDb().insert(apiKey).values({
+      id: crypto.randomUUID(),
+      userId: user.id,
+      name: 'CLI',
+      keyHash: await hashToken(raw),
+      keyPrefix: tokenPrefix(raw),
+      expiresAt: new Date(Date.now() - 86400000) // expired 1 day ago
+    })
+
+    await expect(
+      createTRPCContext({
+        headers: new Headers({ Authorization: `Bearer ${raw}` }),
+        db: getTestDb(),
+        resolveCookieSession: async () => null
+      })
+    ).rejects.toThrow('API key has expired')
+  })
+
+  test('updates lastUsedAt on valid API key use', async () => {
+    const user = await createTestUser()
+    const raw = generateApiToken()
+    const keyId = crypto.randomUUID()
+    await getTestDb().insert(apiKey).values({
+      id: keyId,
+      userId: user.id,
+      name: 'CLI',
+      keyHash: await hashToken(raw),
+      keyPrefix: tokenPrefix(raw),
+      expiresAt: getApiKeyExpiryDate()
+    })
+
+    const headers = new Headers({ Authorization: `Bearer ${raw}` })
+    const ctx = await createTRPCContext({
+      headers,
+      db: getTestDb(),
+      resolveCookieSession: async () => null
+    })
+
+    expect(ctx.session?.user.id).toBe(user.id)
+
+    const updated = await getTestDb()
+      .select({ lastUsedAt: apiKey.lastUsedAt })
+      .from(apiKey)
+      .where(eq(apiKey.id, keyId))
+    expect(updated[0]?.lastUsedAt).toBeInstanceOf(Date)
+  })
+
+  test('throttles lastUsedAt updates (skips if <1h since last update)', async () => {
+    const user = await createTestUser()
+    const raw = generateApiToken()
+    const keyId = crypto.randomUUID()
+    const now = new Date()
+    await getTestDb().insert(apiKey).values({
+      id: keyId,
+      userId: user.id,
+      name: 'CLI',
+      keyHash: await hashToken(raw),
+      keyPrefix: tokenPrefix(raw),
+      expiresAt: getApiKeyExpiryDate(),
+      lastUsedAt: now
+    })
+
+    await createTRPCContext({
+      headers: new Headers({ Authorization: `Bearer ${raw}` }),
+      db: getTestDb(),
+      resolveCookieSession: async () => null
+    })
+
+    const row = await getTestDb()
+      .select({ lastUsedAt: apiKey.lastUsedAt })
+      .from(apiKey)
+      .where(eq(apiKey.id, keyId))
+    // Should NOT have changed since it was updated just now (<1h ago)
+    expect(row[0]?.lastUsedAt?.getTime()).toBeCloseTo(now.getTime(), -1)
   })
 })

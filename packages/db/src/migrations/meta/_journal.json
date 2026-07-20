@@ -43,6 +43,13 @@
       "when": 1781923200000,
       "tag": "0005_cli_auth_session_user_id",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781923260000,
+      "tag": "0006_api_key_expires_at",
+      "breakpoints": true
     }
   ]
 }

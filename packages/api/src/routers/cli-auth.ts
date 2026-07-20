@@ -4,6 +4,7 @@ import { apiKey, cliAuthSession } from '@envy/db/schema/envy'
 import { env } from '@envy/env/server'
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
+import { getApiKeyExpiryDate } from '../context'
 import { protectedProcedure, publicProcedure, router } from '..'
 
 const POLLING_EXPIRY_MS = 1000 * 60 * 5 // 5 minutes
@@ -83,7 +84,8 @@ export const cliAuthRouter = router({
           userId: session.userId,
           name: 'CLI',
           keyHash,
-          keyPrefix
+          keyPrefix,
+          expiresAt: getApiKeyExpiryDate()
         })
 
         await ctx.db
