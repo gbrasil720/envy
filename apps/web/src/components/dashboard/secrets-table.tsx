@@ -25,11 +25,6 @@ type Props = {
   projectPlan?: string
 }
 
-function maskValue(value: string, revealed: boolean) {
-  if (revealed) return value
-  return '•'.repeat(Math.min(value.length, 24))
-}
-
 export function SecretsTable({
   projectId,
   environments,
@@ -41,7 +36,8 @@ export function SecretsTable({
   const [currentEnv, setCurrentEnv] = useState(
     environments[0]?.name ?? 'development'
   )
-  const [revealed, setRevealed] = useState<Set<string>>(() => new Set())
+  // Map of key → decrypted value (only populated on explicit reveal)
+  const [revealedValues, setRevealedValues] = useState<Record<string, string>>({})
   const [revealAll, setRevealAll] = useState(false)
   const [search, setSearch] = useState('')
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
@@ -77,8 +73,9 @@ export function SecretsTable({
     return () => document.removeEventListener('keydown', onKey)
   }, [])
 
-  const secretsQuery = useQuery(
-    trpc.secrets.reveal.queryOptions({ projectId, environment: currentEnv })
+  // Default view: only keys, no decryption
+  const keysQuery = useQuery(
+    trpc.secrets.listKeys.queryOptions({ projectId, environment: currentEnv })
   )
 
   const envsListQuery = useQuery(
@@ -93,10 +90,21 @@ export function SecretsTable({
     return map
   }, [envsListQuery.data])
 
+  const revealMutation = useMutation({
+    mutationFn: () =>
+      queryClient.fetchQuery(
+        trpc.secrets.reveal.queryOptions({ projectId, environment: currentEnv })
+      ),
+    onSuccess: (data) => {
+      setRevealedValues((prev) => ({ ...prev, ...data.secrets }))
+      setRevealAll(true)
+    }
+  })
+
   const deleteMutation = useMutation(
     trpc.secrets.delete.mutationOptions({
       onSuccess: () => {
-        invalidateSecretScope(queryClient, trpc, projectId, currentEnv)
+        invalidateSecretScope(queryClient, projectId, currentEnv)
         queryClient.invalidateQueries(
           trpc.environments.list.queryOptions({ projectId })
         )
@@ -107,8 +115,12 @@ export function SecretsTable({
     })
   )
 
-  const secrets = secretsQuery.data?.secrets ?? {}
-  const secretEntries = Object.entries(secrets) as [string, string][]
+  const keys = keysQuery.data?.keys ?? []
+  const isLoading = keysQuery.isLoading
+
+  const secretEntries = useMemo(() => {
+    return keys.map((key) => [key, revealedValues[key]] as [string, string | undefined])
+  }, [keys, revealedValues])
 
   const filteredEntries = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -117,29 +129,39 @@ export function SecretsTable({
   }, [secretEntries, search])
 
   function isRevealed(key: string) {
-    return revealAll || revealed.has(key)
+    return revealAll || revealedValues.hasOwnProperty(key)
   }
 
   function toggleReveal(key: string) {
     if (revealAll) {
       setRevealAll(false)
       // Keep all other secrets visible; hide only the clicked one
-      setRevealed(
-        new Set(secretEntries.map(([k]) => k).filter((k) => k !== key))
-      )
+      const next = { ...revealedValues }
+      delete next[key]
+      setRevealedValues(next)
     } else {
-      setRevealed((prev) => {
-        const next = new Set(prev)
-        if (next.has(key)) next.delete(key)
-        else next.add(key)
-        return next
-      })
+      // Reveal this single key by fetching from server
+      if (!revealedValues.hasOwnProperty(key)) {
+        // Optimistic: show masked, fetch in background
+        void queryClient
+          .fetchQuery(
+            trpc.secrets.reveal.queryOptions({ projectId, environment: currentEnv })
+          )
+          .then((data) => {
+            setRevealedValues((prev) => ({ ...prev, ...data.secrets }))
+          })
+      } else {
+        // Hide this key
+        const next = { ...revealedValues }
+        delete next[key]
+        setRevealedValues(next)
+      }
     }
   }
 
   function handleEnvChange(env: string) {
     setCurrentEnv(env)
-    setRevealed(new Set())
+    setRevealedValues({})
     setRevealAll(false)
     setSelectedKeys(new Set())
     setSearch('')
@@ -174,7 +196,7 @@ export function SecretsTable({
 
   function copyAsEnv() {
     const lines = filteredEntries.map(([k, v]) => {
-      const val = isRevealed(k) ? v : '***'
+      const val = isRevealed(k) ? (v ?? '***') : '***'
       const escaped = val.includes('\n') ? JSON.stringify(val) : val
       return `${k}=${escaped}`
     })
@@ -207,7 +229,7 @@ export function SecretsTable({
           {environments.map((env) => {
             const isActive = currentEnv === env.name
             const count = isActive
-              ? secretEntries.length
+              ? keys.length
               : (envCountMap.get(env.id) ?? 0)
             return (
               <button
@@ -240,12 +262,21 @@ export function SecretsTable({
           <button
             type="button"
             onClick={() => {
-              setRevealAll((v) => !v)
-              setRevealed(new Set())
+              if (revealAll) {
+                setRevealAll(false)
+                setRevealedValues({})
+              } else {
+                revealMutation.mutate()
+              }
             }}
-            className="cursor-pointer transition-colors hover:text-text-primary"
+            disabled={revealMutation.isPending}
+            className="cursor-pointer transition-colors hover:text-text-primary disabled:opacity-40"
           >
-            {revealAll ? 'hide all' : 'show all'}
+            {revealMutation.isPending
+              ? 'revealing…'
+              : revealAll
+                ? 'hide all'
+                : 'show all'}
           </button>
           <button
             type="button"
@@ -284,14 +315,14 @@ export function SecretsTable({
       </div>
 
       <div className="flex-1">
-        {secretsQuery.isLoading ? (
+        {isLoading ? (
           Array.from({ length: 5 }).map((_, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
             <div key={i} className="border-b border-ghost-divider px-7 py-3.5">
               <div className="h-3.5 w-2/3 max-w-md animate-pulse rounded bg-ghost-bg" />
             </div>
           ))
-        ) : filteredEntries.length === 0 && secretEntries.length === 0 ? (
+        ) : filteredEntries.length === 0 && keys.length === 0 ? (
           <div className="px-7 py-16 text-center">
             <p className="mb-2 text-[15px] font-semibold text-text-primary">
               No secrets in {currentEnv}
@@ -314,6 +345,9 @@ export function SecretsTable({
         ) : (
           filteredEntries.map(([key, value]) => {
             const shown = isRevealed(key)
+            const displayValue = shown && value
+              ? value
+              : '•'.repeat(24)
             return (
               <div
                 key={key}
@@ -336,7 +370,7 @@ export function SecretsTable({
                   )}
                   title={shown ? 'Hide value' : 'Reveal value'}
                 >
-                  {maskValue(value, shown)}
+                  {displayValue}
                 </button>
                 <span className="hidden text-[11px] text-text-secondary sm:inline">
                   —
@@ -345,18 +379,35 @@ export function SecretsTable({
                   —
                 </span>
                 <span className="flex gap-3 text-[10.5px] text-text-muted">
+                  {shown && value ? (
+                    <button
+                      type="button"
+                      onClick={() => void copyText(value, 'Value copied')}
+                      className="cursor-pointer transition-colors hover:text-text-primary"
+                    >
+                      copy
+                    </button>
+                  ) : null}
                   <button
                     type="button"
-                    onClick={() => void copyText(value, 'Value copied')}
-                    className="cursor-pointer transition-colors hover:text-text-primary"
-                  >
-                    copy
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setEditingSecret({ key, value: value as string })
-                    }
+                    onClick={() => {
+                      if (shown && value) {
+                        setEditingSecret({ key, value })
+                      } else {
+                        // Reveal first, then open edit
+                        void queryClient
+                          .fetchQuery(
+                            trpc.secrets.reveal.queryOptions({ projectId, environment: currentEnv })
+                          )
+                          .then((data) => {
+                            setRevealedValues((prev) => ({
+                              ...prev,
+                              ...data.secrets
+                            }))
+                            setEditingSecret({ key, value: data.secrets[key] ?? '' })
+                          })
+                      }
+                    }}
                     className="cursor-pointer transition-colors hover:text-text-primary"
                   >
                     edit
@@ -376,7 +427,7 @@ export function SecretsTable({
       </div>
 
       <div className="px-7 py-3 font-mono text-[10.5px] text-text-muted">
-        values are AES-256-GCM encrypted · every reveal is logged
+        values are AES-256-GCM encrypted · revealed on demand
         {projectPlan === 'free' ? ' · free plan' : ''}
       </div>
 

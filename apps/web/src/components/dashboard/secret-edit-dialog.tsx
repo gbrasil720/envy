@@ -55,7 +55,7 @@ export function SecretEditDialog({
   const updateMutation = useMutation(
     trpc.secrets.update.mutationOptions({
       onSuccess: () => {
-        invalidateSecretScope(queryClient, trpc, projectId, environment)
+        invalidateSecretScope(queryClient, projectId, environment)
         onClose()
       }
     })
