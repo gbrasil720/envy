@@ -14,6 +14,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useTRPC } from '@/utils/trpc'
+import { invalidateSecretScope } from '@/utils/invalidateSecretScope'
 import { useDashboardActions } from './dashboard-context'
 import { SecretAddDialog } from './secret-add-dialog'
 import { SecretEditDialog } from './secret-edit-dialog'
@@ -95,15 +96,7 @@ export function SecretsTable({
   const deleteMutation = useMutation(
     trpc.secrets.delete.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries(
-          trpc.secrets.reveal.queryOptions({
-            projectId,
-            environment: currentEnv
-          })
-        )
-        queryClient.invalidateQueries(
-          trpc.auditLog.list.queryOptions({ projectId, limit: 50 })
-        )
+        invalidateSecretScope(queryClient, trpc, projectId, currentEnv)
         queryClient.invalidateQueries(
           trpc.environments.list.queryOptions({ projectId })
         )

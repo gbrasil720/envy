@@ -23,6 +23,7 @@ import { ViewIcon, ViewOffIcon } from '@hugeicons/core-free-icons'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { useTRPC } from '@/utils/trpc'
+import { invalidateSecretScope } from '@/utils/invalidateSecretScope'
 import { DashboardIcon } from './dashboard-icon'
 
 type Props = {
@@ -54,12 +55,7 @@ export function SecretEditDialog({
   const updateMutation = useMutation(
     trpc.secrets.update.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries(
-          trpc.secrets.reveal.queryOptions({ projectId, environment })
-        )
-        queryClient.invalidateQueries(
-          trpc.auditLog.list.queryOptions({ projectId, limit: 50 })
-        )
+        invalidateSecretScope(queryClient, trpc, projectId, environment)
         onClose()
       }
     })
