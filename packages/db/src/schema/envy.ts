@@ -155,7 +155,7 @@ export const cliAuthSession = pgTable(
       .unique()
       .default(sql`gen_random_uuid()`),
     status: text('status').notNull().default('pending'),
-    rawKey: text('raw_key'),
+    userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
     expiresAt: timestamp('expires_at').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull()
   },

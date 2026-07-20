@@ -124,10 +124,11 @@ describe('cliAuth router', () => {
       expect((err as TRPCError).message).toContain('expired')
     }
 
+    // Expired sessions are deleted on poll, not marked 'expired'
     const row = await getTestDb().query.cliAuthSession.findFirst({
       where: eq(cliAuthSession.sessionToken, token)
     })
-    expect(row?.status).toBe('expired')
+    expect(row).toBeUndefined()
   })
 
   test('cancel marks session cancelled and poll reports it', async () => {
