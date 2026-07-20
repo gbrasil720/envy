@@ -124,8 +124,11 @@ export function createAuth() {
               .limit(1)
 
             if (!entry) {
+              // Distinct message so the server can map waitlist rejection
+              // separately from OAuth state/code failures.
               throw new APIError('FORBIDDEN', {
-                message: 'This email is not approved for early access'
+                message:
+                  'WAITLIST_NOT_APPROVED: This email is not approved for early access'
               })
             }
 
@@ -153,19 +156,26 @@ export function createAuth() {
     },
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL.replace(/\/$/, ''),
-    // Prefer database-backed OAuth state when a DB is configured. Cookie-only
-    // state is fragile across reloads / double-callbacks and can yield a code
-    // that GitHub rejects as bad_verification_code on token exchange.
+    // Cookie-backed OAuth state: the full payload lives in an encrypted cookie
+    // set on the API host during sign-in. Database strategy failed here with
+    // "verification not found" on callback (adapter/DB write not durable in
+    // this stack); cookie state matches Better Auth's cross-port localhost flow.
     account: {
-      storeStateStrategy: 'database'
+      storeStateStrategy: 'cookie'
+    },
+    // When OAuth state is unreadable, Better Auth redirects here (not the
+    // errorCallbackURL stored inside state). Always land on the web login page.
+    onAPIError: {
+      errorURL: `${env.CORS_ORIGIN.replace(/\/$/, '')}/login`
     },
     advanced: {
       defaultCookieAttributes: {
-        // Cross-origin web (e.g. :3001) → API (:3000) needs SameSite=None in
-        // production. Localhost is same-site enough with Lax for OAuth cookies.
+        // localhost:3000 and localhost:3001 are same-site (schemeful localhost).
+        // Production web/api on different sites need None+Secure+domain.
         sameSite: env.NODE_ENV === 'development' ? 'lax' : 'none',
         secure: env.NODE_ENV !== 'development',
         httpOnly: true,
+        path: '/',
         domain: env.NODE_ENV === 'development' ? undefined : '.useenvy.dev'
       }
     },

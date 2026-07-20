@@ -36,13 +36,15 @@ export function AuthForm() {
   }
 
   const oauthErrorMessage =
-    error === 'oauth_code'
-      ? 'GitHub login failed (code expired or callback URL mismatch). Try again — ensure the OAuth app callback is exactly BETTER_AUTH_URL/api/auth/callback/github.'
+    error === 'oauth_code' || error === 'please_restart_the_process'
+      ? 'GitHub login session expired or was interrupted. Click Continue with GitHub again (do not reuse a back-button redirect). Callback URL must be exactly http://localhost:3000/api/auth/callback/github in local dev.'
       : error === 'oauth_denied'
         ? 'GitHub authorization was cancelled.'
         : error === 'oauth_failed'
           ? 'GitHub login failed. Try again in a moment.'
-          : error
+          : error === 'state_mismatch'
+            ? 'OAuth state mismatch — start login again from this tab (clear site cookies for localhost if it keeps happening).'
+            : error
 
   return (
     <div className="w-full max-w-[400px]">

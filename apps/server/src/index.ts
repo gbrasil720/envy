@@ -8,6 +8,41 @@ import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
 import { Elysia } from 'elysia'
 import { waitlistRoutes } from './routes/waitlist'
 
+const WEB_ORIGIN = env.CORS_ORIGIN.replace(/\/$/, '')
+
+function mapOAuthErrorCode(raw: string): string {
+  const msg = raw.toLowerCase()
+  if (
+    msg.includes('waitlist_not_approved') ||
+    msg.includes('not approved for early access')
+  ) {
+    return 'not_approved'
+  }
+  if (msg.includes('access_denied') || msg.includes('oauth_denied')) {
+    return 'oauth_denied'
+  }
+  if (
+    msg.includes('state') ||
+    msg.includes('verification') ||
+    msg.includes('please_restart') ||
+    msg.includes('invalid_code') ||
+    msg.includes('bad_verification')
+  ) {
+    return 'oauth_code'
+  }
+  if (msg.includes('forbidden') && msg.includes('early access')) {
+    return 'not_approved'
+  }
+  return 'oauth_failed'
+}
+
+function loginErrorRedirect(code: string) {
+  return Response.redirect(
+    `${WEB_ORIGIN}/login?error=${encodeURIComponent(code)}`,
+    302
+  )
+}
+
 const app = new Elysia()
   .use(
     cors({
@@ -33,52 +68,58 @@ const app = new Elysia()
   .use(waitlistRoutes)
   .all('/api/auth/*', async (context) => {
     const { request, status } = context
-    if (['POST', 'GET'].includes(request.method)) {
-      const response = await auth.handler(request)
+    if (!['POST', 'GET'].includes(request.method)) {
+      return status(405)
+    }
 
-      // OAuth provider callback errors: map to a useful login error instead of
-      // always treating failures as waitlist rejection.
-      if (request.url.includes('/callback/') && response.status >= 400) {
-        const url = new URL(request.url)
-        const ghError = url.searchParams.get('error')
-        let code = 'oauth_failed'
-        if (ghError === 'access_denied') {
-          code = 'oauth_denied'
-        } else {
-          try {
-            const cloned = response.clone()
-            const body = (await cloned.json().catch(() => null)) as {
-              message?: string
-              code?: string
-            } | null
-            const msg =
-              `${body?.message ?? ''} ${body?.code ?? ''}`.toLowerCase()
-            if (
-              msg.includes('not approved') ||
-              msg.includes('early access') ||
-              msg.includes('forbidden')
-            ) {
-              code = 'not_approved'
-            } else if (
-              msg.includes('verification') ||
-              msg.includes('invalid_code') ||
-              msg.includes('state')
-            ) {
-              code = 'oauth_code'
-            }
-          } catch {
-            // keep oauth_failed
-          }
-        }
-        return Response.redirect(
-          `${env.CORS_ORIGIN}/login?error=${encodeURIComponent(code)}`,
-          302
-        )
-      }
+    const response = await auth.handler(request)
+    const isCallback = request.url.includes('/callback/')
 
+    if (!isCallback) {
       return response
     }
-    return status(405)
+
+    // Better Auth often responds with a redirect to errorURL?error=… on state
+    // failures (302), not a JSON 4xx. Normalize those to the web login page.
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get('Location')
+      if (location) {
+        try {
+          const dest = new URL(location, env.BETTER_AUTH_URL)
+          const errParam =
+            dest.searchParams.get('error') ||
+            dest.searchParams.get('error_description') ||
+            ''
+          if (errParam) {
+            return loginErrorRedirect(mapOAuthErrorCode(errParam))
+          }
+          // Successful OAuth redirects to the app — pass through.
+          return response
+        } catch {
+          return response
+        }
+      }
+    }
+
+    if (response.status >= 400) {
+      let raw = ''
+      try {
+        const body = (await response.clone().json()) as {
+          message?: string
+          code?: string
+          error?: string
+        }
+        raw = `${body.message ?? ''} ${body.code ?? ''} ${body.error ?? ''}`
+      } catch {
+        raw = ''
+      }
+      const ghError = new URL(request.url).searchParams.get('error')
+      return loginErrorRedirect(
+        mapOAuthErrorCode(ghError || raw || 'oauth_failed')
+      )
+    }
+
+    return response
   })
   .all('/trpc/*', async (context) => {
     let req: Request
