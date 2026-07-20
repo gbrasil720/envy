@@ -1,6 +1,7 @@
 import { Shield01Icon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Link } from '@tanstack/react-router'
+import { EnvyWordmark } from '@/components/brand'
 import { scrollToSection } from '@/lib/smooth-scroll'
 
 const GITHUB_URL = 'https://github.com/gbrasil720/envy'
@@ -11,17 +12,8 @@ export function Footer() {
       <div className="max-w-7xl mx-auto">
         <div className="grid md:grid-cols-4 gap-12 mb-16">
           <div className="col-span-2">
-            <Link to="/" className="flex items-center gap-2 mb-6 w-fit">
-              <div className="size-8 bg-[#111] rounded-lg flex items-center justify-center">
-                <img
-                  src="/logo-no-bg.png"
-                  alt="Envy"
-                  className="size-14 object-cover"
-                />
-              </div>
-              <span className="text-xl font-display font-bold tracking-tight">
-                envy
-              </span>
+            <Link to="/" className="mb-6 flex w-fit items-center">
+              <EnvyWordmark markSize={17} className="text-[13px]" />
             </Link>
             <p className="text-text-secondary max-w-xs leading-relaxed">
               Your secrets. In sync. Always. The modern way to manage

@@ -12,6 +12,7 @@ import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { EnvyWordmark } from '@/components/brand'
 import { authClient } from '@/lib/auth-client'
 import { AccessDeniedCard } from './access-denied-card'
 
@@ -83,19 +84,8 @@ export function AuthForm() {
         <CardContent
           className={`p-10 md:p-12 ${error ? 'mt-8' : ''} transition-all duration-300`}
         >
-          <div className="flex flex-col items-center mb-8">
-            <div className="size-8 text-brand mb-3">
-              <div className="size-8 bg-[#111] rounded-lg flex items-center justify-center">
-                <img
-                  src="/logo-no-bg.png"
-                  alt="Envy"
-                  className="size-14 object-cover"
-                />
-              </div>
-            </div>
-            <h1 className="font-display font-bold text-[22px] text-text-primary tracking-tight">
-              envy
-            </h1>
+          <div className="mb-8 flex flex-col items-center">
+            <EnvyWordmark markSize={28} className="text-[18px]" />
           </div>
 
           <div className="mb-8">

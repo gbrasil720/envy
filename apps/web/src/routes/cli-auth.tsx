@@ -3,6 +3,7 @@ import { ArrowLeft01Icon, LockIcon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { AuthFormCli } from '@/components/auth/auth-form-cli'
+import { EnvyWordmark } from '@/components/brand'
 import { MeshBackground } from '@/components/mesh-background'
 import { getAuthState } from '@/functions/get-auth-state'
 
@@ -29,17 +30,8 @@ function RouteComponent() {
 
   return (
     <MeshBackground>
-      <div className="absolute top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2">
-        <div className="size-8 bg-[#111] rounded-lg flex items-center justify-center">
-          <img
-            src="/logo-no-bg.png"
-            alt="Envy"
-            className="size-14 object-cover"
-          />
-        </div>
-        <span className="font-display font-bold text-text-primary text-lg tracking-tight">
-          envy
-        </span>
+      <div className="absolute top-4 left-4 sm:top-8 sm:left-8 flex items-center">
+        <EnvyWordmark markSize={20} className="text-[15px]" />
       </div>
 
       <Button

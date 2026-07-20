@@ -11,6 +11,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Link } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
+import { EnvyWordmark } from '@/components/brand'
 import { WAITLIST_MODE } from '@/lib/env'
 import { scrollToSection } from '@/lib/smooth-scroll'
 import { ModeToggle } from './theme-toggle'
@@ -57,17 +58,8 @@ export function Navbar() {
       className={`fixed top-0 left-0 right-0 z-50 max-w-full transition-all duration-300 pt-[calc(env(safe-area-inset-top)+16px)] sm:pt-[calc(env(safe-area-inset-top)+20px)] ${isScrolled ? 'border-b border-ghost-divider/90 bg-bg/45 pb-3 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-2xl backdrop-saturate-150 dark:bg-bg/40 dark:shadow-[0_8px_40px_rgba(0,0,0,0.35)] sm:pb-4' : 'bg-transparent pb-5 sm:pb-6'}`}
     >
       <div className="mx-auto flex w-full min-w-0 max-w-7xl items-center justify-between px-4 sm:px-6 md:grid md:grid-cols-3">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="size-8 bg-[#111] rounded-lg flex items-center justify-center">
-            <img
-              src="/logo-no-bg.png"
-              alt="Envy"
-              className="size-14 object-cover"
-            />
-          </div>
-          <span className="text-xl font-display font-bold tracking-tight">
-            envy
-          </span>
+        <Link to="/" className="flex items-center">
+          <EnvyWordmark markSize={20} className="text-[15px]" />
         </Link>
 
         <div className="hidden md:flex items-center justify-center gap-8">

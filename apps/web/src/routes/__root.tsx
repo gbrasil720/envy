@@ -35,7 +35,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
       },
       {
         name: 'theme-color',
-        content: '#3DD68C'
+        content: '#0b0c0b'
       },
       {
         property: 'og:site_name',
@@ -61,11 +61,17 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
       },
       {
         rel: 'icon',
-        href: '/favicon.ico'
+        href: '/envy-favicon.svg',
+        type: 'image/svg+xml'
+      },
+      {
+        rel: 'icon',
+        href: '/favicon.ico',
+        sizes: 'any'
       },
       {
         rel: 'apple-touch-icon',
-        href: '/apple-touch-icon.png'
+        href: '/apple-touch-image.png'
       }
     ],
     scripts: [

@@ -25,6 +25,7 @@ import {
 import type { IconSvgElement } from '@hugeicons/react'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { EnvyMark, EnvyWordmark } from '@/components/brand'
 import { dashboardInsetCardClass } from './dashboard-classes'
 import { DashboardIcon } from './dashboard-icon'
 import type { DashboardProject, DashboardSection } from './dashboard-types'
@@ -184,13 +185,7 @@ function SidebarInner({
       >
         {collapsed ? (
           <>
-            <img
-              src="/logo-no-bg.png"
-              alt="Envy"
-              width={28}
-              height={28}
-              className="size-7 object-cover"
-            />
+            <EnvyMark size={28} />
             {onToggleCollapse && (
               <button
                 type="button"
@@ -209,18 +204,11 @@ function SidebarInner({
         ) : (
           <>
             <div className="mb-3 flex items-center gap-2 px-1">
-              <img
-                src="/logo-no-bg.png"
-                alt="Envy"
-                width={40}
-                height={40}
-                className="size-10 object-cover"
-              />
               <div className="min-w-0 flex-1">
-                <p className="truncate font-display text-sm font-semibold tracking-tight">
-                  envy
+                <EnvyWordmark markSize={19} className="text-[14px]" />
+                <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+                  Projects
                 </p>
-                <p className="text-[10px] text-muted-foreground">Projects</p>
               </div>
               {onToggleCollapse && (
                 <button

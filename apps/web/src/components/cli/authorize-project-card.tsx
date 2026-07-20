@@ -9,6 +9,7 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react'
 import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
+import { EnvyMark } from '@/components/brand'
 
 const MotionCard = motion.create(Card)
 
@@ -79,12 +80,8 @@ export function AuthorizeProjectCard({
             />
           </div>
           <div className="text-text-muted font-display text-xl">→</div>
-          <div className="size-12 bg-brand/10 border border-brand/20 rounded-xl flex items-center justify-center text-brand">
-            <img
-              src="/logo-no-bg.png"
-              alt="CLI"
-              className="size-14 object-cover"
-            />
+          <div className="flex size-12 items-center justify-center rounded-xl border border-brand/20 bg-brand/10 text-brand">
+            <EnvyMark size={28} />
           </div>
         </div>
 
