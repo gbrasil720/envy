@@ -1,560 +1,205 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@envy/ui/components/avatar'
-import { Badge } from '@envy/ui/components/badge'
-import { Button } from '@envy/ui/components/button'
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle
-} from '@envy/ui/components/empty'
-import { Input } from '@envy/ui/components/input'
-import { Label } from '@envy/ui/components/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@envy/ui/components/select'
-import { Skeleton } from '@envy/ui/components/skeleton'
-import { ToggleGroup, ToggleGroupItem } from '@envy/ui/components/toggle-group'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger
-} from '@envy/ui/components/tooltip'
-import {
-  Delete01Icon,
-  Download01Icon,
-  FileKeyIcon,
-  Key01Icon,
-  Upload01Icon,
-  UserAdd01Icon,
-  UserMinus01Icon,
-  Wrench01Icon
-} from '@hugeicons/core-free-icons'
-import type { IconSvgElement } from '@hugeicons/react'
+import { SECRET_AUDIT_ACTIONS } from '@envy/api/lib/audit-actions'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
-import { SECRET_AUDIT_ACTIONS } from '@envy/api/lib/audit-actions'
 import { useTRPC } from '@/utils/trpc'
-import { DashboardIcon } from './dashboard-icon'
 
 type Props = {
   projectId: string
   environments: { id: string; name: string }[]
 }
 
-type ActionFilter = 'all' | 'secrets'
+type ActionFilter = 'all' | 'secrets' | 'members' | 'cli'
 
 const SECRET_ACTIONS = SECRET_AUDIT_ACTIONS
 
-function capitalizeLabel(text: string) {
-  const t = text.trim()
-  if (!t) return text
-  if (t.includes('@')) return text
-  return t.charAt(0).toUpperCase() + t.slice(1)
-}
+const MEMBER_ACTIONS = new Set(['member_invited', 'member_removed'])
+const CLI_ACTIONS = new Set(['pushed', 'pulled', 'revealed'])
 
-function capitalizeWords(text: string) {
-  const t = text.trim()
-  if (!t) return text
-  if (t.includes('@')) return t
-  return t
-    .split(/\s+/)
-    .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : w))
-    .join(' ')
-}
-
-function formatAction(
-  action: string,
-  targetKey?: string | null,
-  environment?: string | null
-) {
-  const parts: { text: string; muted?: boolean }[] = []
+function actionVerb(action: string): { verb: string; color: string } {
   switch (action) {
     case 'pushed':
-      parts.push({ text: 'Pushed secrets' })
-      if (environment) {
-        parts.push({ text: `To ${capitalizeLabel(environment)}`, muted: true })
-      }
-      break
+      return { verb: 'pushed', color: 'text-brand' }
     case 'pulled':
-      parts.push({ text: 'Pulled secrets' })
-      if (environment) {
-        parts.push({
-          text: `From ${capitalizeLabel(environment)}`,
-          muted: true
-        })
-      }
-      break
+      return { verb: 'pulled', color: 'text-brand' }
+    case 'revealed':
+      return { verb: 'revealed', color: 'text-warning' }
     case 'secret_created':
-      parts.push({ text: 'Created' })
-      if (targetKey)
-        parts.push({ text: capitalizeLabel(targetKey), muted: true })
-      if (environment) {
-        parts.push({ text: `In ${capitalizeLabel(environment)}`, muted: true })
-      }
-      break
+      return { verb: 'added', color: 'text-brand' }
     case 'secret_updated':
     case 'secrets_updated':
-      parts.push({ text: 'Updated' })
-      if (targetKey)
-        parts.push({ text: capitalizeLabel(targetKey), muted: true })
-      if (environment) {
-        parts.push({ text: `In ${capitalizeLabel(environment)}`, muted: true })
-      }
-      break
+      return { verb: 'changed', color: 'text-info' }
     case 'secret_deleted':
     case 'secrets_deleted':
-      parts.push({ text: 'Deleted' })
-      if (targetKey)
-        parts.push({ text: capitalizeLabel(targetKey), muted: true })
-      if (environment) {
-        parts.push({
-          text: `From ${capitalizeLabel(environment)}`,
-          muted: true
-        })
-      }
-      break
-    case 'revealed':
-      parts.push({ text: 'Revealed secrets' })
-      if (environment) {
-        parts.push({ text: `In ${capitalizeLabel(environment)}`, muted: true })
-      }
-      break
+      return { verb: 'deleted', color: 'text-danger' }
     case 'member_invited':
-      parts.push({ text: 'Invited' })
-      if (targetKey)
-        parts.push({ text: capitalizeLabel(targetKey), muted: true })
-      break
+      return { verb: 'invited', color: 'text-info' }
     case 'member_removed':
-      parts.push({ text: 'Removed' })
-      if (targetKey)
-        parts.push({ text: capitalizeLabel(targetKey), muted: true })
-      break
+      return { verb: 'removed', color: 'text-danger' }
     default:
-      parts.push({
-        text: capitalizeWords(action.replace(/_/g, ' '))
-      })
+      return {
+        verb: action.replace(/_/g, ' '),
+        color: 'text-text-secondary'
+      }
   }
-  return parts
 }
 
 function timeAgo(date: Date | string) {
   const diff = Date.now() - new Date(date).getTime()
   const mins = Math.floor(diff / 60000)
-  if (mins < 60) return `${mins}m ago`
+  if (mins < 1) return 'now'
+  if (mins < 60) return `${mins}m`
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h ago`
+  if (hours < 24) return `${hours}h`
   const days = Math.floor(hours / 24)
-  return `${days}d ago`
+  if (days < 30) return `${days}d`
+  return new Date(date).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric'
+  })
 }
 
-function actionIcon(action: string): IconSvgElement {
-  switch (action) {
-    case 'pushed':
-      return Upload01Icon
-    case 'pulled':
-    case 'revealed':
-      return Download01Icon
-    case 'secret_created':
-      return FileKeyIcon
-    case 'secret_updated':
-    case 'secrets_updated':
-      return Wrench01Icon
-    case 'secret_deleted':
-    case 'secrets_deleted':
-      return Delete01Icon
-    case 'member_invited':
-      return UserAdd01Icon
-    case 'member_removed':
-      return UserMinus01Icon
-    case 'key_generated':
-    case 'key_revoked':
-      return Key01Icon
-    default:
-      return FileKeyIcon
-  }
-}
-
-function actionTone(action: string): string {
-  switch (action) {
-    case 'secret_deleted':
-    case 'secrets_deleted':
-    case 'key_revoked':
-      return 'bg-destructive/15 text-destructive'
-    case 'secret_updated':
-    case 'secrets_updated':
-    case 'member_invited':
-      return 'bg-info/10 text-info'
-    case 'member_removed':
-      return 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-    default:
-      return 'bg-brand/10 text-brand'
-  }
-}
-
-function dateBucket(d: Date): string {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const y = new Date(d)
-  y.setHours(0, 0, 0, 0)
-  const diffDays = Math.floor((today.getTime() - y.getTime()) / 86400000)
-  if (diffDays === 0) return 'Today'
-  if (diffDays === 1) return 'Yesterday'
-  if (diffDays < 7) return 'Last 7 days'
-  return 'Earlier'
-}
+const FILTERS: { id: ActionFilter; label: string }[] = [
+  { id: 'all', label: 'all' },
+  { id: 'secrets', label: 'secrets' },
+  { id: 'members', label: 'members' },
+  { id: 'cli', label: 'cli' }
+]
 
 export function AuditLog({ projectId, environments }: Props) {
   const trpc = useTRPC()
   const [envFilter, setEnvFilter] = useState<string>('all')
-  const [memberFilter, setMemberFilter] = useState<string>('all')
   const [actionFilter, setActionFilter] = useState<ActionFilter>('all')
-  const [search, setSearch] = useState('')
   const [limit, setLimit] = useState(50)
-
-  const membersQuery = useQuery(trpc.members.list.queryOptions({ projectId }))
 
   const auditQuery = useQuery(
     trpc.auditLog.list.queryOptions({
       projectId,
       limit,
       offset: 0,
-      ...(envFilter !== 'all' ? { environment: envFilter } : {}),
-      ...(memberFilter !== 'all' ? { userId: memberFilter } : {})
+      ...(envFilter !== 'all' ? { environment: envFilter } : {})
     })
   )
 
   const logs = auditQuery.data ?? []
-
-  const hasActiveFilters =
-    envFilter !== 'all' ||
-    memberFilter !== 'all' ||
-    actionFilter === 'secrets' ||
-    search.trim() !== ''
 
   const filtered = useMemo(() => {
     return logs.filter((log) => {
       if (actionFilter === 'secrets' && !SECRET_ACTIONS.has(log.action)) {
         return false
       }
-      if (search.trim()) {
-        const q = search.trim().toLowerCase()
-        const key = (log.targetKey ?? '').toLowerCase()
-        const act = log.action.toLowerCase()
-        if (!key.includes(q) && !act.includes(q)) return false
+      if (actionFilter === 'members' && !MEMBER_ACTIONS.has(log.action)) {
+        return false
+      }
+      if (actionFilter === 'cli' && !CLI_ACTIONS.has(log.action)) {
+        return false
       }
       return true
     })
-  }, [logs, actionFilter, search])
-
-  const grouped = useMemo(() => {
-    const map = new Map<string, typeof filtered>()
-    for (const log of filtered) {
-      const bucket = dateBucket(new Date(log.createdAt))
-      if (!map.has(bucket)) map.set(bucket, [])
-      map.get(bucket)?.push(log)
-    }
-    const order = ['Today', 'Yesterday', 'Last 7 days', 'Earlier']
-    return order.reduce<{ label: string; items: typeof filtered }[]>(
-      (acc, k) => {
-        if (map.has(k)) {
-          acc.push({ label: k, items: map.get(k) ?? [] })
-        }
-        return acc
-      },
-      []
-    )
-  }, [filtered])
-
-  const firstSectionLabel = useMemo(
-    () => grouped.find((g) => g.items.length > 0)?.label,
-    [grouped]
-  )
-
-  if (auditQuery.isLoading) {
-    return (
-      <div className="flex flex-col gap-2 rounded-xl border border-border p-4">
-        {['a', 'b', 'c', 'd'].map((k) => (
-          <div key={k} className="flex items-start gap-3">
-            <Skeleton className="mt-1 size-8 rounded-full" />
-            <div className="flex flex-1 flex-col gap-2">
-              <Skeleton className="h-3 w-full max-w-md" />
-              <Skeleton className="h-3 w-40" />
-            </div>
-          </div>
-        ))}
-      </div>
-    )
-  }
-
-  if (logs.length === 0 && !hasActiveFilters) {
-    return (
-      <Empty className="min-h-[320px] rounded-xl border border-dashed border-border bg-muted/20">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <DashboardIcon icon={FileKeyIcon} size="md" />
-          </EmptyMedia>
-          <EmptyTitle>No activity yet</EmptyTitle>
-          <EmptyDescription>
-            Actions from the CLI and dashboard will show up here. Try{' '}
-            <code className="rounded bg-muted px-1 font-mono text-[11px]">
-              envy push
-            </code>{' '}
-            or{' '}
-            <a
-              href="https://docs.useenvy.dev/cli"
-              className="underline underline-offset-4 hover:text-foreground"
-              target="_blank"
-              rel="noreferrer"
-            >
-              read the CLI docs
-            </a>
-            .
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
-    )
-  }
+  }, [logs, actionFilter])
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex flex-col gap-1.5">
-            <Label
-              htmlFor="audit-env"
-              className="text-xs text-muted-foreground"
+    <div className="flex min-h-full flex-col">
+      <div className="flex flex-wrap items-center gap-2 border-b border-border px-7 py-3.5">
+        {FILTERS.map((f) => {
+          const active = actionFilter === f.id
+          return (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => setActionFilter(f.id)}
+              className={`cursor-pointer rounded-full border px-3 py-1 font-mono text-[11px] transition-colors ${
+                active
+                  ? 'border-ghost-border bg-ghost-bg text-text-primary'
+                  : 'border-ghost-border/60 bg-transparent text-text-muted hover:border-border-focus hover:text-text-secondary'
+              }`}
             >
-              Environment
-            </Label>
-            <Select
-              value={envFilter}
-              onValueChange={(v) => setEnvFilter(v ?? 'all')}
-            >
-              <SelectTrigger
-                id="audit-env"
-                className="h-9 w-[180px] rounded-md"
-              >
-                <SelectValue placeholder="All environments">
-                  {(value) =>
-                    value === 'all' || value == null
-                      ? 'All environments'
-                      : String(value)
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent className="rounded-md">
-                <SelectItem value="all">All environments</SelectItem>
-                {environments.map((e) => (
-                  <SelectItem key={e.id} value={e.name}>
-                    {e.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label
-              htmlFor="audit-member"
-              className="text-xs text-muted-foreground"
-            >
-              Member
-            </Label>
-            <Select
-              value={memberFilter}
-              onValueChange={(v) => setMemberFilter(v ?? 'all')}
-            >
-              <SelectTrigger
-                id="audit-member"
-                className="h-9 w-[200px] rounded-md"
-              >
-                <SelectValue placeholder="All members">
-                  {(value) => {
-                    if (value === 'all' || value == null) return 'All members'
-                    const row = membersQuery.data?.find(
-                      (m) => m.userId === value
-                    )
-                    return row?.user?.name
-                      ? capitalizeWords(row.user.name)
-                      : 'Member'
-                  }}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent className="rounded-md">
-                <SelectItem value="all">All members</SelectItem>
-                {membersQuery.data?.map((m) => (
-                  <SelectItem key={m.id} value={m.userId}>
-                    <span className="flex items-center gap-2">
-                      <Avatar className="size-4">
-                        {m.user.image ? (
-                          <AvatarImage src={m.user.image} alt="" />
-                        ) : null}
-                        <AvatarFallback className="text-[8px]">
-                          {m.user.name?.slice(0, 2).toUpperCase() ?? '??'}
-                        </AvatarFallback>
-                      </Avatar>
-                      {capitalizeWords(m.user.name ?? 'Unknown')}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-muted-foreground">Type</span>
-            <ToggleGroup
-              value={[actionFilter]}
-              onValueChange={(v) => {
-                const x = v[0]
-                if (x === 'all' || x === 'secrets') {
-                  setActionFilter(x)
-                }
-              }}
-              variant="outline"
-              size="sm"
-            >
-              <ToggleGroupItem value="all">All</ToggleGroupItem>
-              <ToggleGroupItem value="secrets">Secrets</ToggleGroupItem>
-            </ToggleGroup>
-          </div>
-        </div>
-        <div className="flex w-full max-w-sm flex-col gap-1.5">
-          <Label
-            htmlFor="audit-search"
-            className="text-xs text-muted-foreground"
+              {f.label}
+            </button>
+          )
+        })}
+        <div className="ml-auto flex items-center gap-2">
+          <select
+            value={envFilter}
+            onChange={(e) => setEnvFilter(e.target.value)}
+            className="cursor-pointer rounded border border-ghost-border bg-transparent px-2 py-1 font-mono text-[11px] text-text-secondary outline-none focus:border-border-focus"
+            aria-label="Filter by environment"
           >
-            Search
-          </Label>
-          <Input
-            id="audit-search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Action or key…"
-            className="h-9"
-          />
+            <option value="all">all envs</option>
+            {environments.map((e) => (
+              <option key={e.id} value={e.name}>
+                {e.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      <div className="w-full min-w-0 rounded-xl border border-border">
-        <div className="flex flex-col px-0 pb-1 pt-0">
-          {grouped.map((group) =>
-            group.items.length > 0 ? (
-              <div key={group.label} className="mb-2">
-                <p
-                  className={`sticky top-0 z-10 bg-card px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground ${
-                    group.label === firstSectionLabel
-                      ? 'rounded-b-lg'
-                      : 'rounded-lg'
-                  }`}
-                >
-                  {group.label}
-                </p>
-                <div className="divide-y divide-border">
-                  {group.items.map((log) => {
-                    const parts = formatAction(
-                      log.action,
-                      log.targetKey,
-                      log.environment
-                    )
-                    const icon = actionIcon(log.action)
-                    return (
-                      <div key={log.id} className="flex gap-3 px-3 py-3">
-                        <div
-                          className={`flex size-8 shrink-0 items-center justify-center rounded-full ${actionTone(log.action)}`}
-                        >
-                          <DashboardIcon icon={icon} size="md" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm leading-snug">
-                            {parts.map((part, j) => (
-                              <span
-                                // biome-ignore lint/suspicious/noArrayIndexKey: static ordered tokens from formatAction
-                                key={j}
-                                className={
-                                  part.muted ? 'text-muted-foreground' : ''
-                                }
-                              >
-                                {part.text}
-                                {j < parts.length - 1 ? ' ' : ''}
-                              </span>
-                            ))}
-                          </p>
-                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                            {log.environment ? (
-                              <Badge
-                                variant="outline"
-                                className="font-mono text-[10px]"
-                              >
-                                {capitalizeLabel(log.environment)}
-                              </Badge>
-                            ) : null}
-                            <Tooltip>
-                              <TooltipTrigger
-                                render={
-                                  <span className="cursor-default tabular-nums">
-                                    {timeAgo(log.createdAt)}
-                                  </span>
-                                }
-                              />
-                              <TooltipContent>
-                                {new Date(log.createdAt).toISOString()}
-                              </TooltipContent>
-                            </Tooltip>
-                            <span className="font-mono text-xs flex items-center gap-1">
-                              — By{' '}
-                              {log.user?.name
-                                ? capitalizeWords(log.user.name)
-                                : 'System'}{' '}
-                              {log.user?.image ? (
-                                <Avatar className="size-4">
-                                  <AvatarImage src={log.user.image} alt="" />
-                                  <AvatarFallback className="bg-muted text-xs font-semibold text-muted-foreground">
-                                    {log.user.name?.slice(0, 2).toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
-                              ) : null}
-                            </span>
-                            {log.metadata &&
-                            typeof log.metadata === 'object' &&
-                            'source' in log.metadata ? (
-                              <span>
-                                Via{' '}
-                                {capitalizeLabel(
-                                  (log.metadata as { source: string }).source
-                                )}
-                              </span>
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            ) : null
-          )}
+      {auditQuery.isLoading ? (
+        Array.from({ length: 6 }).map((_, i) => (
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
+            key={i}
+            className="border-b border-ghost-divider px-7 py-3"
+          >
+            <div className="h-3.5 w-3/4 max-w-lg animate-pulse rounded bg-ghost-bg" />
+          </div>
+        ))
+      ) : logs.length === 0 ? (
+        <div className="px-7 py-16 text-center">
+          <p className="mb-2 text-[15px] font-semibold text-text-primary">
+            No activity yet
+          </p>
+          <p className="font-mono text-[12px] text-text-muted">
+            $ envy push · CLI and dashboard actions land here
+          </p>
         </div>
-      </div>
-
-      {filtered.length === 0 && hasActiveFilters ? (
-        <p className="text-center text-sm text-muted-foreground">
-          No entries match your filters.
-        </p>
-      ) : null}
+      ) : filtered.length === 0 ? (
+        <div className="px-7 py-12 text-center font-mono text-[12px] text-text-muted">
+          no entries match this filter
+        </div>
+      ) : (
+        filtered.map((log) => {
+          const { verb, color } = actionVerb(log.action)
+          const who = log.user?.name ?? 'system'
+          const target = log.targetKey
+            ? log.targetKey
+            : log.environment
+              ? `[${log.environment}]`
+              : ''
+          return (
+            <div
+              key={log.id}
+              className="grid grid-cols-[110px_1fr_90px_70px] items-baseline gap-4 border-b border-ghost-divider px-7 py-3 font-mono text-[12px] transition-colors hover:bg-ghost-bg sm:grid-cols-[110px_1fr_90px_110px]"
+            >
+              <span className="truncate text-text-primary">{who}</span>
+              <span className="min-w-0 truncate text-text-secondary">
+                <span className={color}>{verb}</span>
+                {target ? ` ${target}` : ''}
+              </span>
+              <span className="truncate text-[10.5px] text-text-muted">
+                {log.environment ?? '—'}
+              </span>
+              <span
+                className="text-right text-[10.5px] text-text-muted"
+                title={new Date(log.createdAt).toISOString()}
+              >
+                {timeAgo(log.createdAt)}
+              </span>
+            </div>
+          )
+        })
+      )}
 
       {auditQuery.data && auditQuery.data.length >= limit ? (
-        <Button
-          variant="outline"
-          size="sm"
-          className="self-center"
-          onClick={() => setLimit((l) => l + 50)}
-        >
-          Load more
-        </Button>
+        <div className="flex justify-center py-5">
+          <button
+            type="button"
+            onClick={() => setLimit((l) => l + 50)}
+            className="cursor-pointer rounded border border-ghost-border px-4 py-2 font-mono text-[11px] text-text-secondary transition-colors hover:border-border-focus hover:text-text-primary"
+          >
+            load more
+          </button>
+        </div>
       ) : null}
     </div>
   )

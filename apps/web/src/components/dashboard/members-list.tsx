@@ -1,3 +1,4 @@
+import { PLAN_LIMITS } from '@envy/api/lib/plan-limits'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,32 +9,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@envy/ui/components/alert-dialog'
-import { Avatar, AvatarFallback, AvatarImage } from '@envy/ui/components/avatar'
-import { Badge } from '@envy/ui/components/badge'
-import { Button } from '@envy/ui/components/button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle
-} from '@envy/ui/components/card'
-import { Skeleton } from '@envy/ui/components/skeleton'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger
-} from '@envy/ui/components/tooltip'
-import {
-  Cancel01Icon,
-  UserAdd01Icon,
-  UserGroupIcon
-} from '@hugeicons/core-free-icons'
-import { PLAN_LIMITS } from '@envy/api/lib/plan-limits'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTRPC } from '@/utils/trpc'
-import { dashboardCardClass } from './dashboard-classes'
-import { DashboardIcon } from './dashboard-icon'
 import { InviteDialog } from './invite-dialog'
 import { PendingInvites } from './pending-invites'
 
@@ -44,30 +22,30 @@ type Props = {
   orgPlan: string
 }
 
-const roleBadgeClass: Record<string, string> = {
-  owner: 'border-0 bg-brand/10 font-medium text-brand',
-  admin: 'border-0 bg-info/10 font-medium text-info',
-  member: 'border-0 bg-muted text-muted-foreground'
+const ROLE_COLOR: Record<string, string> = {
+  owner: 'text-brand',
+  admin: 'text-info',
+  member: 'text-text-muted'
 }
 
-const ROLE_HELP: Record<string, string> = {
-  owner: 'Full access; billing and deletion (where available).',
-  admin: 'Manage secrets, environments, and invitations.',
-  member: 'View and pull secrets; cannot change project settings.'
+function initials(name: string | null | undefined) {
+  if (name?.trim()) {
+    const parts = name.trim().split(/\s+/)
+    if (parts.length >= 2) {
+      return `${parts[0]?.[0] ?? ''}${parts[1]?.[0] ?? ''}`.toUpperCase()
+    }
+    return name.slice(0, 2).toUpperCase()
+  }
+  return '??'
 }
 
-function formatUserId(userId: string) {
-  if (userId.length <= 12) return userId
-  return `${userId.slice(0, 6)}…${userId.slice(-4)}`
-}
-
-function initialsFromId(userId: string) {
-  return (
-    userId
-      .replace(/[^a-zA-Z0-9]/g, '')
-      .slice(0, 2)
-      .toUpperCase() || '??'
-  )
+function formatJoined(date: Date | string | null | undefined) {
+  if (!date) return '—'
+  return new Date(date).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
 }
 
 const MEMBER_CAP: Record<string, number> = {
@@ -109,134 +87,118 @@ export function MembersList({
   const members = membersQuery.data ?? []
   const pending = pendingQuery.data ?? []
   const cap = MEMBER_CAP[orgPlan] ?? 1
+  const overLimit = members.length > cap
+  const removing = members.find((m) => m.userId === removingUserId)
 
   return (
-    <div className="flex flex-col gap-5">
-      <Card className={dashboardCardClass}>
-        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-border py-4">
-          <div className="flex items-center gap-2">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-brand/10">
-              <DashboardIcon
-                icon={UserGroupIcon}
-                size="md"
-                className="text-brand"
-              />
-            </div>
-            <div>
-              <CardTitle className="text-base">Members</CardTitle>
-              <p className="text-xs text-muted-foreground">
-                {members.length} member{members.length !== 1 ? 's' : ''}
-                {canManage ? ` · ${pending.length} pending` : ''}
-                {orgPlan === 'team'
-                  ? ` · up to ${cap} on Team`
-                  : ` · ${cap} seat on ${orgPlan}`}
-              </p>
-            </div>
+    <div className="flex min-h-full flex-col">
+      {overLimit ? (
+        <div className="mx-7 mt-4 flex gap-2.5 rounded border border-danger/35 bg-danger/[0.06] px-4 py-3 text-[12.5px] leading-[1.55] text-text-secondary">
+          <span className="font-mono text-danger">△</span>
+          <span>
+            This organization is over the {orgPlan} seat limit ({members.length}{' '}
+            / {cap}).{' '}
+            <span className="text-text-primary">
+              Review plan in preferences.
+            </span>
+          </span>
+        </div>
+      ) : null}
+
+      <div className="flex items-center justify-between gap-3 border-b border-border px-7 py-3">
+        <div className="font-mono text-[11px] text-text-muted">
+          {members.length} member{members.length !== 1 ? 's' : ''}
+          {canManage ? ` · ${pending.length} pending` : ''}
+          {` · ${cap} seat${cap === 1 ? '' : 's'} on ${orgPlan}`}
+        </div>
+        {canManage ? (
+          <button
+            type="button"
+            onClick={() => setInviteOpen(true)}
+            className="cursor-pointer rounded bg-primary px-3.5 py-1.5 text-[12px] font-semibold text-primary-foreground transition-colors hover:bg-white"
+          >
+            + invite
+          </button>
+        ) : null}
+      </div>
+
+      <div className="grid grid-cols-[2fr_1.2fr_1fr_auto] gap-4 border-b border-ghost-divider px-7 py-2.5 font-mono text-[10px] tracking-[0.08em] text-text-muted">
+        <span>MEMBER</span>
+        <span>ROLE</span>
+        <span>JOINED</span>
+        <span />
+      </div>
+
+      {membersQuery.isLoading ? (
+        Array.from({ length: 3 }).map((_, i) => (
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
+            key={i}
+            className="border-b border-ghost-divider px-7 py-3.5"
+          >
+            <div className="h-4 w-2/3 max-w-sm animate-pulse rounded bg-ghost-bg" />
           </div>
-          {canManage ? (
-            <Button
-              size="sm"
-              className="gap-1.5"
-              onClick={() => setInviteOpen(true)}
-            >
-              <DashboardIcon
-                icon={UserAdd01Icon}
-                size="sm"
-                data-icon="inline-start"
-              />
-              Invite
-            </Button>
-          ) : null}
-        </CardHeader>
-        <CardContent className="p-0">
-          {membersQuery.isLoading ? (
-            <div className="flex flex-col gap-3 p-4">
-              {['a', 'b'].map((k) => (
-                <div key={k} className="flex items-center gap-3">
-                  <Skeleton className="size-10 rounded-full" />
-                  <div className="flex flex-1 flex-col gap-2">
-                    <Skeleton className="h-3 w-40" />
-                    <Skeleton className="h-3 w-56" />
-                  </div>
-                </div>
-              ))}
+        ))
+      ) : members.length === 0 ? (
+        <div className="px-7 py-14 text-center font-mono text-[12px] text-text-muted">
+          no members yet
+        </div>
+      ) : (
+        members.map((member) => (
+          <div
+            key={member.id}
+            className="grid grid-cols-[2fr_1.2fr_1fr_auto] items-center gap-4 border-b border-ghost-divider px-7 py-3.5 transition-colors hover:bg-ghost-bg"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex size-[26px] shrink-0 items-center justify-center rounded bg-ghost-bg font-mono text-[10px] text-text-primary">
+                {initials(member.user.name)}
+              </span>
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate text-[13px] font-semibold text-text-primary">
+                  {member.user.name}
+                  {member.userId === currentUserId ? (
+                    <span className="ml-1.5 font-mono text-[10px] font-normal text-text-muted">
+                      you
+                    </span>
+                  ) : null}
+                </span>
+                <span className="truncate font-mono text-[10px] text-text-muted">
+                  {member.role}
+                </span>
+              </span>
             </div>
-          ) : (
-            members.map((member, i) => (
-              <div
-                key={member.id}
-                className={`flex flex-wrap items-center justify-between gap-3 px-4 py-3 ${
-                  i < members.length - 1 ? 'border-b border-border' : ''
-                }`}
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <Avatar className="size-10">
-                    {member.user.image ? (
-                      <AvatarImage src={member.user.image} alt="" />
-                    ) : (
-                      <AvatarFallback className="bg-muted text-xs font-semibold text-muted-foreground">
-                        {initialsFromId(member.user.name)}
-                      </AvatarFallback>
-                    )}
-                  </Avatar>
-                  <div className="min-w-0">
-                    <p className="font-mono text-sm font-medium tracking-tight">
-                      {member.user.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {member.createdAt
-                        ? `Joined ${new Date(member.createdAt).toLocaleDateString()}`
-                        : ''}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <span className="inline-flex cursor-default">
-                          <Badge
-                            className={
-                              roleBadgeClass[member.role] ??
-                              roleBadgeClass.member
-                            }
-                          >
-                            {member.role.charAt(0).toUpperCase() +
-                              member.role.slice(1)}
-                          </Badge>
-                        </span>
-                      }
-                    />
-                    <TooltipContent className="max-w-xs">
-                      {ROLE_HELP[member.role] ?? member.role}
-                    </TooltipContent>
-                  </Tooltip>
-                  {canManage &&
-                    member.role !== 'owner' &&
-                    member.userId !== currentUserId && (
-                      <Tooltip>
-                        <TooltipTrigger
-                          render={
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              className="text-muted-foreground hover:text-destructive"
-                              onClick={() => setRemovingUserId(member.userId)}
-                              aria-label="Remove member"
-                            />
-                          }
-                        >
-                          <DashboardIcon icon={Cancel01Icon} size="sm" />
-                        </TooltipTrigger>
-                        <TooltipContent>Remove member</TooltipContent>
-                      </Tooltip>
-                    )}
-                </div>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
+            <span
+              className={`font-mono text-[11px] ${
+                ROLE_COLOR[member.role] ?? ROLE_COLOR.member
+              }`}
+            >
+              {member.role}
+            </span>
+            <span className="font-mono text-[10.5px] text-text-muted">
+              {formatJoined(member.createdAt)}
+            </span>
+            <span className="flex justify-end">
+              {member.role === 'owner' ? (
+                <span className="font-mono text-[10.5px] text-text-muted">
+                  —
+                </span>
+              ) : canManage && member.userId !== currentUserId ? (
+                <button
+                  type="button"
+                  onClick={() => setRemovingUserId(member.userId)}
+                  className="cursor-pointer font-mono text-[10.5px] text-text-muted transition-colors hover:text-danger"
+                >
+                  remove
+                </button>
+              ) : (
+                <span className="font-mono text-[10.5px] text-text-muted">
+                  —
+                </span>
+              )}
+            </span>
+          </div>
+        ))
+      )}
 
       {canManage ? (
         <PendingInvites projectId={projectId} invites={pending} />
@@ -252,13 +214,13 @@ export function MembersList({
         open={!!removingUserId}
         onOpenChange={() => setRemovingUserId(null)}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-md border-ghost-border bg-[#0e0f0e]">
           <AlertDialogHeader>
             <AlertDialogTitle>Remove member</AlertDialogTitle>
             <AlertDialogDescription>
               Remove{' '}
-              <span className="font-mono font-medium">
-                {removingUserId ? formatUserId(removingUserId) : ''}
+              <span className="font-mono text-text-primary">
+                {removing?.user.name ?? 'this member'}
               </span>
               ? They will lose access to this project immediately.
             </AlertDialogDescription>
@@ -266,7 +228,7 @@ export function MembersList({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-danger text-white hover:bg-danger/90"
               onClick={() =>
                 removingUserId &&
                 removeMutation.mutate({ projectId, userId: removingUserId })

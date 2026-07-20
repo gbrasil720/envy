@@ -8,15 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@envy/ui/components/alert-dialog'
-import { Badge } from '@envy/ui/components/badge'
 import { Button } from '@envy/ui/components/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@envy/ui/components/card'
 import {
   Dialog,
   DialogContent,
@@ -32,25 +24,11 @@ import {
   FieldLabel
 } from '@envy/ui/components/field'
 import { Input } from '@envy/ui/components/input'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger
-} from '@envy/ui/components/tooltip'
-import {
-  Add01Icon,
-  Delete01Icon,
-  Edit01Icon,
-  Key01Icon,
-  Layers01Icon
-} from '@hugeicons/core-free-icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useTRPC } from '@/utils/trpc'
-import { dashboardCardClass } from './dashboard-classes'
-import { DashboardIcon } from './dashboard-icon'
 
 type Env = {
   id: string
@@ -178,176 +156,66 @@ export function EnvironmentsManager({ projectId, projectSlug, role }: Props) {
 
   return (
     <>
-      <Card className={dashboardCardClass}>
-        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
-          <div>
-            <CardTitle className="text-base">Environments</CardTitle>
-            <CardDescription>
-              Manage isolated secret stores. Each environment encrypts secrets
-              independently.
-            </CardDescription>
-          </div>
-          {canEdit ? (
-            <Button
-              size="sm"
-              variant="outline"
-              className="shrink-0 gap-1"
-              onClick={() => {
-                setCreateName('')
-                setCreateError(null)
-                setCreateOpen(true)
-              }}
-            >
-              <DashboardIcon
-                icon={Add01Icon}
-                size="sm"
-                data-icon="inline-start"
+      <div className="flex flex-wrap gap-2">
+        {envsQuery.isPending
+          ? [1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-8 w-24 animate-pulse rounded border border-ghost-border bg-ghost-bg"
               />
-              New environment
-            </Button>
-          ) : null}
-        </CardHeader>
-
-        <CardContent className="p-0">
-          {envsQuery.isPending ? (
-            <div className="flex flex-col divide-y divide-border px-6">
-              {[1, 2].map((i) => (
-                <div key={i} className="flex items-center gap-3 py-4">
-                  <div className="h-4 w-24 animate-pulse rounded bg-muted" />
-                  <div className="h-5 w-14 animate-pulse rounded-full bg-muted" />
-                </div>
-              ))}
-            </div>
-          ) : envs.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                <DashboardIcon
-                  icon={Layers01Icon}
-                  size="lg"
-                  className="text-muted-foreground"
-                />
-              </div>
-              <div>
-                <p className="text-sm font-medium">No environments yet</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Run{' '}
-                  <code className="rounded bg-muted px-1 font-mono text-xs">
-                    envy push
-                  </code>{' '}
-                  or create one manually.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <ul className="flex flex-col divide-y divide-border">
-              {envs.map((env) => (
-                <li
-                  key={env.id}
-                  className="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between"
+            ))
+          : envs.map((env) => (
+              <div
+                key={env.id}
+                className="group flex items-center gap-1.5 rounded border border-ghost-border px-3 py-1.5 font-mono text-[11.5px] text-text-primary"
+              >
+                <Link
+                  to="/dashboard/$projectSlug/secrets"
+                  params={{ projectSlug }}
+                  className="hover:text-brand"
+                  title={`${env.secretsCount} secrets`}
                 >
-                  {/* left: icon + name + created */}
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted/50">
-                      <DashboardIcon
-                        icon={Layers01Icon}
-                        size="sm"
-                        className="text-muted-foreground"
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate font-mono text-sm font-medium">
-                        {env.name}
-                      </p>
-                      {env.createdAt ? (
-                        <p className="text-xs text-muted-foreground">
-                          Created{' '}
-                          {new Date(env.createdAt).toLocaleDateString(
-                            undefined,
-                            {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            }
-                          )}
-                        </p>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  {/* right: count + actions */}
-                  <div className="flex shrink-0 items-center gap-2">
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <Link
-                            to="/dashboard/$projectSlug/secrets"
-                            params={{ projectSlug }}
-                            className="flex items-center gap-1"
-                          />
-                        }
-                      >
-                        <Badge
-                          variant="secondary"
-                          className="gap-1 font-mono tabular-nums"
-                        >
-                          <DashboardIcon
-                            icon={Key01Icon}
-                            size="xs"
-                            className="text-muted-foreground"
-                          />
-                          {env.secretsCount}
-                        </Badge>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {env.secretsCount === 1
-                          ? '1 secret — view in Secrets'
-                          : `${env.secretsCount} secrets — view in Secrets`}
-                      </TooltipContent>
-                    </Tooltip>
-
-                    {canEdit ? (
-                      <>
-                        <Tooltip>
-                          <TooltipTrigger
-                            render={
-                              <Button
-                                variant="ghost"
-                                size="icon-xs"
-                                aria-label={`Rename ${env.name}`}
-                                onClick={() => openRename(env)}
-                              />
-                            }
-                          >
-                            <DashboardIcon icon={Edit01Icon} size="sm" />
-                          </TooltipTrigger>
-                          <TooltipContent>Rename</TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger
-                            render={
-                              <Button
-                                variant="ghost"
-                                size="icon-xs"
-                                aria-label={`Delete ${env.name}`}
-                                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                onClick={() => setDeleteTarget(env)}
-                              />
-                            }
-                          >
-                            <DashboardIcon icon={Delete01Icon} size="sm" />
-                          </TooltipTrigger>
-                          <TooltipContent>Delete environment</TooltipContent>
-                        </Tooltip>
-                      </>
-                    ) : null}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+                  {env.name}
+                  <span className="ml-1.5 text-text-muted">
+                    {env.secretsCount}
+                  </span>
+                </Link>
+                {canEdit ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => openRename(env)}
+                      className="ml-1 cursor-pointer text-text-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-text-primary"
+                      aria-label={`Rename ${env.name}`}
+                    >
+                      ✎
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(env)}
+                      className="cursor-pointer text-text-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-danger"
+                      aria-label={`Delete ${env.name}`}
+                    >
+                      ×
+                    </button>
+                  </>
+                ) : null}
+              </div>
+            ))}
+        {canEdit ? (
+          <button
+            type="button"
+            onClick={() => {
+              setCreateName('')
+              setCreateError(null)
+              setCreateOpen(true)
+            }}
+            className="cursor-pointer rounded border border-dashed border-ghost-border px-3 py-1.5 font-mono text-[11.5px] text-text-muted transition-colors hover:border-border-focus hover:text-text-primary"
+          >
+            + add
+          </button>
+        ) : null}
+      </div>
 
       {/* Create dialog */}
       <Dialog
