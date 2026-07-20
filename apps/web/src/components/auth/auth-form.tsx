@@ -19,7 +19,7 @@ export function AuthForm() {
       .social({
         provider: 'github',
         callbackURL: `${window.location.origin}/dashboard`,
-        errorCallbackURL: `${window.location.origin}/login?error=not_approved`
+        errorCallbackURL: `${window.location.origin}/login?error=oauth_failed`
       })
       .then((data) => {
         if (data.error) {
@@ -35,6 +35,15 @@ export function AuthForm() {
     return <AccessDeniedCard />
   }
 
+  const oauthErrorMessage =
+    error === 'oauth_code'
+      ? 'GitHub login failed (code expired or callback URL mismatch). Try again — ensure the OAuth app callback is exactly BETTER_AUTH_URL/api/auth/callback/github.'
+      : error === 'oauth_denied'
+        ? 'GitHub authorization was cancelled.'
+        : error === 'oauth_failed'
+          ? 'GitHub login failed. Try again in a moment.'
+          : error
+
   return (
     <div className="w-full max-w-[400px]">
       <div className="overflow-hidden rounded-md border border-ghost-border bg-surface">
@@ -46,9 +55,9 @@ export function AuthForm() {
             Your secrets are waiting. Encrypted, obviously.
           </p>
 
-          {error ? (
+          {oauthErrorMessage ? (
             <div className="mb-5 rounded border border-danger/40 bg-danger/10 px-3 py-2.5 font-mono text-[12px] text-danger">
-              {error}
+              {oauthErrorMessage}
             </div>
           ) : null}
 

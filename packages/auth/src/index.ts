@@ -26,18 +26,21 @@ export function createAuth() {
       github: {
         clientId:
           env.NODE_ENV === 'development'
-            ? (env.GITHUB_CLIENT_ID_DEV as string).trim()
-            : (env.GITHUB_CLIENT_ID as string).trim(),
+            ? env.GITHUB_CLIENT_ID_DEV
+            : env.GITHUB_CLIENT_ID,
         clientSecret:
           env.NODE_ENV === 'development'
-            ? (env.GITHUB_CLIENT_SECRET_DEV as string).trim()
-            : (env.GITHUB_CLIENT_SECRET as string).trim()
+            ? env.GITHUB_CLIENT_SECRET_DEV
+            : env.GITHUB_CLIENT_SECRET,
+        // Must match the GitHub OAuth App "Authorization callback URL" exactly.
+        // Mismatch here surfaces as GitHub bad_verification_code on token exchange.
+        redirectURI: `${env.BETTER_AUTH_URL.replace(/\/$/, '')}/api/auth/callback/github`
       }
     },
     trustedOrigins: [
       env.CORS_ORIGIN,
       env.BETTER_AUTH_URL,
-      ...(env.TRUSTED_ORIGINS?.split(',') ?? [])
+      ...(env.TRUSTED_ORIGINS?.split(',').map((o) => o.trim()) ?? [])
     ],
     databaseHooks: {
       user: {
@@ -149,12 +152,17 @@ export function createAuth() {
       }
     },
     secret: env.BETTER_AUTH_SECRET,
-    baseURL: env.BETTER_AUTH_URL,
+    baseURL: env.BETTER_AUTH_URL.replace(/\/$/, ''),
+    // Prefer database-backed OAuth state when a DB is configured. Cookie-only
+    // state is fragile across reloads / double-callbacks and can yield a code
+    // that GitHub rejects as bad_verification_code on token exchange.
     account: {
-      storeStateStrategy: 'cookie'
+      storeStateStrategy: 'database'
     },
     advanced: {
       defaultCookieAttributes: {
+        // Cross-origin web (e.g. :3001) → API (:3000) needs SameSite=None in
+        // production. Localhost is same-site enough with Lax for OAuth cookies.
         sameSite: env.NODE_ENV === 'development' ? 'lax' : 'none',
         secure: env.NODE_ENV !== 'development',
         httpOnly: true,

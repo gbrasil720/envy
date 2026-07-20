@@ -24,7 +24,8 @@ function LoginCard({ sessionToken }: { sessionToken: string | undefined }) {
       : '/cli-auth'
     await authClient.signIn.social({
       provider: 'github',
-      callbackURL: `${window.location.origin}${callbackPath}`
+      callbackURL: `${window.location.origin}${callbackPath}`,
+      errorCallbackURL: `${window.location.origin}/login?error=oauth_failed`
     })
   }
 

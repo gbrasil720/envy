@@ -15,10 +15,10 @@ export const env = createEnv({
     BETTER_AUTH_API_KEY: z.string().min(1),
     BETTER_AUTH_URL: z.url(),
     CORS_ORIGIN: z.string(),
-    GITHUB_CLIENT_ID: z.string(),
-    GITHUB_CLIENT_SECRET: z.string(),
-    GITHUB_CLIENT_ID_DEV: z.string(),
-    GITHUB_CLIENT_SECRET_DEV: z.string(),
+    GITHUB_CLIENT_ID: z.string().transform((s) => s.trim()),
+    GITHUB_CLIENT_SECRET: z.string().transform((s) => s.trim()),
+    GITHUB_CLIENT_ID_DEV: z.string().transform((s) => s.trim()),
+    GITHUB_CLIENT_SECRET_DEV: z.string().transform((s) => s.trim()),
     TRUSTED_ORIGINS: z.string().optional(),
     NODE_ENV: z
       .enum(['development', 'production', 'test'])
