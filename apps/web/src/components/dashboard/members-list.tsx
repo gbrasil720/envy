@@ -14,6 +14,8 @@ import { useState } from 'react'
 import { useTRPC } from '@/utils/trpc'
 import { InviteDialog } from './invite-dialog'
 import { PendingInvites } from './pending-invites'
+import { initials } from '@/utils/initials'
+import { formatDateShort } from '@/utils/time'
 
 type Props = {
   projectId: string
@@ -26,26 +28,6 @@ const ROLE_COLOR: Record<string, string> = {
   owner: 'text-brand',
   admin: 'text-info',
   member: 'text-text-muted'
-}
-
-function initials(name: string | null | undefined) {
-  if (name?.trim()) {
-    const parts = name.trim().split(/\s+/)
-    if (parts.length >= 2) {
-      return `${parts[0]?.[0] ?? ''}${parts[1]?.[0] ?? ''}`.toUpperCase()
-    }
-    return name.slice(0, 2).toUpperCase()
-  }
-  return '??'
-}
-
-function formatJoined(date: Date | string | null | undefined) {
-  if (!date) return '—'
-  return new Date(date).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  })
 }
 
 const MEMBER_CAP: Record<string, number> = {
@@ -175,7 +157,7 @@ export function MembersList({
               {member.role}
             </span>
             <span className="font-mono text-[10.5px] text-text-muted">
-              {formatJoined(member.createdAt)}
+              {formatDateShort(member.createdAt)}
             </span>
             <span className="flex justify-end">
               {member.role === 'owner' ? (

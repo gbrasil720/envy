@@ -1,6 +1,6 @@
 export function initials(
   name: string | null | undefined,
-  email: string | null
+  email?: string | null
 ) {
   if (name?.trim()) {
     const parts = name.trim().split(/\s+/)

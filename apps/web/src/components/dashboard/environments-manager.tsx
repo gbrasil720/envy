@@ -27,6 +27,7 @@ import { Input } from '@envy/ui/components/input'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
+import { envNameSchema } from '@envy/api/lib/env-name'
 import { toast } from 'sonner'
 import { useTRPC } from '@/utils/trpc'
 
@@ -43,13 +44,9 @@ type Props = {
   role: string
 }
 
-const ENV_NAME_RE = /^[a-z0-9_-]+$/
-
 function validateEnvName(name: string): string | null {
-  if (!name.trim()) return 'Name is required'
-  if (name.length > 64) return 'Max 64 characters'
-  if (!ENV_NAME_RE.test(name))
-    return 'Only lowercase letters, numbers, hyphens and underscores'
+  const result = envNameSchema.safeParse(name)
+  if (!result.success) return result.error.errors[0].message
   return null
 }
 
