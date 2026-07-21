@@ -1,5 +1,5 @@
-import { useDashboardActions } from './dashboard-context'
-import type { DashboardProject, DashboardSection } from './dashboard-types'
+import { useDashboardActions, useDashboardShell } from './dashboard-context'
+import type { DashboardSection } from './dashboard-types'
 
 const SECTION_LABEL: Record<DashboardSection, string> = {
   secrets: 'secrets',
@@ -9,21 +9,16 @@ const SECTION_LABEL: Record<DashboardSection, string> = {
 }
 
 type Props = {
-  currentProject: DashboardProject | null
-  section: DashboardSection
-  isHome: boolean
   onOpenCommand: () => void
   onOpenMobileSidebar: () => void
 }
 
 export function AppTopbar({
-  currentProject,
-  section,
-  isHome,
   onOpenCommand,
   onOpenMobileSidebar
 }: Props) {
   const { openNewProject, openAddSecret } = useDashboardActions()
+  const { currentProject, section, isHome } = useDashboardShell()
 
   const breadcrumb = isHome
     ? 'workspace / projects'

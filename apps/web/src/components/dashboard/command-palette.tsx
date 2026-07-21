@@ -28,6 +28,7 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useTRPC } from '@/utils/trpc'
 import { DashboardIcon } from './dashboard-icon'
+import { useDashboardShell } from './dashboard-context'
 import type { DashboardProject, DashboardSection } from './dashboard-types'
 
 const RECENT_STORAGE_KEY = 'envy:cmdk:recent'
@@ -47,11 +48,6 @@ type ResolvedRecentRow =
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  currentProject: DashboardProject | null
-  section: DashboardSection
-  onSectionChange: (s: DashboardSection) => void
-  onSelectProject: (p: DashboardProject) => void
-  onNewProject: () => void
 }
 
 const SECTION_ICON: Record<DashboardSection, typeof LockIcon> = {
@@ -129,14 +125,10 @@ function Kbd({ children }: { children: ReactNode }) {
 
 export function CommandPalette({
   open,
-  onOpenChange,
-  currentProject,
-  section,
-  onSectionChange,
-  onSelectProject,
-  onNewProject
+  onOpenChange
 }: Props) {
   const trpc = useTRPC()
+  const { currentProject, section, onSectionChange, onSelectProject, onNewProject } = useDashboardShell()
   const projectsQuery = useQuery(trpc.projects.list.queryOptions())
   const projects = projectsQuery.data ?? []
 

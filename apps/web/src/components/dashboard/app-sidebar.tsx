@@ -4,6 +4,7 @@ import { cn } from '@envy/ui/lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { EnvyWordmark } from '@/components/brand'
 import { useTRPC } from '@/utils/trpc'
+import { useDashboardShell } from './dashboard-context'
 import type { DashboardProject, DashboardSection } from './dashboard-types'
 import { ProjectSwitcher } from './project-switcher'
 import { UserCard } from './user-card'
@@ -16,32 +17,19 @@ const PROJECT_NAV: { id: DashboardSection; label: string }[] = [
 ]
 
 type Props = {
-  currentProject: DashboardProject | null
-  section: DashboardSection
-  isHome: boolean
-  onSectionChange: (s: DashboardSection) => void
-  onSelectProject: (p: DashboardProject) => void
-  onNewProject: () => void
-  onGoHome: () => void
   mobileOpen: boolean
   onMobileClose: () => void
 }
 
-type InnerProps = Omit<Props, 'mobileOpen' | 'onMobileClose'> & {
+type InnerProps = {
   onAfterNavigate?: () => void
 }
 
 function SidebarInner({
-  currentProject,
-  section,
-  isHome,
-  onSectionChange,
-  onSelectProject,
-  onNewProject,
-  onGoHome,
   onAfterNavigate
 }: InnerProps) {
   const trpc = useTRPC()
+  const { currentProject, section, isHome, onSectionChange, onSelectProject, onNewProject, onGoHome } = useDashboardShell()
   const meQuery = useQuery(trpc.me.get.queryOptions())
   const projectsQuery = useQuery(trpc.projects.list.queryOptions())
   const projects = projectsQuery.data ?? []

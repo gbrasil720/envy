@@ -10,7 +10,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { AppSidebar } from '@/components/dashboard/app-sidebar'
 import { AppTopbar } from '@/components/dashboard/app-topbar'
 import { CommandPalette } from '@/components/dashboard/command-palette'
-import { DashboardActionsProvider } from '@/components/dashboard/dashboard-context'
+import { DashboardActionsProvider, DashboardShellProvider } from '@/components/dashboard/dashboard-context'
 import type {
   DashboardProject,
   DashboardSection
@@ -111,49 +111,44 @@ function DashboardLayout() {
 
   return (
     <DashboardActionsProvider openNewProject={openNewProject}>
-      <div className="flex h-dvh overflow-hidden bg-bg text-text-primary">
-        <AppSidebar
-          currentProject={currentProject}
-          section={section}
-          isHome={isHome}
-          onSectionChange={handleSectionChange}
-          onSelectProject={handleSelectProject}
-          onNewProject={openNewProject}
-          onGoHome={goHome}
-          mobileOpen={mobileSidebarOpen}
-          onMobileClose={() => setMobileSidebarOpen(false)}
-        />
-
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <AppTopbar
-            currentProject={currentProject}
-            section={section}
-            isHome={isHome}
-            onOpenCommand={() => setCommandOpen(true)}
-            onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
+      <DashboardShellProvider
+        currentProject={currentProject}
+        section={section}
+        isHome={isHome}
+        onSectionChange={handleSectionChange}
+        onSelectProject={handleSelectProject}
+        onNewProject={openNewProject}
+        onGoHome={goHome}
+      >
+        <div className="flex h-dvh overflow-hidden bg-bg text-text-primary">
+          <AppSidebar
+            mobileOpen={mobileSidebarOpen}
+            onMobileClose={() => setMobileSidebarOpen(false)}
           />
 
-          <main className="flex-1 overflow-y-auto">
-            <Outlet />
-          </main>
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            <AppTopbar
+              onOpenCommand={() => setCommandOpen(true)}
+              onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
+            />
+
+            <main className="flex-1 overflow-y-auto">
+              <Outlet />
+            </main>
+          </div>
+
+          <CommandPalette
+            open={commandOpen}
+            onOpenChange={setCommandOpen}
+          />
+
+          <NewProjectDialog
+            open={newProjectOpen}
+            onClose={() => setNewProjectOpen(false)}
+            onSuccess={handleNewProjectSuccess}
+          />
         </div>
-
-        <CommandPalette
-          open={commandOpen}
-          onOpenChange={setCommandOpen}
-          currentProject={currentProject}
-          section={section}
-          onSectionChange={handleSectionChange}
-          onSelectProject={handleSelectProject}
-          onNewProject={openNewProject}
-        />
-
-        <NewProjectDialog
-          open={newProjectOpen}
-          onClose={() => setNewProjectOpen(false)}
-          onSuccess={handleNewProjectSuccess}
-        />
-      </div>
+      </DashboardShellProvider>
     </DashboardActionsProvider>
   )
 }
