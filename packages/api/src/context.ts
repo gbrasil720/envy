@@ -1,6 +1,6 @@
 import { hashToken } from '@envy/crypto'
 import type { db as DbInstance } from '@envy/db'
-import { eq, lt, or } from '@envy/db'
+import { eq } from '@envy/db'
 import { apiKey } from '@envy/db/schema/envy'
 import type { Context as ElysiaContext } from 'elysia'
 import { TRPCError } from '@trpc/server'
@@ -43,7 +43,7 @@ export async function createTRPCContext(
     if (token) {
       const key = await db.query.apiKey.findFirst({
         where: eq(apiKey.keyHash, await hashToken(token)),
-        columns: { id: true, userId: true, revokedAt: true, expiresAt: true }
+        columns: { id: true, userId: true, revokedAt: true, expiresAt: true, lastUsedAt: true }
       })
 
       if (key && !key.revokedAt && key.expiresAt > new Date()) {

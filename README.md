@@ -370,11 +370,12 @@ All tables use `text('id').primaryKey()` for UUIDs. Timestamps default to `now()
 |---|---|---|
 | id | text | PRIMARY KEY |
 | sessionToken | text | NOT NULL, UNIQUE |
+| browserToken | text | NOT NULL, UNIQUE, DEFAULT gen_random_uuid() |
 | status | text | NOT NULL, DEFAULT 'pending' |
-| rawKey | text | nullable (API key generated after approval) |
+| userId | text | nullable, FK → user.id (set null on delete) |
 | expiresAt | timestamp | NOT NULL |
 | createdAt | timestamp | NOT NULL, DEFAULT now() |
-| **Indexes** | | cli_auth_session_token_uidx (UNIQUE), cli_auth_session_expiresAt_idx, cli_auth_session_status_idx |
+| **Indexes** | | cli_auth_session_token_uidx (UNIQUE), cli_auth_session_browser_token_uidx (UNIQUE), cli_auth_session_expiresAt_idx, cli_auth_session_status_idx |
 
 ---
 
