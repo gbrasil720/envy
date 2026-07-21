@@ -1,5 +1,7 @@
+import { AUDIT_ACTION_LABELS } from '@envy/api/lib/audit-actions'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useCallback, useMemo, useState } from 'react'
+import { timeAgoCompact } from '@/utils/time'
 import { useTRPCClient } from '@/utils/trpc'
 
 type Props = {
@@ -23,47 +25,23 @@ type AuditPage = {
   nextCursor?: string | undefined
 }
 
-function actionVerb(action: string): { verb: string; color: string } {
-  switch (action) {
-    case 'pushed':
-      return { verb: 'pushed', color: 'text-brand' }
-    case 'pulled':
-      return { verb: 'pulled', color: 'text-brand' }
-    case 'revealed':
-      return { verb: 'revealed', color: 'text-warning' }
-    case 'secret_created':
-      return { verb: 'added', color: 'text-brand' }
-    case 'secret_updated':
-    case 'secrets_updated':
-      return { verb: 'changed', color: 'text-info' }
-    case 'secret_deleted':
-    case 'secrets_deleted':
-      return { verb: 'deleted', color: 'text-danger' }
-    case 'member_invited':
-      return { verb: 'invited', color: 'text-info' }
-    case 'member_removed':
-      return { verb: 'removed', color: 'text-danger' }
-    default:
-      return {
-        verb: action.replace(/_/g, ' '),
-        color: 'text-text-secondary'
-      }
-  }
+const TONE_TO_CLASS: Record<string, string> = {
+  brand: 'text-brand',
+  info: 'text-info',
+  warning: 'text-warning',
+  danger: 'text-danger',
+  muted: 'text-text-secondary'
 }
 
-function timeAgo(date: Date | string) {
-  const diff = Date.now() - new Date(date).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'now'
-  if (mins < 60) return `${mins}m`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h`
-  const days = Math.floor(hours / 24)
-  if (days < 30) return `${days}d`
-  return new Date(date).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric'
-  })
+function actionLabel(action: string): { verb: string; color: string } {
+  const entry = AUDIT_ACTION_LABELS[action as keyof typeof AUDIT_ACTION_LABELS]
+  if (entry) {
+    return { verb: entry.verb, color: TONE_TO_CLASS[entry.tone] }
+  }
+  return {
+    verb: action.replace(/_/g, ' '),
+    color: 'text-text-secondary'
+  }
 }
 
 const FILTERS: { id: ActionFilter; label: string }[] = [
@@ -168,7 +146,7 @@ export function AuditLog({ projectId, environments }: Props) {
       ) : (
         <>
           {allLogs.map((log) => {
-            const { verb, color } = actionVerb(log.action)
+            const { verb, color } = actionLabel(log.action)
             const who = log.user?.name ?? 'system'
             const target = log.targetKey
               ? log.targetKey
@@ -192,7 +170,7 @@ export function AuditLog({ projectId, environments }: Props) {
                   className="text-right text-[10.5px] text-text-muted"
                   title={new Date(log.createdAt).toISOString()}
                 >
-                  {timeAgo(log.createdAt)}
+                  {timeAgoCompact(log.createdAt)}
                 </span>
               </div>
             )
