@@ -23,4 +23,18 @@ describe('generateKey / exportKey / importKey', () => {
     const b = await exportKey(await generateKey())
     expect(a).not.toBe(b)
   })
+
+  test('importKey accepts hex-encoded keys', async () => {
+    const key = await generateKey()
+    const base64 = await exportKey(key)
+    const raw = Buffer.from(base64, 'base64')
+    const hex = raw.toString('hex')
+    expect(hex.length).toBe(64)
+
+    const imported = await importKey(hex)
+    const payload = await encrypt('via-hex', hex)
+    expect(await decrypt(payload, hex)).toBe('via-hex')
+    expect(imported.type).toBe('secret')
+    expect(imported.algorithm).toMatchObject({ name: 'AES-GCM' })
+  })
 })

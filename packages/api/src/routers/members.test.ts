@@ -7,6 +7,7 @@ import {
   test
 } from 'bun:test'
 import { eq } from '@envy/db'
+import { auditLog } from '@envy/db/schema/envy'
 import { invitation, member } from '@envy/db/schema/organization'
 import type { TRPCError } from '@trpc/server'
 import { createCaller } from '../test/caller'
@@ -222,5 +223,29 @@ describe('members router', () => {
     } catch (err) {
       expect((err as TRPCError).code).toBe('CONFLICT')
     }
+  })
+
+  test('invite records member_invited audit event', async () => {
+    const owner = await createTestUser()
+    const proj = await createTestProject(owner.id, 'Audit Invite')
+    await setOrgPlan(proj.organizationId, 'team', 5)
+
+    await createCaller(owner.id).members.invite({
+      projectId: proj.id,
+      email: 'audit@test.local',
+      role: 'member'
+    })
+
+    const logs = await getTestDb().query.auditLog.findMany({
+      where: eq(auditLog.projectId, proj.id)
+    })
+
+    const inviteLog = logs.find((l) => l.action === 'member_invited')
+    expect(inviteLog).toBeDefined()
+    expect(inviteLog?.userId).toBe(owner.id)
+    expect(inviteLog?.targetKey).toBe('audit@test.local')
+    expect((inviteLog?.metadata as Record<string, unknown>)?.role).toBe(
+      'member'
+    )
   })
 })

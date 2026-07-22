@@ -1,6 +1,37 @@
 #!/usr/bin/env node
 
+import { config as loadEnv } from 'dotenv'
+import { existsSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import pkg from '../package.json'
+
+// Walk up from cwd to find .env files (monorepo-friendly)
+function loadEnvFiles() {
+  let dir = process.cwd()
+  const root = resolve('/')
+  while (dir !== root) {
+    const envPath = join(dir, '.env')
+    if (existsSync(envPath)) {
+      loadEnv({ path: envPath })
+    }
+    const localPath = join(dir, '.env.local')
+    if (existsSync(localPath)) {
+      loadEnv({ path: localPath, override: true })
+    }
+    // Also check apps/server/.env (monorepo server app)
+    const serverEnv = join(dir, 'apps', 'server', '.env')
+    if (existsSync(serverEnv)) {
+      loadEnv({ path: serverEnv })
+    }
+    const serverLocalEnv = join(dir, 'apps', 'server', '.env.local')
+    if (existsSync(serverLocalEnv)) {
+      loadEnv({ path: serverLocalEnv, override: true })
+    }
+    dir = resolve(dir, '..')
+  }
+}
+
+loadEnvFiles()
 import { createProgram } from './cli/program'
 import { checkForUpdate } from './core/checkForUpdate'
 import { describeError, EnvyError } from './core/errors'

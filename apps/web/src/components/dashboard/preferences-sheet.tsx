@@ -1,5 +1,5 @@
+import { PLAN_LIMITS } from '@envy/api/lib/plan-limits'
 import { Avatar, AvatarFallback, AvatarImage } from '@envy/ui/components/avatar'
-import { Badge } from '@envy/ui/components/badge'
 import { Button } from '@envy/ui/components/button'
 import {
   Sheet,
@@ -8,17 +8,9 @@ import {
   SheetTitle
 } from '@envy/ui/components/sheet'
 import { Skeleton } from '@envy/ui/components/skeleton'
-import {
-  Cancel01Icon,
-  CrownIcon,
-  StarIcon,
-  UserIcon
-} from '@hugeicons/core-free-icons'
-import { PLAN_LIMITS } from '@envy/api/lib/plan-limits'
 import { useQuery } from '@tanstack/react-query'
 import { initials } from '@/utils/initials'
 import { useTRPC } from '@/utils/trpc'
-import { DashboardIcon } from './dashboard-icon'
 import { ThemeSwitcher } from './theme-switcher'
 import { UsageBar } from './usage-bar'
 
@@ -44,27 +36,45 @@ const PLAN_CONFIG: Record<
   free: {
     label: 'Free',
     price: '$0/mo',
-    projectLimit: Number.isFinite(PLAN_LIMITS.free.projects) ? PLAN_LIMITS.free.projects : null,
-    secretLimit: Number.isFinite(PLAN_LIMITS.free.secrets) ? PLAN_LIMITS.free.secrets : null,
-    memberLimit: Number.isFinite(PLAN_LIMITS.free.members) ? PLAN_LIMITS.free.members : null,
+    projectLimit: Number.isFinite(PLAN_LIMITS.free.projects)
+      ? PLAN_LIMITS.free.projects
+      : null,
+    secretLimit: Number.isFinite(PLAN_LIMITS.free.secrets)
+      ? PLAN_LIMITS.free.secrets
+      : null,
+    memberLimit: Number.isFinite(PLAN_LIMITS.free.members)
+      ? PLAN_LIMITS.free.members
+      : null,
     color: 'text-muted-foreground',
     badgeClass: 'bg-muted text-muted-foreground border-0'
   },
   pro: {
     label: 'Pro',
     price: '$9/mo',
-    projectLimit: Number.isFinite(PLAN_LIMITS.pro.projects) ? PLAN_LIMITS.pro.projects : null,
-    secretLimit: Number.isFinite(PLAN_LIMITS.pro.secrets) ? PLAN_LIMITS.pro.secrets : null,
-    memberLimit: Number.isFinite(PLAN_LIMITS.pro.members) ? PLAN_LIMITS.pro.members : null,
+    projectLimit: Number.isFinite(PLAN_LIMITS.pro.projects)
+      ? PLAN_LIMITS.pro.projects
+      : null,
+    secretLimit: Number.isFinite(PLAN_LIMITS.pro.secrets)
+      ? PLAN_LIMITS.pro.secrets
+      : null,
+    memberLimit: Number.isFinite(PLAN_LIMITS.pro.members)
+      ? PLAN_LIMITS.pro.members
+      : null,
     color: 'text-brand',
     badgeClass: 'bg-brand/10 text-brand border-0'
   },
   team: {
     label: 'Team',
     price: '$19/mo',
-    projectLimit: Number.isFinite(PLAN_LIMITS.team.projects) ? PLAN_LIMITS.team.projects : null,
-    secretLimit: Number.isFinite(PLAN_LIMITS.team.secrets) ? PLAN_LIMITS.team.secrets : null,
-    memberLimit: Number.isFinite(PLAN_LIMITS.team.members) ? PLAN_LIMITS.team.members : null,
+    projectLimit: Number.isFinite(PLAN_LIMITS.team.projects)
+      ? PLAN_LIMITS.team.projects
+      : null,
+    secretLimit: Number.isFinite(PLAN_LIMITS.team.secrets)
+      ? PLAN_LIMITS.team.secrets
+      : null,
+    memberLimit: Number.isFinite(PLAN_LIMITS.team.members)
+      ? PLAN_LIMITS.team.members
+      : null,
     color: 'text-blue-400',
     badgeClass: 'bg-blue-500/10 text-blue-400 border-0'
   }
@@ -82,167 +92,151 @@ export function PreferencesSheet({ open, onOpenChange }: Props) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex w-full flex-col gap-0 overflow-y-auto p-0 sm:max-w-sm"
+        className="flex w-full flex-col gap-0 overflow-y-auto border-border bg-bg p-0 sm:max-w-sm"
       >
         <SheetHeader className="border-b border-border px-5 py-4">
-          <div className="flex items-center justify-between">
-            <SheetTitle className="text-sm font-medium">Preferences</SheetTitle>
-          </div>
+          <SheetTitle className="font-mono text-[10px] font-normal tracking-[0.1em] text-text-muted">
+            ACCOUNT · PROFILE
+          </SheetTitle>
         </SheetHeader>
 
         {meQuery.isLoading ? (
           <div className="flex flex-col gap-4 p-5">
             <div className="flex items-center gap-3">
-              <Skeleton className="size-10 rounded-full" />
+              <Skeleton className="size-14 rounded" />
               <div className="flex flex-col gap-1.5">
                 <Skeleton className="h-3 w-28" />
                 <Skeleton className="h-2.5 w-40" />
               </div>
             </div>
-            <Skeleton className="h-24 rounded-xl" />
-            <Skeleton className="h-32 rounded-xl" />
+            <Skeleton className="h-24 rounded" />
+            <Skeleton className="h-32 rounded" />
           </div>
         ) : !user ? null : (
-          <div className="flex flex-col gap-5 p-5">
-            <section className="flex flex-col gap-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Account
-              </p>
-              <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/20 p-3">
-                <Avatar className="size-10 shrink-0">
+          <div className="flex flex-col gap-7 p-5">
+            <section>
+              <div className="mb-5 flex items-center gap-4">
+                <Avatar className="size-14 shrink-0 rounded">
                   {user.image ? <AvatarImage src={user.image} alt="" /> : null}
-                  <AvatarFallback className="bg-brand/15 text-xs font-semibold text-brand">
+                  <AvatarFallback className="rounded bg-ghost-bg font-mono text-[18px] text-text-primary">
                     {initials(user.name, user.email)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
+                  <p className="truncate text-[17px] font-bold text-text-primary">
                     {user.name ?? 'Account'}
                   </p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {user.email}
+                  <p className="font-mono text-[11px] text-text-muted">
+                    member since{' '}
+                    {new Date(user.createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      year: 'numeric'
+                    })}
                   </p>
                 </div>
-                <Badge className={config.badgeClass}>{config.label}</Badge>
+              </div>
+
+              <div className="mb-1.5 font-mono text-[10px] tracking-[0.08em] text-text-muted uppercase">
+                DISPLAY NAME
+              </div>
+              <div className="mb-4 rounded border border-ghost-border bg-surface-2 px-3 py-2.5 font-mono text-[12.5px] text-text-primary">
+                {user.name ?? '—'}
+              </div>
+
+              <div className="mb-1.5 font-mono text-[10px] tracking-[0.08em] text-text-muted uppercase">
+                EMAIL
+              </div>
+              <div className="mb-1 flex items-center justify-between rounded border border-ghost-border bg-surface-2 px-3 py-2.5 font-mono text-[12.5px]">
+                <span className="truncate text-text-primary">{user.email}</span>
+                <span className="shrink-0 text-[10px] text-brand">
+                  verified ✓
+                </span>
               </div>
             </section>
 
-            <section className="flex flex-col gap-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Plan
-              </p>
-              <div className="rounded-xl border border-border bg-muted/20 p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <DashboardIcon
-                      icon={
-                        plan === 'free'
-                          ? UserIcon
-                          : plan === 'pro'
-                            ? StarIcon
-                            : CrownIcon
-                      }
-                      size="sm"
-                      className={config.color}
-                    />
-                    <span className="text-sm font-medium">{config.label}</span>
+            <section>
+              <div className="mb-2.5 font-mono text-[10px] tracking-[0.08em] text-text-muted">
+                CURRENT PLAN
+              </div>
+              <div className="overflow-hidden rounded border border-ghost-border">
+                <div className="flex items-center justify-between px-4 py-4">
+                  <div>
+                    <div className="text-[20px] font-bold tracking-[-0.015em] text-text-primary">
+                      {config.label}{' '}
+                      <span className="text-[13px] font-normal text-text-muted">
+                        {config.price}
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    {config.price}
-                  </span>
+                  {plan !== 'team' ? (
+                    <Button
+                      size="sm"
+                      className="rounded"
+                      onClick={() => {
+                        // TODO: checkout
+                      }}
+                    >
+                      Upgrade
+                    </Button>
+                  ) : null}
                 </div>
-
-                <div className="flex flex-col gap-3">
-                  <UsageBar
-                    label="Projects"
-                    used={user.projectCount ?? 0}
-                    limit={config.projectLimit}
-                  />
-                  {plan === 'free' ? (
+                <div className="border-t border-border px-4 py-3">
+                  <div className="flex flex-col gap-3">
+                    <UsageBar
+                      label="Projects"
+                      used={user.projectCount ?? 0}
+                      limit={config.projectLimit}
+                    />
                     <UsageBar
                       label="Secrets"
                       used={user.secretCount ?? 0}
-                      limit={50}
+                      limit={config.secretLimit}
                     />
-                  ) : (
-                    config.memberLimit !== null && (
-                      <UsageBar
-                        label="Members per project"
-                        used={1}
-                        limit={config.memberLimit}
-                      />
-                    )
-                  )}
+                  </div>
                 </div>
-
-                {plan !== 'team' && (
-                  <Button
-                    size="sm"
-                    className="mt-4 w-full"
-                    onClick={() => {
-                      // TODO: checkout
-                    }}
-                  >
-                    Upgrade to {plan === 'free' ? 'Pro' : 'Team'}
-                  </Button>
-                )}
               </div>
             </section>
 
-            <section className="flex flex-col gap-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Details
-              </p>
-              <div className="flex flex-col gap-2 rounded-xl border border-border bg-muted/20 p-4 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Member since</span>
-                  <span>
-                    {new Date(user.createdAt).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
+            <section>
+              <div className="mb-2.5 font-mono text-[10px] tracking-[0.08em] text-text-muted">
+                CONNECTED ACCOUNTS
+              </div>
+              <div className="rounded border border-ghost-border">
+                <div className="flex items-center justify-between px-4 py-3">
+                  <span className="text-[13px] font-semibold text-text-primary">
+                    GitHub
+                  </span>
+                  <span className="font-mono text-[10.5px] text-brand">
+                    connected
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Auth provider</span>
-                  <span>GitHub</span>
-                </div>
               </div>
             </section>
 
-            <section className="flex flex-col gap-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Appearance
-              </p>
-              <div className="rounded-xl border border-border bg-muted/20 p-3">
+            <section>
+              <div className="mb-2.5 font-mono text-[10px] tracking-[0.08em] text-text-muted">
+                APPEARANCE
+              </div>
+              <div className="rounded border border-ghost-border p-3">
                 <ThemeSwitcher />
               </div>
             </section>
 
-            <section className="flex flex-col gap-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-destructive/70">
-                Danger zone
-              </p>
-              <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4">
-                <p className="mb-3 text-xs text-muted-foreground">
-                  Permanently delete your account and all associated data. This
-                  action cannot be undone.
-                </p>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="w-full"
-                  disabled
-                >
-                  <DashboardIcon
-                    icon={Cancel01Icon}
-                    size="sm"
-                    data-icon="inline-start"
-                  />
-                  Delete account
-                </Button>
+            <section className="rounded border border-danger/30 p-4">
+              <div className="mb-2 font-mono text-[10px] tracking-[0.08em] text-danger">
+                DANGER ZONE
               </div>
+              <p className="mb-3 text-[12px] text-text-secondary">
+                Permanently delete your account and all associated data.
+              </p>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="w-full rounded"
+                disabled
+              >
+                Delete account
+              </Button>
             </section>
           </div>
         )}

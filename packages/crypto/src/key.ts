@@ -11,7 +11,16 @@ export async function exportKey(key: CryptoKey): Promise<string> {
 }
 
 export async function importKey(base64: string): Promise<CryptoKey> {
-  const raw = Buffer.from(base64, 'base64')
+  let raw: Uint8Array
+  if (/^[0-9a-fA-F]{64}$/.test(base64)) {
+    raw = new Uint8Array(
+      Array.from({ length: 32 }, (_, i) =>
+        parseInt(base64.slice(i * 2, i * 2 + 2), 16)
+      )
+    )
+  } else {
+    raw = Buffer.from(base64, 'base64')
+  }
   return crypto.subtle.importKey(
     'raw',
     raw,

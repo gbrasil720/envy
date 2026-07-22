@@ -1,42 +1,22 @@
-import { Button } from '@envy/ui/components/button'
-import { Card, CardContent } from '@envy/ui/components/card'
-import { CancelCircleIcon } from '@hugeicons/core-free-icons'
-import { HugeiconsIcon } from '@hugeicons/react'
-import { motion } from 'motion/react'
-
-const MotionCard = motion.create(Card)
-
 export function AuthorizationExpiredCard() {
   return (
-    <MotionCard
-      key="expired"
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="bg-surface border border-border rounded-[20px] shadow-[0_8px_40px_rgba(0,0,0,0.6)] ring-0 gap-0 py-0"
-    >
-      <CardContent className="p-12 text-center">
-        <div className="flex justify-center mb-8">
-          <div className="size-20 bg-danger/10 rounded-full flex items-center justify-center text-danger">
-            <HugeiconsIcon icon={CancelCircleIcon} size={40} />
-          </div>
-        </div>
-
-        <h1 className="font-display font-semibold text-[24px] text-danger mb-2">
+    <div className="w-full max-w-[440px] overflow-hidden rounded-md border border-danger/35 bg-surface text-center">
+      <div className="px-9 py-12">
+        <div className="mb-4 font-mono text-[32px] text-danger">✕</div>
+        <h1 className="mb-2 text-[20px] font-bold tracking-[-0.015em] text-text-primary">
           Session expired
         </h1>
-        <p className="text-text-secondary text-[15px] mb-8">
-          This authorization request has expired. Run envy login again.
+        <p className="mb-6 text-[13px] leading-[1.6] text-text-secondary">
+          This authorization request expired or was cancelled. Run the command
+          again from your terminal.
         </p>
-
-        <div className="bg-danger/5 border border-danger/10 rounded-xl p-4 mb-8 font-mono text-[13px] text-text-secondary flex items-center gap-3 justify-center">
-          <span className="text-danger">$</span>
-          <span>envy login</span>
+        <div className="rounded border border-ghost-border bg-surface-2 px-[18px] py-3.5 text-left font-mono text-[12px] leading-[1.9] text-text-secondary">
+          <div>
+            <span className="text-text-muted">$ </span>envy login
+          </div>
+          <div className="text-text-muted">← start a new session</div>
         </div>
-
-        <Button className="w-full h-12 bg-surface-2 border border-border rounded-[10px] text-text-primary font-medium hover:bg-ghost-bg transition-all">
-          Try again
-        </Button>
-      </CardContent>
-    </MotionCard>
+      </div>
+    </div>
   )
 }
