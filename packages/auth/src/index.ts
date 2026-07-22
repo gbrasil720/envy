@@ -26,18 +26,21 @@ export function createAuth() {
       github: {
         clientId:
           env.NODE_ENV === 'development'
-            ? (env.GITHUB_CLIENT_ID_DEV as string).trim()
-            : (env.GITHUB_CLIENT_ID as string).trim(),
+            ? env.GITHUB_CLIENT_ID_DEV
+            : env.GITHUB_CLIENT_ID,
         clientSecret:
           env.NODE_ENV === 'development'
-            ? (env.GITHUB_CLIENT_SECRET_DEV as string).trim()
-            : (env.GITHUB_CLIENT_SECRET as string).trim()
+            ? env.GITHUB_CLIENT_SECRET_DEV
+            : env.GITHUB_CLIENT_SECRET,
+        // Must match the GitHub OAuth App "Authorization callback URL" exactly.
+        // Mismatch here surfaces as GitHub bad_verification_code on token exchange.
+        redirectURI: `${env.BETTER_AUTH_URL.replace(/\/$/, '')}/api/auth/callback/github`
       }
     },
     trustedOrigins: [
       env.CORS_ORIGIN,
       env.BETTER_AUTH_URL,
-      ...(env.TRUSTED_ORIGINS?.split(',') ?? [])
+      ...(env.TRUSTED_ORIGINS?.split(',').map((o) => o.trim()) ?? [])
     ],
     databaseHooks: {
       user: {
@@ -121,8 +124,11 @@ export function createAuth() {
               .limit(1)
 
             if (!entry) {
+              // Distinct message so the server can map waitlist rejection
+              // separately from OAuth state/code failures.
               throw new APIError('FORBIDDEN', {
-                message: 'This email is not approved for early access'
+                message:
+                  'WAITLIST_NOT_APPROVED: This email is not approved for early access'
               })
             }
 
@@ -149,15 +155,27 @@ export function createAuth() {
       }
     },
     secret: env.BETTER_AUTH_SECRET,
-    baseURL: env.BETTER_AUTH_URL,
+    baseURL: env.BETTER_AUTH_URL.replace(/\/$/, ''),
+    // Cookie-backed OAuth state: the full payload lives in an encrypted cookie
+    // set on the API host during sign-in. Database strategy failed here with
+    // "verification not found" on callback (adapter/DB write not durable in
+    // this stack); cookie state matches Better Auth's cross-port localhost flow.
     account: {
       storeStateStrategy: 'cookie'
     },
+    // When OAuth state is unreadable, Better Auth redirects here (not the
+    // errorCallbackURL stored inside state). Always land on the web login page.
+    onAPIError: {
+      errorURL: `${env.CORS_ORIGIN.replace(/\/$/, '')}/login`
+    },
     advanced: {
       defaultCookieAttributes: {
+        // localhost:3000 and localhost:3001 are same-site (schemeful localhost).
+        // Production web/api on different sites need None+Secure+domain.
         sameSite: env.NODE_ENV === 'development' ? 'lax' : 'none',
         secure: env.NODE_ENV !== 'development',
         httpOnly: true,
+        path: '/',
         domain: env.NODE_ENV === 'development' ? undefined : '.useenvy.dev'
       }
     },

@@ -26,7 +26,7 @@ export function UsageBar({
       {!isUnlimited && (
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
           <div
-            className={`h-full rounded-full transition-all ${
+            className={`h-full rounded-full transition-[width,background-color] duration-300 ease-out ${
               isNearLimit ? 'bg-amber-400' : 'bg-brand'
             }`}
             style={{ width: `${pct}%` }}

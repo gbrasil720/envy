@@ -8,65 +8,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@envy/ui/components/alert-dialog'
-import { Badge } from '@envy/ui/components/badge'
-import { Button } from '@envy/ui/components/button'
 import { Checkbox } from '@envy/ui/components/checkbox'
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle
-} from '@envy/ui/components/empty'
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput
-} from '@envy/ui/components/input-group'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@envy/ui/components/table'
-import { ToggleGroup, ToggleGroupItem } from '@envy/ui/components/toggle-group'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger
-} from '@envy/ui/components/tooltip'
 import { cn } from '@envy/ui/lib/utils'
-import {
-  Copy01Icon,
-  Delete01Icon,
-  FileCodeIcon,
-  PencilEdit01Icon,
-  PlusSignIcon,
-  Search01Icon,
-  ViewIcon,
-  ViewOffIcon
-} from '@hugeicons/core-free-icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useTRPC } from '@/utils/trpc'
-import { DashboardIcon } from './dashboard-icon'
+import { invalidateSecretScope } from '@/utils/invalidateSecretScope'
+import { useDashboardActions } from './dashboard-context'
 import { SecretAddDialog } from './secret-add-dialog'
 import { SecretEditDialog } from './secret-edit-dialog'
-import { SecretsStats } from './secrets-stats'
 
 type Props = {
   projectId: string
   environments: { id: string; name: string }[]
   projectPlan?: string
-}
-
-function maskValue(value: string, revealed: boolean) {
-  if (revealed) return value
-  return '•'.repeat(Math.min(value.length, 24))
 }
 
 export function SecretsTable({
@@ -80,7 +36,8 @@ export function SecretsTable({
   const [currentEnv, setCurrentEnv] = useState(
     environments[0]?.name ?? 'development'
   )
-  const [revealed, setRevealed] = useState<Set<string>>(() => new Set())
+  // Map of key → decrypted value (only populated on explicit reveal)
+  const [revealedValues, setRevealedValues] = useState<Record<string, string>>({})
   const [revealAll, setRevealAll] = useState(false)
   const [search, setSearch] = useState('')
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
@@ -91,9 +48,34 @@ export function SecretsTable({
   const [deletingKey, setDeletingKey] = useState<string | null>(null)
   const [bulkDeleteKeys, setBulkDeleteKeys] = useState<string[] | null>(null)
   const [addOpen, setAddOpen] = useState(false)
+  const { registerOpenAddSecret } = useDashboardActions()
 
-  const secretsQuery = useQuery(
-    trpc.secrets.reveal.queryOptions({ projectId, environment: currentEnv })
+  useEffect(() => {
+    registerOpenAddSecret(() => setAddOpen(true))
+    return () => registerOpenAddSecret(null)
+  }, [registerOpenAddSecret])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (
+        e.key.toLowerCase() === 'n' &&
+        !e.metaKey &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !(e.target instanceof HTMLInputElement) &&
+        !(e.target instanceof HTMLTextAreaElement)
+      ) {
+        e.preventDefault()
+        setAddOpen(true)
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
+
+  // Default view: only keys, no decryption
+  const keysQuery = useQuery(
+    trpc.secrets.listKeys.queryOptions({ projectId, environment: currentEnv })
   )
 
   const envsListQuery = useQuery(
@@ -108,18 +90,21 @@ export function SecretsTable({
     return map
   }, [envsListQuery.data])
 
+  const revealMutation = useMutation({
+    mutationFn: () =>
+      queryClient.fetchQuery(
+        trpc.secrets.reveal.queryOptions({ projectId, environment: currentEnv })
+      ),
+    onSuccess: (data) => {
+      setRevealedValues((prev) => ({ ...prev, ...data.secrets }))
+      setRevealAll(true)
+    }
+  })
+
   const deleteMutation = useMutation(
     trpc.secrets.delete.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries(
-          trpc.secrets.reveal.queryOptions({
-            projectId,
-            environment: currentEnv
-          })
-        )
-        queryClient.invalidateQueries(
-          trpc.auditLog.list.queryOptions({ projectId, limit: 50 })
-        )
+        invalidateSecretScope(queryClient, trpc, projectId, currentEnv)
         queryClient.invalidateQueries(
           trpc.environments.list.queryOptions({ projectId })
         )
@@ -130,8 +115,12 @@ export function SecretsTable({
     })
   )
 
-  const secrets = secretsQuery.data?.secrets ?? {}
-  const secretEntries = Object.entries(secrets) as [string, string][]
+  const keys = keysQuery.data?.keys ?? []
+  const isLoading = keysQuery.isLoading
+
+  const secretEntries = useMemo(() => {
+    return keys.map((key) => [key, revealedValues[key]] as [string, string | undefined])
+  }, [keys, revealedValues])
 
   const filteredEntries = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -140,29 +129,39 @@ export function SecretsTable({
   }, [secretEntries, search])
 
   function isRevealed(key: string) {
-    return revealAll || revealed.has(key)
+    return revealAll || revealedValues.hasOwnProperty(key)
   }
 
   function toggleReveal(key: string) {
     if (revealAll) {
       setRevealAll(false)
       // Keep all other secrets visible; hide only the clicked one
-      setRevealed(
-        new Set(secretEntries.map(([k]) => k).filter((k) => k !== key))
-      )
+      const next = { ...revealedValues }
+      delete next[key]
+      setRevealedValues(next)
     } else {
-      setRevealed((prev) => {
-        const next = new Set(prev)
-        if (next.has(key)) next.delete(key)
-        else next.add(key)
-        return next
-      })
+      // Reveal this single key by fetching from server
+      if (!revealedValues.hasOwnProperty(key)) {
+        // Optimistic: show masked, fetch in background
+        void queryClient
+          .fetchQuery(
+            trpc.secrets.reveal.queryOptions({ projectId, environment: currentEnv })
+          )
+          .then((data) => {
+            setRevealedValues((prev) => ({ ...prev, ...data.secrets }))
+          })
+      } else {
+        // Hide this key
+        const next = { ...revealedValues }
+        delete next[key]
+        setRevealedValues(next)
+      }
     }
   }
 
   function handleEnvChange(env: string) {
     setCurrentEnv(env)
-    setRevealed(new Set())
+    setRevealedValues({})
     setRevealAll(false)
     setSelectedKeys(new Set())
     setSearch('')
@@ -197,7 +196,7 @@ export function SecretsTable({
 
   function copyAsEnv() {
     const lines = filteredEntries.map(([k, v]) => {
-      const val = isRevealed(k) ? v : '***'
+      const val = isRevealed(k) ? (v ?? '***') : '***'
       const escaped = val.includes('\n') ? JSON.stringify(val) : val
       return `${k}=${escaped}`
     })
@@ -224,20 +223,13 @@ export function SecretsTable({
     filteredEntries.every(([k]) => selectedKeys.has(k))
 
   return (
-    <div className="flex flex-col gap-5">
-      <SecretsStats
-        projectId={projectId}
-        environment={currentEnv}
-        secretCount={secretEntries.length}
-        projectPlan={projectPlan}
-      />
-
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div role="tablist" className="flex flex-wrap gap-1.5">
+    <div className="flex min-h-full flex-col">
+      <div className="flex flex-wrap items-center gap-0.5 border-b border-border px-7">
+        <div role="tablist" className="flex flex-wrap items-center">
           {environments.map((env) => {
             const isActive = currentEnv === env.name
             const count = isActive
-              ? secretEntries.length
+              ? keys.length
               : (envCountMap.get(env.id) ?? 0)
             return (
               <button
@@ -247,331 +239,197 @@ export function SecretsTable({
                 aria-selected={isActive}
                 onClick={() => handleEnvChange(env.name)}
                 className={cn(
-                  'flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 font-mono text-xs transition-all duration-150',
+                  'cursor-pointer border-b-2 px-3.5 py-3 font-mono text-[12px] transition-colors',
                   isActive
-                    ? 'border-emerald-500/50 bg-emerald-500/10 text-foreground shadow-sm'
-                    : 'border-border bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground'
+                    ? 'border-text-primary text-text-primary'
+                    : 'border-transparent text-text-secondary hover:text-text-primary'
                 )}
               >
-                <span
-                  className={cn(
-                    'h-1.5 w-1.5 shrink-0 rounded-full transition-colors duration-150',
-                    isActive
-                      ? 'bg-emerald-500 shadow-[0_0_6px_2px_rgba(16,185,129,0.4)]'
-                      : 'bg-muted-foreground/50'
-                  )}
-                />
-                {env.name}
-                <Badge
-                  variant="secondary"
-                  className="h-4 min-w-[1.25rem] rounded-full px-1 font-mono text-[10px] tabular-nums opacity-80"
-                >
-                  {count}
-                </Badge>
+                {env.name}{' '}
+                <span className="text-[10px] text-text-muted">{count}</span>
               </button>
             )
           })}
         </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <InputGroup className="h-9 w-full min-w-[200px] max-w-sm">
-            <InputGroupAddon align="inline-start">
-              <DashboardIcon
-                icon={Search01Icon}
-                size="md"
-                className="opacity-50"
-              />
-            </InputGroupAddon>
-            <InputGroupInput
-              placeholder="Filter keys…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              aria-label="Filter secret keys"
-            />
-          </InputGroup>
-          <ToggleGroup
-            value={revealAll ? (['show'] as const) : (['hide'] as const)}
-            onValueChange={(groupValue) => {
-              const v = groupValue[0]
-              if (v === 'show') {
-                setRevealAll(true)
-                setRevealed(new Set())
-              } else {
+        <div className="ml-auto flex flex-wrap items-center gap-2 py-2 font-mono text-[10.5px] text-text-muted">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="filter…"
+            aria-label="Filter secret keys"
+            className="w-28 rounded border border-ghost-border bg-transparent px-2 py-1 text-[11px] text-text-primary outline-none placeholder:text-text-muted focus:border-border-focus sm:w-36"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (revealAll) {
                 setRevealAll(false)
-                setRevealed(new Set())
+                setRevealedValues({})
+              } else {
+                revealMutation.mutate()
               }
             }}
-            variant="outline"
-            size="sm"
-            className="min-h-9"
+            disabled={revealMutation.isPending}
+            className="cursor-pointer transition-colors hover:text-text-primary disabled:opacity-40"
           >
-            <ToggleGroupItem value="hide" aria-label="Hide all values">
-              Hide
-            </ToggleGroupItem>
-            <ToggleGroupItem value="show" aria-label="Show all values">
-              Show
-            </ToggleGroupItem>
-          </ToggleGroup>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 gap-1.5"
-                  onClick={() => void copyAsEnv()}
-                  disabled={filteredEntries.length === 0}
-                />
-              }
-            >
-              <DashboardIcon
-                icon={FileCodeIcon}
-                size="sm"
-                data-icon="inline-start"
-              />
-              Copy .env
-            </TooltipTrigger>
-            <TooltipContent>
-              Copy visible keys as KEY=VALUE (masked if hidden)
-            </TooltipContent>
-          </Tooltip>
+            {revealMutation.isPending
+              ? 'revealing…'
+              : revealAll
+                ? 'hide all'
+                : 'show all'}
+          </button>
+          <button
+            type="button"
+            onClick={() => void copyAsEnv()}
+            disabled={filteredEntries.length === 0}
+            className="cursor-pointer transition-colors hover:text-text-primary disabled:opacity-40"
+          >
+            copy .env
+          </button>
           {selectedKeys.size > 0 ? (
-            <Button
-              variant="destructive"
-              size="sm"
-              className="h-9"
+            <button
+              type="button"
               onClick={() => setBulkDeleteKeys([...selectedKeys])}
+              className="cursor-pointer text-danger transition-colors hover:text-danger/80"
             >
-              Delete ({selectedKeys.size})
-            </Button>
+              del ({selectedKeys.size})
+            </button>
           ) : null}
-          <Button
-            size="sm"
-            className="h-9 gap-1.5"
-            onClick={() => setAddOpen(true)}
-          >
-            <DashboardIcon
-              icon={PlusSignIcon}
-              size="sm"
-              data-icon="inline-start"
-            />
-            Add secret
-            <kbd className="ml-1 hidden rounded border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground sm:inline">
-              N
-            </kbd>
-          </Button>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/40 hover:bg-muted/40">
-              <TableHead className="w-[40px]">
-                <Checkbox
-                  checked={allFilteredSelected && filteredEntries.length > 0}
-                  indeterminate={!allFilteredSelected && selectedKeys.size > 0}
-                  onCheckedChange={() => toggleSelectAll()}
-                  aria-label="Select all filtered secrets"
-                />
-              </TableHead>
-              <TableHead className="w-[32%] text-xs font-medium text-muted-foreground">
-                Key
-              </TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">
-                Value
-              </TableHead>
-              <TableHead className="w-[72px] text-right text-xs font-medium text-muted-foreground">
-                Len
-              </TableHead>
-              <TableHead className="w-[120px]" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {secretsQuery.isLoading ? (
-              Array.from({ length: 4 }).map((_, i) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
-                <TableRow key={i}>
-                  <TableCell colSpan={5}>
-                    <div className="h-4 w-full max-w-md animate-pulse rounded bg-muted" />
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : filteredEntries.length === 0 && secretEntries.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="p-0">
-                  <Empty className="border-0 py-12">
-                    <EmptyHeader>
-                      <EmptyMedia variant="default">
-                        <DashboardIcon icon={FileCodeIcon} size="lg" />
-                      </EmptyMedia>
-                      <EmptyTitle>No secrets in {currentEnv}</EmptyTitle>
-                      <EmptyDescription>
-                        Push from the CLI with{' '}
-                        <code className="rounded bg-muted px-1 font-mono text-[11px]">
-                          envy push
-                        </code>{' '}
-                        or add a secret manually.
-                      </EmptyDescription>
-                    </EmptyHeader>
-                    <EmptyContent>
-                      <Button size="sm" onClick={() => setAddOpen(true)}>
-                        Add secret
-                      </Button>
-                    </EmptyContent>
-                  </Empty>
-                </TableCell>
-              </TableRow>
-            ) : filteredEntries.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="py-10 text-center text-sm text-muted-foreground"
+      <div className="grid grid-cols-[1.4fr_2fr_auto] gap-4 border-b border-ghost-divider px-7 py-2.5 font-mono text-[10px] tracking-[0.08em] text-text-muted sm:grid-cols-[1.6fr_2fr_1fr_.9fr_auto]">
+        <span className="flex items-center gap-2">
+          <Checkbox
+            checked={allFilteredSelected && filteredEntries.length > 0}
+            indeterminate={!allFilteredSelected && selectedKeys.size > 0}
+            onCheckedChange={() => toggleSelectAll()}
+            aria-label="Select all filtered secrets"
+          />
+          KEY
+        </span>
+        <span>VALUE</span>
+        <span className="hidden sm:inline">UPDATED BY</span>
+        <span className="hidden sm:inline">WHEN</span>
+        <span />
+      </div>
+
+      <div className="flex-1">
+        {isLoading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
+            <div key={i} className="border-b border-ghost-divider px-7 py-3.5">
+              <div className="h-3.5 w-2/3 max-w-md animate-pulse rounded bg-ghost-bg" />
+            </div>
+          ))
+        ) : filteredEntries.length === 0 && keys.length === 0 ? (
+          <div className="px-7 py-16 text-center">
+            <p className="mb-2 text-[15px] font-semibold text-text-primary">
+              No secrets in {currentEnv}
+            </p>
+            <p className="mb-5 font-mono text-[12px] text-text-muted">
+              $ envy push · or add a secret manually
+            </p>
+            <button
+              type="button"
+              onClick={() => setAddOpen(true)}
+              className="cursor-pointer rounded bg-primary px-4 py-2 text-[13px] font-semibold text-primary-foreground hover:bg-white"
+            >
+              + add secret
+            </button>
+          </div>
+        ) : filteredEntries.length === 0 ? (
+          <div className="px-7 py-10 text-center font-mono text-[12px] text-text-muted">
+            no keys match &quot;{search}&quot;
+          </div>
+        ) : (
+          filteredEntries.map(([key, value]) => {
+            const shown = isRevealed(key)
+            const displayValue = shown && value
+              ? value
+              : '•'.repeat(24)
+            return (
+              <div
+                key={key}
+                className="group grid grid-cols-[1.4fr_2fr_auto] items-center gap-4 border-b border-ghost-divider px-7 py-3 font-mono text-[12.5px] transition-colors hover:bg-ghost-bg sm:grid-cols-[1.6fr_2fr_1fr_.9fr_auto]"
+              >
+                <div className="flex min-w-0 items-center gap-2">
+                  <Checkbox
+                    checked={selectedKeys.has(key)}
+                    onCheckedChange={() => toggleSelectKey(key)}
+                    aria-label={`Select ${key}`}
+                  />
+                  <span className="truncate text-text-primary">{key}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => toggleReveal(key)}
+                  className={cn(
+                    'min-w-0 cursor-pointer truncate text-left transition-colors hover:text-text-primary',
+                    shown ? 'text-text-primary' : 'text-text-muted'
+                  )}
+                  title={shown ? 'Hide value' : 'Reveal value'}
                 >
-                  No keys match &quot;{search}&quot;
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredEntries.map(([key, value]) => {
-                const shown = isRevealed(key)
-                return (
-                  <TableRow key={key} className="group">
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedKeys.has(key)}
-                        onCheckedChange={() => toggleSelectKey(key)}
-                        aria-label={`Select ${key}`}
-                      />
-                    </TableCell>
-                    <TableCell className="font-mono text-xs font-medium">
-                      <div className="flex items-center gap-1">
-                        <span className="min-w-0 truncate">{key}</span>
-                        <Tooltip>
-                          <TooltipTrigger
-                            render={
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-                                onClick={() => void copyText(key, 'Key copied')}
-                              />
-                            }
-                          >
-                            <DashboardIcon icon={Copy01Icon} size="sm" />
-                          </TooltipTrigger>
-                          <TooltipContent>Copy key</TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span className="min-w-0 flex-1 break-all font-mono text-xs text-muted-foreground">
-                          {maskValue(value, shown ?? false)}
-                        </span>
-                        <Tooltip>
-                          <TooltipTrigger
-                            render={
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                className="shrink-0"
-                                onClick={() => toggleReveal(key)}
-                                aria-label={shown ? 'Hide value' : 'Show value'}
-                              />
-                            }
-                          >
-                            {shown ? (
-                              <DashboardIcon icon={ViewOffIcon} size="sm" />
-                            ) : (
-                              <DashboardIcon icon={ViewIcon} size="sm" />
-                            )}
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {shown ? 'Hide value' : 'Show value'}
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger
-                            render={
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                className="shrink-0"
-                                onClick={() =>
-                                  void copyText(value, 'Value copied')
-                                }
-                                aria-label="Copy value"
-                              />
-                            }
-                          >
-                            <DashboardIcon icon={Copy01Icon} size="sm" />
-                          </TooltipTrigger>
-                          <TooltipContent>Copy value</TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-[10px] tabular-nums text-muted-foreground">
-                      {value.length}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                        <Tooltip>
-                          <TooltipTrigger
-                            render={
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                className="text-muted-foreground hover:text-foreground"
-                                onClick={() =>
-                                  setEditingSecret({
-                                    key,
-                                    value: value as string
-                                  })
-                                }
-                                aria-label="Edit secret"
-                              />
-                            }
-                          >
-                            <DashboardIcon icon={PencilEdit01Icon} size="sm" />
-                          </TooltipTrigger>
-                          <TooltipContent>Edit</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger
-                            render={
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                className="text-muted-foreground hover:text-destructive"
-                                onClick={() => setDeletingKey(key)}
-                                aria-label="Delete secret"
-                              />
-                            }
-                          >
-                            <DashboardIcon icon={Delete01Icon} size="sm" />
-                          </TooltipTrigger>
-                          <TooltipContent>Delete</TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
+                  {displayValue}
+                </button>
+                <span className="hidden text-[11px] text-text-secondary sm:inline">
+                  —
+                </span>
+                <span className="hidden text-[10.5px] text-text-muted sm:inline">
+                  —
+                </span>
+                <span className="flex gap-3 text-[10.5px] text-text-muted">
+                  {shown && value ? (
+                    <button
+                      type="button"
+                      onClick={() => void copyText(value, 'Value copied')}
+                      className="cursor-pointer transition-colors hover:text-text-primary"
+                    >
+                      copy
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (shown && value) {
+                        setEditingSecret({ key, value })
+                      } else {
+                        // Reveal first, then open edit
+                        void queryClient
+                          .fetchQuery(
+                            trpc.secrets.reveal.queryOptions({ projectId, environment: currentEnv })
+                          )
+                          .then((data) => {
+                            setRevealedValues((prev) => ({
+                              ...prev,
+                              ...data.secrets
+                            }))
+                            setEditingSecret({ key, value: data.secrets[key] ?? '' })
+                          })
+                      }
+                    }}
+                    className="cursor-pointer transition-colors hover:text-text-primary"
+                  >
+                    edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeletingKey(key)}
+                    className="cursor-pointer transition-colors hover:text-danger"
+                  >
+                    del
+                  </button>
+                </span>
+              </div>
+            )
+          })
+        )}
       </div>
 
-      {secretEntries.length > 0 ? (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Badge variant="secondary" className="font-mono text-[10px]">
-            {filteredEntries.length === secretEntries.length
-              ? `${secretEntries.length} secret${secretEntries.length !== 1 ? 's' : ''}`
-              : `${filteredEntries.length} of ${secretEntries.length} shown`}
-          </Badge>
-          <span>in {currentEnv}</span>
-        </div>
-      ) : null}
+      <div className="px-7 py-3 font-mono text-[10.5px] text-text-muted">
+        values are AES-256-GCM encrypted · revealed on demand
+        {projectPlan === 'free' ? ' · free plan' : ''}
+      </div>
 
       {editingSecret ? (
         <SecretEditDialog

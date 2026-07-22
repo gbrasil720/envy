@@ -36,6 +36,20 @@
       "when": 1784347666506,
       "tag": "0004_premium_bloodstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1781923200000,
+      "tag": "0005_cli_auth_session_user_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781923260000,
+      "tag": "0006_api_key_expires_at",
+      "breakpoints": true
     }
   ]
 }

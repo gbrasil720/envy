@@ -1,24 +1,20 @@
 import { generateApiToken, hashToken, tokenPrefix } from '@envy/crypto'
-import { and, eq, lt } from '@envy/db'
+import { eq, lt } from '@envy/db'
 import { apiKey, cliAuthSession } from '@envy/db/schema/envy'
 import { env } from '@envy/env/server'
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { protectedProcedure, publicProcedure, router } from '..'
+import { getApiKeyExpiryDate } from '../context'
 
 const POLLING_EXPIRY_MS = 1000 * 60 * 5 // 5 minutes
 
 export const cliAuthRouter = router({
   start: publicProcedure.mutation(async ({ ctx }) => {
-    // Clean up expired pending sessions to prevent unbounded DB growth
+    // Clean up expired sessions regardless of status to prevent unbounded DB growth
     await ctx.db
       .delete(cliAuthSession)
-      .where(
-        and(
-          lt(cliAuthSession.expiresAt, new Date()),
-          eq(cliAuthSession.status, 'pending')
-        )
-      )
+      .where(lt(cliAuthSession.expiresAt, new Date()))
 
     // sessionToken is used for polling (CLI only), browserToken goes in the URL
     const sessionToken = crypto.randomUUID()
@@ -56,8 +52,7 @@ export const cliAuthRouter = router({
 
       if (new Date() > session.expiresAt) {
         await ctx.db
-          .update(cliAuthSession)
-          .set({ status: 'expired', rawKey: null })
+          .delete(cliAuthSession)
           .where(eq(cliAuthSession.sessionToken, input.token))
 
         throw new TRPCError({
@@ -71,12 +66,27 @@ export const cliAuthRouter = router({
       }
 
       if (session.status === 'authorized') {
-        if (!session.rawKey) {
+        if (!session.userId) {
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: 'Session authorized but key missing'
+            message: 'Session authorized but user missing'
           })
         }
+
+        // Generate the API token at claim time — never stored in DB
+        const rawToken = generateApiToken()
+        const keyHash = await hashToken(rawToken)
+        const keyPrefix = tokenPrefix(rawToken)
+        const keyId = crypto.randomUUID()
+
+        await ctx.db.insert(apiKey).values({
+          id: keyId,
+          userId: session.userId,
+          name: 'CLI',
+          keyHash,
+          keyPrefix,
+          expiresAt: getApiKeyExpiryDate()
+        })
 
         await ctx.db
           .delete(cliAuthSession)
@@ -84,7 +94,7 @@ export const cliAuthRouter = router({
 
         return {
           status: 'authorized' as const,
-          api_key: session.rawKey
+          api_key: rawToken
         }
       }
 
@@ -120,24 +130,12 @@ export const cliAuthRouter = router({
         })
       }
 
-      const rawToken = generateApiToken()
-      const keyHash = await hashToken(rawToken)
-      const keyPrefix = tokenPrefix(rawToken)
-      const keyId = crypto.randomUUID()
-
-      await ctx.db.insert(apiKey).values({
-        id: keyId,
-        userId: ctx.session.user.id,
-        name: 'CLI',
-        keyHash,
-        keyPrefix
-      })
-
+      // Mark authorized with userId — token is generated later at poll time
       await ctx.db
         .update(cliAuthSession)
         .set({
           status: 'authorized',
-          rawKey: rawToken
+          userId: ctx.session.user.id
         })
         .where(eq(cliAuthSession.browserToken, input.token))
 
@@ -179,13 +177,13 @@ export const cliAuthRouter = router({
       if (!session || session.status !== 'pending') {
         throw new TRPCError({
           code: 'NOT_FOUND',
-          message: 'Session not found or already used'
+          message: 'Auth session not found or already used'
         })
       }
 
       await ctx.db
         .update(cliAuthSession)
-        .set({ status: 'cancelled', rawKey: null })
+        .set({ status: 'cancelled' })
         .where(eq(cliAuthSession.browserToken, input.token))
 
       return { success: true }

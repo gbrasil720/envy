@@ -6,17 +6,19 @@ import {
   useNavigate,
   useParams
 } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { AppSidebar } from '@/components/dashboard/app-sidebar'
 import { AppTopbar } from '@/components/dashboard/app-topbar'
 import { CommandPalette } from '@/components/dashboard/command-palette'
-import { DashboardActionsContext } from '@/components/dashboard/dashboard-context'
+import {
+  DashboardActionsProvider,
+  DashboardShellProvider
+} from '@/components/dashboard/dashboard-context'
 import type {
   DashboardProject,
   DashboardSection
 } from '@/components/dashboard/dashboard-types'
 import { NewProjectDialog } from '@/components/dashboard/new-project-dialog'
-import { MeshBackground } from '@/components/mesh-background'
 import { requireWebAuth } from '@/functions/require-web-auth'
 import { useTRPC } from '@/utils/trpc'
 
@@ -55,6 +57,9 @@ function DashboardLayout() {
   const currentProject =
     projectsQuery.data?.find((p) => p.slug === projectSlug) ?? null
   const section = deriveSection(pathname)
+  const isHome = !projectSlug
+
+  const openNewProject = useCallback(() => setNewProjectOpen(true), [])
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -100,50 +105,50 @@ function DashboardLayout() {
     })
   }
 
-  return (
-    <DashboardActionsContext
-      value={{ openNewProject: () => setNewProjectOpen(true) }}
-    >
-      <MeshBackground className="flex h-dvh overflow-hidden" intensity="strong">
-        <AppSidebar
-          currentProject={currentProject}
-          section={section}
-          onSectionChange={handleSectionChange}
-          onSelectProject={handleSelectProject}
-          onNewProject={() => setNewProjectOpen(true)}
-          mobileOpen={mobileSidebarOpen}
-          onMobileClose={() => setMobileSidebarOpen(false)}
-        />
+  function goHome() {
+    navigate({
+      to: '/dashboard',
+      search: { project: '', section: 'secrets' as const }
+    })
+  }
 
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <AppTopbar
-            currentProject={currentProject}
-            section={section}
-            onOpenCommand={() => setCommandOpen(true)}
-            onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
+  return (
+    <DashboardActionsProvider openNewProject={openNewProject}>
+      <DashboardShellProvider
+        currentProject={currentProject}
+        section={section}
+        isHome={isHome}
+        onSectionChange={handleSectionChange}
+        onSelectProject={handleSelectProject}
+        onNewProject={openNewProject}
+        onGoHome={goHome}
+      >
+        <div className="flex h-dvh overflow-hidden bg-bg text-text-primary">
+          <AppSidebar
+            mobileOpen={mobileSidebarOpen}
+            onMobileClose={() => setMobileSidebarOpen(false)}
           />
 
-          <main className="flex-1 overflow-y-auto p-4 md:p-5">
-            <Outlet />
-          </main>
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            <AppTopbar
+              onOpenCommand={() => setCommandOpen(true)}
+              onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
+            />
+
+            <main className="flex-1 overflow-y-auto">
+              <Outlet />
+            </main>
+          </div>
+
+          <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
+
+          <NewProjectDialog
+            open={newProjectOpen}
+            onClose={() => setNewProjectOpen(false)}
+            onSuccess={handleNewProjectSuccess}
+          />
         </div>
-
-        <CommandPalette
-          open={commandOpen}
-          onOpenChange={setCommandOpen}
-          currentProject={currentProject}
-          section={section}
-          onSectionChange={handleSectionChange}
-          onSelectProject={handleSelectProject}
-          onNewProject={() => setNewProjectOpen(true)}
-        />
-
-        <NewProjectDialog
-          open={newProjectOpen}
-          onClose={() => setNewProjectOpen(false)}
-          onSuccess={handleNewProjectSuccess}
-        />
-      </MeshBackground>
-    </DashboardActionsContext>
+      </DashboardShellProvider>
+    </DashboardActionsProvider>
   )
 }

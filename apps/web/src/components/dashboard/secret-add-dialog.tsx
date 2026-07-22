@@ -18,6 +18,7 @@ import { Textarea } from '@envy/ui/components/textarea'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTRPC } from '@/utils/trpc'
+import { invalidateSecretScope } from '@/utils/invalidateSecretScope'
 
 type Props = {
   open: boolean
@@ -41,12 +42,7 @@ export function SecretAddDialog({
   const pushMutation = useMutation(
     trpc.secrets.push.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries(
-          trpc.secrets.reveal.queryOptions({ projectId, environment })
-        )
-        queryClient.invalidateQueries(
-          trpc.auditLog.list.queryOptions({ projectId, limit: 50 })
-        )
+        invalidateSecretScope(queryClient, trpc, projectId, environment)
         onClose()
         setKey('')
         setValue('')

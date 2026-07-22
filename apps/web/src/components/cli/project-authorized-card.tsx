@@ -1,80 +1,32 @@
-import { Button } from '@envy/ui/components/button'
-import { Card, CardContent } from '@envy/ui/components/card'
-import {
-  ArrowLeft01Icon,
-  CheckmarkCircle02Icon
-} from '@hugeicons/core-free-icons'
-import { HugeiconsIcon } from '@hugeicons/react'
-import { motion } from 'motion/react'
+'use client'
 
-const MotionCard = motion.create(Card)
+import { authClient } from '@/lib/auth-client'
 
 export function ProjectAuthorizedCard() {
+  const { data: sessionData } = authClient.useSession()
+  const name =
+    sessionData?.user?.name ?? sessionData?.user?.email ?? 'your account'
+
   return (
-    <MotionCard
-      key="success"
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="bg-surface border border-border rounded-[20px] shadow-[0_8px_40px_rgba(0,0,0,0.6)] ring-0 gap-0 py-0"
-    >
-      <CardContent className="p-6 sm:p-10 md:p-12 text-center">
-        <div className="flex justify-center mb-8">
-          <div className="relative">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: 'spring', damping: 12, stiffness: 200 }}
-              className="size-20 bg-brand/10 rounded-full flex items-center justify-center text-brand"
-            >
-              <HugeiconsIcon icon={CheckmarkCircle02Icon} size={40} />
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1.2 }}
-              transition={{ duration: 0.5, repeat: 1, repeatType: 'reverse' }}
-              className="absolute inset-0 border-2 border-brand rounded-full"
-            />
-          </div>
-        </div>
-
-        <h1 className="font-display font-semibold text-[28px] text-text-primary mb-2">
-          You're logged in!
+    <div className="w-full max-w-[440px] overflow-hidden rounded-md border border-brand/30 bg-surface text-center">
+      <div className="px-9 py-12">
+        <div className="mb-4 font-mono text-[32px] text-brand">✓</div>
+        <h1 className="mb-2 text-[20px] font-bold tracking-[-0.015em] text-text-primary">
+          CLI authorized
         </h1>
-        <p className="text-text-secondary text-[15px] mb-8">
-          CLI connected to your account. You can close this tab and return to
-          your terminal.
+        <p className="mb-6 text-[13px] leading-[1.6] text-text-secondary">
+          Head back to your terminal — it already has the key.
         </p>
-
-        <div className="bg-brand/5 border border-brand/10 rounded-xl p-6 mb-8 text-left">
-          <p className="text-brand text-sm font-medium mb-3">
-            Start using the CLI:
-          </p>
-          <div className="flex flex-col gap-2">
-            {[
-              { cmd: 'envy projects', comment: '# list your projects' },
-              { cmd: 'envy pull', comment: '# sync secrets to .env' },
-              { cmd: 'envy push', comment: '# push local secrets' }
-            ].map(({ cmd, comment }) => (
-              <div
-                key={cmd}
-                className="bg-bg/50 rounded-lg p-3 font-mono text-[13px] text-text-secondary flex flex-wrap items-center gap-2"
-              >
-                <span className="text-brand">$</span>
-                <span className="wrap-break-word min-w-0">
-                  {cmd} <span className="text-text-muted">{comment}</span>
-                </span>
-              </div>
-            ))}
+        <div className="rounded border border-ghost-border bg-surface-2 px-[18px] py-3.5 text-left font-mono text-[12px] leading-[1.9]">
+          <div className="text-brand">✓ authenticated as {name}</div>
+          <div className="text-text-secondary">
+            $ envy pull <span className="text-text-muted">← next step</span>
           </div>
         </div>
-
-        <Button
-          variant="link"
-          className="decoration-0 text-text-muted hover:text-brand transition-colors text-sm font-medium flex items-center gap-2 mx-auto"
-        >
-          <HugeiconsIcon icon={ArrowLeft01Icon} size={16} /> Back to Dashboard
-        </Button>
-      </CardContent>
-    </MotionCard>
+        <p className="mt-5 text-[11.5px] text-text-muted">
+          You can close this tab.
+        </p>
+      </div>
+    </div>
   )
 }

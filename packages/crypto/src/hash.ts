@@ -24,7 +24,16 @@ export async function hmacValue(
   value: string,
   keyBase64: string
 ): Promise<string> {
-  const keyBytes = Buffer.from(keyBase64, 'base64')
+  let keyBytes: Uint8Array
+  if (/^[0-9a-fA-F]{64}$/.test(keyBase64)) {
+    keyBytes = new Uint8Array(
+      Array.from({ length: 32 }, (_, i) =>
+        parseInt(keyBase64.slice(i * 2, i * 2 + 2), 16)
+      )
+    )
+  } else {
+    keyBytes = Buffer.from(keyBase64, 'base64')
+  }
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
     keyBytes,

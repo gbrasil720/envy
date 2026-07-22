@@ -27,6 +27,7 @@ import { Command as CommandPrimitive } from 'cmdk'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useTRPC } from '@/utils/trpc'
+import { useDashboardShell } from './dashboard-context'
 import { DashboardIcon } from './dashboard-icon'
 import type { DashboardProject, DashboardSection } from './dashboard-types'
 
@@ -47,11 +48,6 @@ type ResolvedRecentRow =
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  currentProject: DashboardProject | null
-  section: DashboardSection
-  onSectionChange: (s: DashboardSection) => void
-  onSelectProject: (p: DashboardProject) => void
-  onNewProject: () => void
 }
 
 const SECTION_ICON: Record<DashboardSection, typeof LockIcon> = {
@@ -121,22 +117,21 @@ function copy(text: string, msg: string) {
 
 function Kbd({ children }: { children: ReactNode }) {
   return (
-    <kbd className="rounded border border-border bg-card px-1 font-mono text-[10px] font-medium text-muted-foreground">
+    <kbd className="rounded border border-ghost-border bg-surface-2 px-1 font-mono text-[10px] font-medium text-text-muted">
       {children}
     </kbd>
   )
 }
 
-export function CommandPalette({
-  open,
-  onOpenChange,
-  currentProject,
-  section,
-  onSectionChange,
-  onSelectProject,
-  onNewProject
-}: Props) {
+export function CommandPalette({ open, onOpenChange }: Props) {
   const trpc = useTRPC()
+  const {
+    currentProject,
+    section,
+    onSectionChange,
+    onSelectProject,
+    onNewProject
+  } = useDashboardShell()
   const projectsQuery = useQuery(trpc.projects.list.queryOptions())
   const projects = projectsQuery.data ?? []
 
@@ -195,39 +190,40 @@ export function CommandPalette({
   }, [recent, projects])
 
   const groupHeadingClass =
-    '**:[[cmdk-group-heading]]:px-3 **:[[cmdk-group-heading]]:py-2 **:[[cmdk-group-heading]]:text-[11px] **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:uppercase **:[[cmdk-group-heading]]:tracking-wider **:[[cmdk-group-heading]]:text-muted-foreground/80'
+    '**:[[cmdk-group-heading]]:px-[18px] **:[[cmdk-group-heading]]:py-2.5 **:[[cmdk-group-heading]]:font-mono **:[[cmdk-group-heading]]:text-[9.5px] **:[[cmdk-group-heading]]:font-normal **:[[cmdk-group-heading]]:uppercase **:[[cmdk-group-heading]]:tracking-[0.1em] **:[[cmdk-group-heading]]:text-text-muted'
 
-  const itemClass = 'gap-3 px-3 py-2.5 text-sm rounded-lg'
+  const itemClass =
+    'gap-3 rounded px-[18px] py-2.5 text-[13px] data-[selected=true]:bg-ghost-bg'
 
   return (
     <CommandDialog
       open={open}
       onOpenChange={onOpenChange}
-      showCloseButton
+      showCloseButton={false}
       title="Command palette"
       description="Search projects, jump to a section, or run CLI actions."
       className={cn(
-        'top-2 max-h-[calc(100vh-1rem)] translate-y-0 gap-0 overflow-hidden p-0 shadow-2xl shadow-black/20 sm:top-[12vh] sm:max-w-2xl'
+        'top-2 max-h-[calc(100vh-1rem)] translate-y-0 gap-0 overflow-hidden rounded-md border border-ghost-border bg-[#0e0f0e] p-0 shadow-md sm:top-[14vh] sm:max-w-[560px]'
       )}
     >
-      <Command className="rounded-xl text-sm">
+      <Command className="rounded-md bg-[#0e0f0e] text-sm text-text-primary">
         <div
           data-slot="command-input-wrapper"
-          className="flex h-14 shrink-0 items-center gap-3 border-b border-border/60 px-3"
+          className="flex h-12 shrink-0 items-center gap-3 border-b border-border px-[18px]"
         >
-          <DashboardIcon
-            icon={Search01Icon}
-            size="lg"
-            className="text-muted-foreground"
-            aria-hidden
-          />
+          <span className="font-mono text-[13px] text-text-muted" aria-hidden>
+            ›
+          </span>
           <CommandPrimitive.Input
-            placeholder="Jump to section, project, or copy CLI…"
+            placeholder="type a command or search…"
             value={search}
             onValueChange={setSearch}
             aria-label="Command palette search"
-            className="placeholder:text-muted-foreground flex h-full min-w-0 flex-1 bg-transparent text-base outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-full min-w-0 flex-1 bg-transparent font-mono text-[13.5px] text-text-primary outline-none placeholder:text-text-muted disabled:cursor-not-allowed disabled:opacity-50"
           />
+          <span className="rounded border border-ghost-border px-1.5 py-0.5 font-mono text-[10px] text-text-muted">
+            esc
+          </span>
         </div>
 
         <CommandList className="max-h-[min(85vh,640px)] scroll-py-1 sm:max-h-[min(60vh,520px)]">
@@ -623,24 +619,11 @@ export function CommandPalette({
 
         <div
           aria-hidden="true"
-          className="flex shrink-0 items-center justify-between gap-2 border-t border-border/60 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground"
+          className="flex shrink-0 items-center gap-4 border-t border-border px-[18px] py-2.5 font-mono text-[10px] text-text-muted"
         >
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="inline-flex items-center gap-1">
-              <Kbd>↵</Kbd>
-              <span className="hidden sm:inline">select</span>
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Kbd>↑</Kbd>
-              <Kbd>↓</Kbd>
-              <span className="hidden sm:inline">move</span>
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Kbd>esc</Kbd>
-              <span className="hidden sm:inline">close</span>
-            </span>
-          </div>
-          <span className="shrink-0 font-mono text-muted-foreground">envy</span>
+          <span>↑↓ navigate</span>
+          <span>↵ select</span>
+          <span>esc close</span>
         </div>
       </Command>
     </CommandDialog>

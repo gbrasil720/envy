@@ -1,3 +1,4 @@
+import { PLAN_LIMITS } from '@envy/api/lib/plan-limits'
 import { Card, CardContent } from '@envy/ui/components/card'
 import { Skeleton } from '@envy/ui/components/skeleton'
 import {
@@ -5,8 +6,8 @@ import {
   DashboardSpeed01Icon,
   Key01Icon
 } from '@hugeicons/core-free-icons'
-import { PLAN_LIMITS } from '@envy/api/lib/plan-limits'
 import { useQuery } from '@tanstack/react-query'
+import { timeAgoVerbose } from '@/utils/time'
 import { useTRPC } from '@/utils/trpc'
 import { dashboardCardClass } from './dashboard-classes'
 import { DashboardIcon } from './dashboard-icon'
@@ -24,21 +25,6 @@ type Props = {
   projectPlan: string
 }
 
-function formatLastActivity(date: Date | string | undefined) {
-  if (!date) return '—'
-  const d = new Date(date)
-  const now = new Date()
-  const diffMs = now.getTime() - d.getTime()
-  const mins = Math.floor(diffMs / 60000)
-  if (mins < 1) return 'Just now'
-  if (mins < 60) return `${mins}m ago`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  if (days < 7) return `${days}d ago`
-  return d.toLocaleDateString()
-}
-
 export function SecretsStats({
   projectId,
   environment,
@@ -51,12 +37,11 @@ export function SecretsStats({
     trpc.auditLog.list.queryOptions({
       projectId,
       environment,
-      limit: 1,
-      offset: 0
+      limit: 1
     })
   )
 
-  const lastLog = lastQuery.data?.[0]
+  const lastLog = lastQuery.data?.logs?.[0]
   const limit = PLAN_SECRET_LIMIT[projectPlan] ?? PLAN_SECRET_LIMIT.free
   const pct =
     Number.isFinite(limit) && limit! > 0
@@ -122,7 +107,7 @@ export function SecretsStats({
             Last activity
           </div>
           <p className="font-display text-2xl font-semibold tabular-nums text-foreground">
-            {formatLastActivity(lastLog?.createdAt)}
+            {timeAgoVerbose(lastLog?.createdAt)}
           </p>
           <p className="truncate text-[11px] text-muted-foreground">
             {lastLog

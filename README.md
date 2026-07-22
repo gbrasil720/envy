@@ -59,7 +59,7 @@ Envy enables teams to:
 | sonner | 2.0.5+ | Toast notifications |
 | next-themes | 0.4.6+ | Theme provider |
 | **Code Quality** | | |
-| Biome | 2.2.0+ | Linter & formatter (tabs, double quotes) |
+| Biome | 2.2.0+ | Linter & formatter (2-space indent, single quotes, no semicolons, no trailing commas) |
 
 ---
 
@@ -370,11 +370,12 @@ All tables use `text('id').primaryKey()` for UUIDs. Timestamps default to `now()
 |---|---|---|
 | id | text | PRIMARY KEY |
 | sessionToken | text | NOT NULL, UNIQUE |
+| browserToken | text | NOT NULL, UNIQUE, DEFAULT gen_random_uuid() |
 | status | text | NOT NULL, DEFAULT 'pending' |
-| rawKey | text | nullable (API key generated after approval) |
+| userId | text | nullable, FK → user.id (set null on delete) |
 | expiresAt | timestamp | NOT NULL |
 | createdAt | timestamp | NOT NULL, DEFAULT now() |
-| **Indexes** | | cli_auth_session_token_uidx (UNIQUE), cli_auth_session_expiresAt_idx, cli_auth_session_status_idx |
+| **Indexes** | | cli_auth_session_token_uidx (UNIQUE), cli_auth_session_browser_token_uidx (UNIQUE), cli_auth_session_expiresAt_idx, cli_auth_session_status_idx |
 
 ---
 
