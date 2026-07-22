@@ -1,3 +1,4 @@
+import { envNameSchema } from '@envy/api/lib/env-name'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +28,6 @@ import { Input } from '@envy/ui/components/input'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { envNameSchema } from '@envy/api/lib/env-name'
 import { toast } from 'sonner'
 import { useTRPC } from '@/utils/trpc'
 

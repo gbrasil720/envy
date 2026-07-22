@@ -142,14 +142,16 @@ describe('createTRPCContext', () => {
   test('rejects expired API key', async () => {
     const user = await createTestUser()
     const raw = generateApiToken()
-    await getTestDb().insert(apiKey).values({
-      id: crypto.randomUUID(),
-      userId: user.id,
-      name: 'CLI',
-      keyHash: await hashToken(raw),
-      keyPrefix: tokenPrefix(raw),
-      expiresAt: new Date(Date.now() - 86400000) // expired 1 day ago
-    })
+    await getTestDb()
+      .insert(apiKey)
+      .values({
+        id: crypto.randomUUID(),
+        userId: user.id,
+        name: 'CLI',
+        keyHash: await hashToken(raw),
+        keyPrefix: tokenPrefix(raw),
+        expiresAt: new Date(Date.now() - 86400000) // expired 1 day ago
+      })
 
     await expect(
       createTRPCContext({
@@ -164,14 +166,16 @@ describe('createTRPCContext', () => {
     const user = await createTestUser()
     const raw = generateApiToken()
     const keyId = crypto.randomUUID()
-    await getTestDb().insert(apiKey).values({
-      id: keyId,
-      userId: user.id,
-      name: 'CLI',
-      keyHash: await hashToken(raw),
-      keyPrefix: tokenPrefix(raw),
-      expiresAt: getApiKeyExpiryDate()
-    })
+    await getTestDb()
+      .insert(apiKey)
+      .values({
+        id: keyId,
+        userId: user.id,
+        name: 'CLI',
+        keyHash: await hashToken(raw),
+        keyPrefix: tokenPrefix(raw),
+        expiresAt: getApiKeyExpiryDate()
+      })
 
     const headers = new Headers({ Authorization: `Bearer ${raw}` })
     const ctx = await createTRPCContext({
@@ -194,15 +198,17 @@ describe('createTRPCContext', () => {
     const raw = generateApiToken()
     const keyId = crypto.randomUUID()
     const now = new Date()
-    await getTestDb().insert(apiKey).values({
-      id: keyId,
-      userId: user.id,
-      name: 'CLI',
-      keyHash: await hashToken(raw),
-      keyPrefix: tokenPrefix(raw),
-      expiresAt: getApiKeyExpiryDate(),
-      lastUsedAt: now
-    })
+    await getTestDb()
+      .insert(apiKey)
+      .values({
+        id: keyId,
+        userId: user.id,
+        name: 'CLI',
+        keyHash: await hashToken(raw),
+        keyPrefix: tokenPrefix(raw),
+        expiresAt: getApiKeyExpiryDate(),
+        lastUsedAt: now
+      })
 
     await createTRPCContext({
       headers: new Headers({ Authorization: `Bearer ${raw}` }),

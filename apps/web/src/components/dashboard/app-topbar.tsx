@@ -13,10 +13,7 @@ type Props = {
   onOpenMobileSidebar: () => void
 }
 
-export function AppTopbar({
-  onOpenCommand,
-  onOpenMobileSidebar
-}: Props) {
+export function AppTopbar({ onOpenCommand, onOpenMobileSidebar }: Props) {
   const { openNewProject, openAddSecret } = useDashboardActions()
   const { currentProject, section, isHome } = useDashboardShell()
 

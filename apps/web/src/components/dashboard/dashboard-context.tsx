@@ -30,7 +30,9 @@ const DashboardActionsContext = createContext<DashboardActions>({
   registerOpenAddSecret: () => {}
 })
 
-const DashboardShellContext = createContext<DashboardShell>(null! as DashboardShell)
+const DashboardShellContext = createContext<DashboardShell>(
+  null! as DashboardShell
+)
 
 export function useDashboardActions() {
   return useContext(DashboardActionsContext)
@@ -87,12 +89,18 @@ export function DashboardShellProvider({
       onNewProject,
       onGoHome
     }),
-    [currentProject, section, isHome, onSectionChange, onSelectProject, onNewProject, onGoHome]
+    [
+      currentProject,
+      section,
+      isHome,
+      onSectionChange,
+      onSelectProject,
+      onNewProject,
+      onGoHome
+    ]
   )
 
-  return (
-    <DashboardShellContext value={value}>{children}</DashboardShellContext>
-  )
+  return <DashboardShellContext value={value}>{children}</DashboardShellContext>
 }
 
 export { DashboardActionsContext, DashboardShellContext }

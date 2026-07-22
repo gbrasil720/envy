@@ -18,10 +18,7 @@ import {
 
 type AuthCtx = Context & { session: { user: { id: string } } }
 
-export async function listMembers(
-  ctx: AuthCtx,
-  input: { projectId: string }
-) {
+export async function listMembers(ctx: AuthCtx, input: { projectId: string }) {
   const userId = ctx.session.user.id
 
   const { organizationId } = await requireProjectAccess(
@@ -242,9 +239,7 @@ export async function acceptInvite(
   // Custom invite accept — insert allowed only for admin|member.
   // Ownership must never be granted via invite; use Better Auth for that.
   const role =
-    invite.role === 'admin' || invite.role === 'member'
-      ? invite.role
-      : 'member'
+    invite.role === 'admin' || invite.role === 'member' ? invite.role : 'member'
 
   await ctx.db.insert(member).values({
     id: crypto.randomUUID(),
@@ -261,8 +256,7 @@ export async function acceptInvite(
 
   // Return a project in this org for client navigation (first by createdAt)
   const proj = await ctx.db.query.project.findFirst({
-    where: (p, { eq: eqCol }) =>
-      eqCol(p.organizationId, invite.organizationId),
+    where: (p, { eq: eqCol }) => eqCol(p.organizationId, invite.organizationId),
     columns: { id: true },
     orderBy: (p, { asc }) => [asc(p.createdAt)]
   })

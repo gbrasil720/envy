@@ -25,11 +25,17 @@ type InnerProps = {
   onAfterNavigate?: () => void
 }
 
-function SidebarInner({
-  onAfterNavigate
-}: InnerProps) {
+function SidebarInner({ onAfterNavigate }: InnerProps) {
   const trpc = useTRPC()
-  const { currentProject, section, isHome, onSectionChange, onSelectProject, onNewProject, onGoHome } = useDashboardShell()
+  const {
+    currentProject,
+    section,
+    isHome,
+    onSectionChange,
+    onSelectProject,
+    onNewProject,
+    onGoHome
+  } = useDashboardShell()
   const meQuery = useQuery(trpc.me.get.queryOptions())
   const projectsQuery = useQuery(trpc.projects.list.queryOptions())
   const projects = projectsQuery.data ?? []

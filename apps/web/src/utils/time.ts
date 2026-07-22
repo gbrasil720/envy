@@ -13,9 +13,7 @@ export function timeAgoCompact(date: Date | string): string {
   })
 }
 
-export function timeAgoVerbose(
-  date: Date | string | undefined
-): string {
+export function timeAgoVerbose(date: Date | string | undefined): string {
   if (!date) return '—'
   const d = new Date(date)
   const now = new Date()

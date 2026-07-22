@@ -8,8 +8,16 @@ export function invalidateSecretScope(
   queryClient: QueryClient,
   trpc: {
     secrets: {
-      reveal: { queryOptions: (input: { projectId: string; environment: string }) => { queryKey: QueryKey } }
-      listKeys: { queryOptions: (input: { projectId: string; environment: string }) => { queryKey: QueryKey } }
+      reveal: {
+        queryOptions: (input: { projectId: string; environment: string }) => {
+          queryKey: QueryKey
+        }
+      }
+      listKeys: {
+        queryOptions: (input: { projectId: string; environment: string }) => {
+          queryKey: QueryKey
+        }
+      }
     }
   },
   projectId: string,

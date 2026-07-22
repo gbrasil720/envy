@@ -11,11 +11,11 @@ import {
 } from '@envy/ui/components/alert-dialog'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { initials } from '@/utils/initials'
+import { formatDateShort } from '@/utils/time'
 import { useTRPC } from '@/utils/trpc'
 import { InviteDialog } from './invite-dialog'
 import { PendingInvites } from './pending-invites'
-import { initials } from '@/utils/initials'
-import { formatDateShort } from '@/utils/time'
 
 type Props = {
   projectId: string

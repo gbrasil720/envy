@@ -6,7 +6,12 @@ import { protectedProcedure, router } from '..'
 import { requireProjectAccess } from '../lib/org-utils'
 
 const ACTION_CATEGORIES = {
-  secrets: new Set(['pushed', 'revealed', 'secrets_updated', 'secrets_deleted']),
+  secrets: new Set([
+    'pushed',
+    'revealed',
+    'secrets_updated',
+    'secrets_deleted'
+  ]),
   members: new Set(['member_invited', 'member_removed']),
   cli: new Set(['pushed', 'pulled', 'revealed'])
 } as const
@@ -79,7 +84,9 @@ export const auditLogRouter = router({
         user: l.userId ? (userMap.get(l.userId) ?? null) : null
       }))
 
-      const nextCursor = hasMore ? items[items.length - 1]?.createdAt.toISOString() : undefined
+      const nextCursor = hasMore
+        ? items[items.length - 1]?.createdAt.toISOString()
+        : undefined
 
       return {
         logs: enriched,

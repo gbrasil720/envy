@@ -27,8 +27,8 @@ import { Command as CommandPrimitive } from 'cmdk'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useTRPC } from '@/utils/trpc'
-import { DashboardIcon } from './dashboard-icon'
 import { useDashboardShell } from './dashboard-context'
+import { DashboardIcon } from './dashboard-icon'
 import type { DashboardProject, DashboardSection } from './dashboard-types'
 
 const RECENT_STORAGE_KEY = 'envy:cmdk:recent'
@@ -123,12 +123,15 @@ function Kbd({ children }: { children: ReactNode }) {
   )
 }
 
-export function CommandPalette({
-  open,
-  onOpenChange
-}: Props) {
+export function CommandPalette({ open, onOpenChange }: Props) {
   const trpc = useTRPC()
-  const { currentProject, section, onSectionChange, onSelectProject, onNewProject } = useDashboardShell()
+  const {
+    currentProject,
+    section,
+    onSectionChange,
+    onSelectProject,
+    onNewProject
+  } = useDashboardShell()
   const projectsQuery = useQuery(trpc.projects.list.queryOptions())
   const projects = projectsQuery.data ?? []
 

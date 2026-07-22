@@ -10,7 +10,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { AppSidebar } from '@/components/dashboard/app-sidebar'
 import { AppTopbar } from '@/components/dashboard/app-topbar'
 import { CommandPalette } from '@/components/dashboard/command-palette'
-import { DashboardActionsProvider, DashboardShellProvider } from '@/components/dashboard/dashboard-context'
+import {
+  DashboardActionsProvider,
+  DashboardShellProvider
+} from '@/components/dashboard/dashboard-context'
 import type {
   DashboardProject,
   DashboardSection
@@ -137,10 +140,7 @@ function DashboardLayout() {
             </main>
           </div>
 
-          <CommandPalette
-            open={commandOpen}
-            onOpenChange={setCommandOpen}
-          />
+          <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
 
           <NewProjectDialog
             open={newProjectOpen}
