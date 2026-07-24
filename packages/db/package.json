@@ -13,7 +13,7 @@
     "test": "bun test",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
-    "db:studio": "drizzle-kit studio",
+    "db:studio": "drizzle-kit studio --host 127.0.0.1",
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
