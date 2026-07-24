@@ -1,3 +1,4 @@
+import type { Plan } from '@envy/api/lib/plan-limits'
 import { PLAN_LIMITS } from '@envy/api/lib/plan-limits'
 import { Avatar, AvatarFallback, AvatarImage } from '@envy/ui/components/avatar'
 import { Button } from '@envy/ui/components/button'
@@ -14,11 +15,13 @@ import { useTRPC } from '@/utils/trpc'
 import { ThemeSwitcher } from './theme-switcher'
 import { UsageBar } from './usage-bar'
 
-type Plan = 'free' | 'pro' | 'team'
-
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
+  plan: Plan | null
+  workspaceName?: string
+  organizationId?: string
+  onManageBilling: () => void
 }
 
 const PLAN_CONFIG: Record<
@@ -80,13 +83,25 @@ const PLAN_CONFIG: Record<
   }
 }
 
-export function PreferencesSheet({ open, onOpenChange }: Props) {
+export function PreferencesSheet({
+  open,
+  onOpenChange,
+  plan,
+  workspaceName,
+  organizationId,
+  onManageBilling
+}: Props) {
   const trpc = useTRPC()
   const meQuery = useQuery(trpc.me.get.queryOptions())
+  const projectsQuery = useQuery({
+    ...trpc.projects.list.queryOptions({
+      organizationId: organizationId ?? ''
+    }),
+    enabled: !!organizationId
+  })
 
   const user = meQuery.data
-  const plan = (user?.plan ?? 'free') as Plan
-  const config = PLAN_CONFIG[plan]
+  const config = plan ? PLAN_CONFIG[plan] : null
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -156,45 +171,70 @@ export function PreferencesSheet({ open, onOpenChange }: Props) {
 
             <section>
               <div className="mb-2.5 font-mono text-[10px] tracking-[0.08em] text-text-muted">
-                CURRENT PLAN
+                WORKSPACE PLAN
               </div>
-              <div className="overflow-hidden rounded border border-ghost-border">
-                <div className="flex items-center justify-between px-4 py-4">
-                  <div>
-                    <div className="text-[20px] font-bold tracking-[-0.015em] text-text-primary">
-                      {config.label}{' '}
-                      <span className="text-[13px] font-normal text-text-muted">
-                        {config.price}
-                      </span>
+              {config ? (
+                <div className="overflow-hidden rounded border border-ghost-border">
+                  <div className="flex items-center justify-between px-4 py-4">
+                    <div>
+                      <div className="text-[20px] font-bold tracking-[-0.015em] text-text-primary">
+                        {config.label}{' '}
+                        <span className="text-[13px] font-normal text-text-muted">
+                          {config.price}
+                        </span>
+                      </div>
+                      {workspaceName ? (
+                        <p className="mt-1 font-mono text-[10px] text-text-muted">
+                          {workspaceName} workspace
+                        </p>
+                      ) : null}
+                    </div>
+                    {plan !== 'team' ? (
+                      <Button
+                        size="sm"
+                        className="rounded"
+                        onClick={onManageBilling}
+                      >
+                        Manage billing
+                      </Button>
+                    ) : null}
+                  </div>
+                  <div className="border-t border-border px-4 py-3">
+                    <div className="flex flex-col gap-3">
+                      <UsageBar
+                        label="Projects"
+                        used={
+                          projectsQuery.data?.filter(
+                            (project) =>
+                              project.organizationId === organizationId
+                          ).length ?? 0
+                        }
+                        limit={config.projectLimit}
+                      />
+                      <UsageBar
+                        label="Secrets"
+                        used={
+                          projectsQuery.data
+                            ?.filter(
+                              (project) =>
+                                project.organizationId === organizationId
+                            )
+                            .reduce(
+                              (total, project) =>
+                                total + (project.secretsCount ?? 0),
+                              0
+                            ) ?? 0
+                        }
+                        limit={config.secretLimit}
+                      />
                     </div>
                   </div>
-                  {plan !== 'team' ? (
-                    <Button
-                      size="sm"
-                      className="rounded"
-                      onClick={() => {
-                        // TODO: checkout
-                      }}
-                    >
-                      Upgrade
-                    </Button>
-                  ) : null}
                 </div>
-                <div className="border-t border-border px-4 py-3">
-                  <div className="flex flex-col gap-3">
-                    <UsageBar
-                      label="Projects"
-                      used={user.projectCount ?? 0}
-                      limit={config.projectLimit}
-                    />
-                    <UsageBar
-                      label="Secrets"
-                      used={user.secretCount ?? 0}
-                      limit={config.secretLimit}
-                    />
-                  </div>
+              ) : (
+                <div className="rounded border border-dashed border-ghost-border px-4 py-3 text-[12px] text-text-secondary">
+                  Select a workspace to view its current plan and limits.
                 </div>
-              </div>
+              )}
             </section>
 
             <section>

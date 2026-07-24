@@ -15,6 +15,9 @@ type DashboardActions = {
 }
 
 type DashboardShell = {
+  organizationSlug: string
+  organizationId: string
+  canManageProjects: boolean
   currentProject: DashboardProject | null
   section: DashboardSection
   isHome: boolean
@@ -30,16 +33,20 @@ const DashboardActionsContext = createContext<DashboardActions>({
   registerOpenAddSecret: () => {}
 })
 
-const DashboardShellContext = createContext<DashboardShell>(
-  null! as DashboardShell
-)
+const DashboardShellContext = createContext<DashboardShell | null>(null)
 
 export function useDashboardActions() {
   return useContext(DashboardActionsContext)
 }
 
 export function useDashboardShell() {
-  return useContext(DashboardShellContext)
+  const context = useContext(DashboardShellContext)
+  if (!context) {
+    throw new Error(
+      'useDashboardShell must be used inside DashboardShellProvider'
+    )
+  }
+  return context
 }
 
 export function DashboardActionsProvider({
@@ -70,6 +77,9 @@ export function DashboardActionsProvider({
 }
 
 export function DashboardShellProvider({
+  organizationSlug,
+  organizationId,
+  canManageProjects,
   currentProject,
   section,
   isHome,
@@ -81,6 +91,9 @@ export function DashboardShellProvider({
 }: DashboardShell & { children: ReactNode }) {
   const value = useMemo(
     () => ({
+      organizationSlug,
+      organizationId,
+      canManageProjects,
       currentProject,
       section,
       isHome,
@@ -90,6 +103,9 @@ export function DashboardShellProvider({
       onGoHome
     }),
     [
+      organizationSlug,
+      organizationId,
+      canManageProjects,
       currentProject,
       section,
       isHome,

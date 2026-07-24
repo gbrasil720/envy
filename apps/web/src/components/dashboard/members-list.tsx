@@ -1,4 +1,3 @@
-import { PLAN_LIMITS } from '@envy/api/lib/plan-limits'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,16 +10,16 @@ import {
 } from '@envy/ui/components/alert-dialog'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { authClient } from '@/lib/auth-client'
 import { initials } from '@/utils/initials'
 import { formatDateShort } from '@/utils/time'
 import { useTRPC } from '@/utils/trpc'
 import { InviteDialog } from './invite-dialog'
-import { PendingInvites } from './pending-invites'
+import { RecentInvitations } from './recent-invitations'
 
 type Props = {
-  projectId: string
+  organizationId: string
   currentUserId: string
-  currentUserRole: string
   orgPlan: string
 }
 
@@ -30,76 +29,57 @@ const ROLE_COLOR: Record<string, string> = {
   member: 'text-text-muted'
 }
 
-const MEMBER_CAP: Record<string, number> = {
-  free: PLAN_LIMITS.free.members,
-  pro: PLAN_LIMITS.pro.members,
-  team: PLAN_LIMITS.team.members
-}
-
-export function MembersList({
-  projectId,
-  currentUserId,
-  currentUserRole,
-  orgPlan
-}: Props) {
+export function MembersList({ organizationId, currentUserId, orgPlan }: Props) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
-  const [inviteOpen, setInviteOpen] = useState(false)
   const [removingUserId, setRemovingUserId] = useState<string | null>(null)
-
-  const canManage = ['owner', 'admin'].includes(currentUserRole)
-
-  const membersQuery = useQuery(trpc.members.list.queryOptions({ projectId }))
-
-  const pendingQuery = useQuery(
-    trpc.members.pending.queryOptions({ projectId }, { enabled: canManage })
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const { data: activeMember } = authClient.useActiveMember()
+  const membersQuery = useQuery({
+    queryKey: ['organization-members', organizationId],
+    queryFn: async () => {
+      const result = await authClient.organization.listMembers({
+        query: { organizationId }
+      })
+      if (result.error) throw new Error(result.error.message)
+      return result.data?.members ?? []
+    }
+  })
+  const canManage = Boolean(
+    activeMember?.role.includes('owner') || activeMember?.role.includes('admin')
   )
 
   const removeMutation = useMutation(
     trpc.members.remove.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries(
-          trpc.members.list.queryOptions({ projectId })
-        )
+      onSuccess: async () => {
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: ['organization-members', organizationId]
+          }),
+          queryClient.invalidateQueries({ queryKey: ['auditLog:list'] })
+        ])
         setRemovingUserId(null)
       }
     })
   )
 
   const members = membersQuery.data ?? []
-  const pending = pendingQuery.data ?? []
-  const cap = MEMBER_CAP[orgPlan] ?? 1
-  const overLimit = members.length > cap
   const removing = members.find((m) => m.userId === removingUserId)
 
   return (
     <div className="flex min-h-full flex-col">
-      {overLimit ? (
-        <div className="mx-7 mt-4 flex gap-2.5 rounded border border-danger/35 bg-danger/[0.06] px-4 py-3 text-[12.5px] leading-[1.55] text-text-secondary">
-          <span className="font-mono text-danger">△</span>
-          <span>
-            This organization is over the {orgPlan} seat limit ({members.length}{' '}
-            / {cap}).{' '}
-            <span className="text-text-primary">
-              Review plan in preferences.
-            </span>
-          </span>
-        </div>
-      ) : null}
-
       <div className="flex items-center justify-between gap-3 border-b border-border px-7 py-3">
         <div className="font-mono text-[11px] text-text-muted">
           {members.length} member{members.length !== 1 ? 's' : ''}
-          {canManage ? ` · ${pending.length} pending` : ''}
-          {` · ${cap} seat${cap === 1 ? '' : 's'} on ${orgPlan}`}
+          {` · ${orgPlan} plan`}
         </div>
         {canManage ? (
           <button
             type="button"
             onClick={() => setInviteOpen(true)}
-            className="cursor-pointer rounded bg-primary px-3.5 py-1.5 text-[12px] font-semibold text-primary-foreground transition-colors hover:bg-white"
+            className="cursor-pointer rounded border border-ghost-border px-2.5 py-1.5 font-mono text-[10.5px] text-text-secondary transition-colors hover:border-brand/50 hover:text-text-primary"
           >
-            + invite
+            <span className="mr-1 text-brand">+</span> invite member
           </button>
         ) : null}
       </div>
@@ -160,7 +140,7 @@ export function MembersList({
               {formatDateShort(member.createdAt)}
             </span>
             <span className="flex justify-end">
-              {member.role === 'owner' ? (
+              {member.role.includes('owner') ? (
                 <span className="font-mono text-[10.5px] text-text-muted">
                   —
                 </span>
@@ -182,15 +162,7 @@ export function MembersList({
         ))
       )}
 
-      {canManage ? (
-        <PendingInvites projectId={projectId} invites={pending} />
-      ) : null}
-
-      <InviteDialog
-        open={inviteOpen}
-        onOpenChange={setInviteOpen}
-        projectId={projectId}
-      />
+      {canManage ? <RecentInvitations organizationId={organizationId} /> : null}
 
       <AlertDialog
         open={!!removingUserId}
@@ -204,7 +176,7 @@ export function MembersList({
               <span className="font-mono text-text-primary">
                 {removing?.user.name ?? 'this member'}
               </span>
-              ? They will lose access to this project immediately.
+              ? They will lose access to this organization immediately.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -213,7 +185,11 @@ export function MembersList({
               className="bg-danger text-white hover:bg-danger/90"
               onClick={() =>
                 removingUserId &&
-                removeMutation.mutate({ projectId, userId: removingUserId })
+                removing &&
+                removeMutation.mutate({
+                  organizationId,
+                  memberId: removing.id
+                })
               }
             >
               {removeMutation.isPending ? 'Removing…' : 'Remove'}
@@ -221,6 +197,11 @@ export function MembersList({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <InviteDialog
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        organizationId={organizationId}
+      />
     </div>
   )
 }

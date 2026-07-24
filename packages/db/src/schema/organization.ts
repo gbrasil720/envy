@@ -9,7 +9,7 @@ import {
   uniqueIndex
 } from 'drizzle-orm/pg-core'
 import { user } from './auth'
-import { subscription } from './billing'
+import { billingCustomer, subscription } from './billing'
 import { project } from './envy'
 
 // ── Enums ──────────────────────────────────────────────────────────────
@@ -121,7 +121,8 @@ export const organizationRelations = relations(
     members: many(member),
     invitations: many(invitation),
     projects: many(project),
-    subscription: one(subscription)
+    subscription: one(subscription),
+    billingCustomer: one(billingCustomer)
   })
 )
 

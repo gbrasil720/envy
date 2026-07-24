@@ -18,7 +18,7 @@ export function AuthForm() {
     authClient.signIn
       .social({
         provider: 'github',
-        callbackURL: `${window.location.origin}/dashboard`,
+        callbackURL: `${window.location.origin}/auth/callback`,
         errorCallbackURL: `${window.location.origin}/login?error=oauth_failed`
       })
       .then((data) => {

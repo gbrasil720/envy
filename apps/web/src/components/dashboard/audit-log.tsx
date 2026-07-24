@@ -5,8 +5,9 @@ import { timeAgoCompact } from '@/utils/time'
 import { useTRPCClient } from '@/utils/trpc'
 
 type Props = {
-  projectId: string
-  environments: { id: string; name: string }[]
+  projectId?: string
+  organizationId?: string
+  environments?: { id: string; name: string }[]
 }
 
 type ActionFilter = 'all' | 'secrets' | 'members' | 'cli'
@@ -36,7 +37,10 @@ const TONE_TO_CLASS: Record<string, string> = {
 function actionLabel(action: string): { verb: string; color: string } {
   const entry = AUDIT_ACTION_LABELS[action as keyof typeof AUDIT_ACTION_LABELS]
   if (entry) {
-    return { verb: entry.verb, color: TONE_TO_CLASS[entry.tone] }
+    return {
+      verb: entry.verb,
+      color: TONE_TO_CLASS[entry.tone] ?? 'text-text-secondary'
+    }
   }
   return {
     verb: action.replace(/_/g, ' '),
@@ -53,21 +57,38 @@ const FILTERS: { id: ActionFilter; label: string }[] = [
 
 const PAGE_SIZE = 50
 
-export function AuditLog({ projectId, environments }: Props) {
+export function AuditLog({
+  projectId,
+  organizationId,
+  environments = []
+}: Props) {
   const trpc = useTRPCClient()
   const [envFilter, setEnvFilter] = useState<string>('all')
   const [actionFilter, setActionFilter] = useState<ActionFilter>('all')
 
   const auditQuery = useInfiniteQuery<AuditPage, Error>({
-    queryKey: ['auditLog:list', projectId, envFilter, actionFilter],
+    queryKey: [
+      'auditLog:list',
+      projectId,
+      organizationId,
+      envFilter,
+      actionFilter
+    ],
     queryFn: async ({ pageParam }) => {
-      const result = await trpc.auditLog.list.query({
-        projectId,
-        limit: PAGE_SIZE,
-        ...(envFilter !== 'all' ? { environment: envFilter } : {}),
-        ...(actionFilter !== 'all' ? { actionCategory: actionFilter } : {}),
-        ...(pageParam ? { cursor: pageParam as string } : {})
-      })
+      const result = organizationId
+        ? await trpc.auditLog.listForOrganization.query({
+            organizationId,
+            limit: PAGE_SIZE,
+            ...(actionFilter !== 'all' ? { actionCategory: actionFilter } : {}),
+            ...(pageParam ? { cursor: pageParam as string } : {})
+          })
+        : await trpc.auditLog.list.query({
+            projectId: projectId ?? '',
+            limit: PAGE_SIZE,
+            ...(envFilter !== 'all' ? { environment: envFilter } : {}),
+            ...(actionFilter !== 'all' ? { actionCategory: actionFilter } : {}),
+            ...(pageParam ? { cursor: pageParam as string } : {})
+          })
       return result
     },
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
@@ -107,21 +128,23 @@ export function AuditLog({ projectId, environments }: Props) {
             </button>
           )
         })}
-        <div className="ml-auto flex items-center gap-2">
-          <select
-            value={envFilter}
-            onChange={(e) => setEnvFilter(e.target.value)}
-            className="cursor-pointer rounded border border-ghost-border bg-transparent px-2 py-1 font-mono text-[11px] text-text-secondary outline-none focus:border-border-focus"
-            aria-label="Filter by environment"
-          >
-            <option value="all">all envs</option>
-            {environments.map((e) => (
-              <option key={e.id} value={e.name}>
-                {e.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {!organizationId ? (
+          <div className="ml-auto flex items-center gap-2">
+            <select
+              value={envFilter}
+              onChange={(e) => setEnvFilter(e.target.value)}
+              className="cursor-pointer rounded border border-ghost-border bg-transparent px-2 py-1 font-mono text-[11px] text-text-secondary outline-none focus:border-border-focus"
+              aria-label="Filter by environment"
+            >
+              <option value="all">all envs</option>
+              {environments.map((e) => (
+                <option key={e.id} value={e.name}>
+                  {e.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
       </div>
 
       {isLoading ? (
@@ -147,7 +170,9 @@ export function AuditLog({ projectId, environments }: Props) {
         <>
           {allLogs.map((log) => {
             const { verb, color } = actionLabel(log.action)
-            const who = log.user?.name ?? 'system'
+            const who =
+              log.user?.name ??
+              (log.action === 'invitation_expired' ? 'system' : 'deleted user')
             const target = log.targetKey
               ? log.targetKey
               : log.environment

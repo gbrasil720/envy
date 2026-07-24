@@ -2,7 +2,9 @@ import { cors } from '@elysiajs/cors'
 import { createTRPCContext } from '@envy/api/context'
 import { appRouter } from '@envy/api/routers/index'
 import { auth } from '@envy/auth'
-import { db } from '@envy/db'
+import { createCustomerPortal } from '@envy/auth/billing'
+import { and, db, eq } from '@envy/db'
+import { member, organization } from '@envy/db/schema/organization'
 import { env } from '@envy/env/server'
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch'
 import { Elysia } from 'elysia'
@@ -66,6 +68,36 @@ const app = new Elysia()
     }
   })
   .use(waitlistRoutes)
+  .get('/api/billing/portal', async ({ request, status }) => {
+    const organizationId = new URL(request.url).searchParams.get(
+      'organizationId'
+    )
+    if (!organizationId) return status(400, 'organizationId is required')
+    const session = await auth.api.getSession({ headers: request.headers })
+    if (!session?.user) return status(401, 'Authentication required')
+    const membership = await db.query.member.findFirst({
+      where: and(
+        eq(member.organizationId, organizationId),
+        eq(member.userId, session.user.id)
+      ),
+      columns: { id: true }
+    })
+    if (!membership) return status(403, 'Access denied')
+    const org = await db.query.organization.findFirst({
+      where: eq(organization.id, organizationId),
+      columns: { slug: true }
+    })
+    if (!org) return status(404, 'Organization not found')
+    try {
+      const portal = await createCustomerPortal({
+        organizationId,
+        returnUrl: `${env.APP_URL.replace(/\/$/, '')}/org/${org.slug}/settings/billing`
+      })
+      return Response.redirect(portal.url, 302)
+    } catch {
+      return status(400, 'Customer portal is not available')
+    }
+  })
   .all('/api/auth/*', async (context) => {
     const { request, status } = context
     if (!['POST', 'GET'].includes(request.method)) {

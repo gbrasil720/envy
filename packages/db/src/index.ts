@@ -15,6 +15,7 @@ export {
   isNotNull,
   isNull,
   lt,
+  lte,
   ne,
   not,
   or,

@@ -16,17 +16,14 @@ import { organization } from './organization'
 // DodoPayments. Mantenha isso em sync manualmente; não derive de string livre.
 export const planEnum = pgEnum('plan', ['free', 'pro', 'team'])
 
-// Espelha os status de subscription do DodoPayments. Ajuste os valores
-// exatos conforme o payload real do webhook antes de migrar — os nomes
-// abaixo seguem a convenção comum (Stripe-like) que a maioria dos
-// providers usa, mas CONFIRME contra a doc do Dodo antes de aplicar.
+// Dodo's subscription lifecycle. A missing row represents the Free plan;
+// subscription rows are only created after Dodo has identified a customer.
 export const subscriptionStatusEnum = pgEnum('subscription_status', [
   'active',
-  'trialing',
-  'past_due',
-  'canceled',
-  'incomplete',
-  'incomplete_expired'
+  'on_hold',
+  'cancelled',
+  'expired',
+  'failed'
 ])
 
 // ── Subscription ───────────────────────────────────────────────────────
@@ -47,15 +44,15 @@ export const subscription = pgTable(
       .unique()
       .references(() => organization.id, { onDelete: 'cascade' }),
 
-    plan: planEnum('plan').notNull().default('free'),
+    plan: planEnum('plan').notNull(),
     status: subscriptionStatusEnum('status').notNull().default('active'),
 
     // IDs do DodoPayments — necessários pra reconciliar webhook <-> linha.
-    // dodoCustomerId existe mesmo no plano free (criado no signup ou no
-    // primeiro checkout) pra evitar duplicar customer depois.
+    // The customer is created at the first organization checkout, rather than
+    // at sign-up. This keeps Dodo customers scoped to the billed organization.
     dodoCustomerId: text('dodo_customer_id').notNull(),
     dodoSubscriptionId: text('dodo_subscription_id').unique(),
-    dodoPriceId: text('dodo_price_id'),
+    dodoProductId: text('dodo_product_id'),
 
     // Limite de membros do plano atual — congelado no momento da assinatura.
     // Free/Pro = 1, Team = 5. Evita hardcode espalhado; se o preço mudar
@@ -66,6 +63,7 @@ export const subscription = pgTable(
     currentPeriodEnd: timestamp('current_period_end'),
     cancelAtPeriodEnd: timestamp('cancel_at_period_end'),
     canceledAt: timestamp('canceled_at'),
+    readOnlyNotifiedAt: timestamp('read_only_notified_at'),
 
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
@@ -77,6 +75,31 @@ export const subscription = pgTable(
     uniqueIndex('subscription_organizationId_uidx').on(table.organizationId),
     index('subscription_dodoCustomerId_idx').on(table.dodoCustomerId),
     index('subscription_status_idx').on(table.status)
+  ]
+)
+
+// Customer identity is separate from a subscription so an organization can
+// start checkout without manufacturing a synthetic Free subscription row.
+export const billingCustomer = pgTable(
+  'billing_customer',
+  {
+    id: text('id').primaryKey(),
+    organizationId: text('organization_id')
+      .notNull()
+      .unique()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    dodoCustomerId: text('dodo_customer_id').notNull().unique(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull()
+  },
+  (table) => [
+    uniqueIndex('billing_customer_organizationId_uidx').on(
+      table.organizationId
+    ),
+    uniqueIndex('billing_customer_dodoCustomerId_uidx').on(table.dodoCustomerId)
   ]
 )
 
@@ -110,6 +133,16 @@ export const subscriptionRelations = relations(subscription, ({ one }) => ({
     references: [organization.id]
   })
 }))
+
+export const billingCustomerRelations = relations(
+  billingCustomer,
+  ({ one }) => ({
+    organization: one(organization, {
+      fields: [billingCustomer.organizationId],
+      references: [organization.id]
+    })
+  })
+)
 
 export const billingEventRelations = relations(billingEvent, ({ one }) => ({
   organization: one(organization, {

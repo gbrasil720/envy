@@ -28,10 +28,7 @@ export async function requireWebAuth(
   }
 
   if (mode === 'onboarding-forbidden' && onboardingDone) {
-    throw redirect({
-      to: '/dashboard',
-      search: { project: '', section: 'secrets' as const }
-    })
+    throw redirect({ to: '/auth/callback' })
   }
 
   return auth

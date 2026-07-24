@@ -12,17 +12,18 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SandboxRouteImport } from './routes/sandbox'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CliAuthRouteImport } from './routes/cli-auth'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
-import { Route as DashboardProjectSlugRouteImport } from './routes/dashboard/$projectSlug'
+import { Route as OrgOrgSlugRouteImport } from './routes/org/$orgSlug'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
-import { Route as DashboardProjectSlugIndexRouteImport } from './routes/dashboard/$projectSlug/index'
-import { Route as DashboardProjectSlugSettingsRouteImport } from './routes/dashboard/$projectSlug/settings'
-import { Route as DashboardProjectSlugSecretsRouteImport } from './routes/dashboard/$projectSlug/secrets'
-import { Route as DashboardProjectSlugMembersRouteImport } from './routes/dashboard/$projectSlug/members'
-import { Route as DashboardProjectSlugAuditRouteImport } from './routes/dashboard/$projectSlug/audit'
+import { Route as AcceptInvitationInvitationIdRouteImport } from './routes/accept-invitation.$invitationId'
+import { Route as OrgOrgSlugIndexRouteImport } from './routes/org/$orgSlug/index'
+import { Route as OrgOrgSlugSettingsMembersRouteImport } from './routes/org/$orgSlug/settings/members'
+import { Route as OrgOrgSlugSettingsBillingRouteImport } from './routes/org/$orgSlug/settings/billing'
+import { Route as OrgOrgSlugSettingsAuditLogRouteImport } from './routes/org/$orgSlug/settings/audit-log'
+import { Route as OrgOrgSlugProjectsProjectSlugRouteImport } from './routes/org/$orgSlug/projects/$projectSlug'
+import { Route as OrgOrgSlugProjectsProjectSlugIndexRouteImport } from './routes/org/$orgSlug/projects/$projectSlug/index'
+import { Route as OrgOrgSlugProjectsProjectSlugSecretsRouteImport } from './routes/org/$orgSlug/projects/$projectSlug/secrets'
 
 const SandboxRoute = SandboxRouteImport.update({
   id: '/sandbox',
@@ -39,11 +40,6 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CliAuthRoute = CliAuthRouteImport.update({
   id: '/cli-auth',
   path: '/cli-auth',
@@ -54,67 +50,80 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardIndexRoute = DashboardIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardProjectSlugRoute = DashboardProjectSlugRouteImport.update({
-  id: '/$projectSlug',
-  path: '/$projectSlug',
-  getParentRoute: () => DashboardRoute,
+const OrgOrgSlugRoute = OrgOrgSlugRouteImport.update({
+  id: '/org/$orgSlug',
+  path: '/org/$orgSlug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardProjectSlugIndexRoute =
-  DashboardProjectSlugIndexRouteImport.update({
+const AcceptInvitationInvitationIdRoute =
+  AcceptInvitationInvitationIdRouteImport.update({
+    id: '/accept-invitation/$invitationId',
+    path: '/accept-invitation/$invitationId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const OrgOrgSlugIndexRoute = OrgOrgSlugIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OrgOrgSlugRoute,
+} as any)
+const OrgOrgSlugSettingsMembersRoute =
+  OrgOrgSlugSettingsMembersRouteImport.update({
+    id: '/settings/members',
+    path: '/settings/members',
+    getParentRoute: () => OrgOrgSlugRoute,
+  } as any)
+const OrgOrgSlugSettingsBillingRoute =
+  OrgOrgSlugSettingsBillingRouteImport.update({
+    id: '/settings/billing',
+    path: '/settings/billing',
+    getParentRoute: () => OrgOrgSlugRoute,
+  } as any)
+const OrgOrgSlugSettingsAuditLogRoute =
+  OrgOrgSlugSettingsAuditLogRouteImport.update({
+    id: '/settings/audit-log',
+    path: '/settings/audit-log',
+    getParentRoute: () => OrgOrgSlugRoute,
+  } as any)
+const OrgOrgSlugProjectsProjectSlugRoute =
+  OrgOrgSlugProjectsProjectSlugRouteImport.update({
+    id: '/projects/$projectSlug',
+    path: '/projects/$projectSlug',
+    getParentRoute: () => OrgOrgSlugRoute,
+  } as any)
+const OrgOrgSlugProjectsProjectSlugIndexRoute =
+  OrgOrgSlugProjectsProjectSlugIndexRouteImport.update({
     id: '/',
     path: '/',
-    getParentRoute: () => DashboardProjectSlugRoute,
+    getParentRoute: () => OrgOrgSlugProjectsProjectSlugRoute,
   } as any)
-const DashboardProjectSlugSettingsRoute =
-  DashboardProjectSlugSettingsRouteImport.update({
-    id: '/settings',
-    path: '/settings',
-    getParentRoute: () => DashboardProjectSlugRoute,
-  } as any)
-const DashboardProjectSlugSecretsRoute =
-  DashboardProjectSlugSecretsRouteImport.update({
+const OrgOrgSlugProjectsProjectSlugSecretsRoute =
+  OrgOrgSlugProjectsProjectSlugSecretsRouteImport.update({
     id: '/secrets',
     path: '/secrets',
-    getParentRoute: () => DashboardProjectSlugRoute,
-  } as any)
-const DashboardProjectSlugMembersRoute =
-  DashboardProjectSlugMembersRouteImport.update({
-    id: '/members',
-    path: '/members',
-    getParentRoute: () => DashboardProjectSlugRoute,
-  } as any)
-const DashboardProjectSlugAuditRoute =
-  DashboardProjectSlugAuditRouteImport.update({
-    id: '/audit',
-    path: '/audit',
-    getParentRoute: () => DashboardProjectSlugRoute,
+    getParentRoute: () => OrgOrgSlugProjectsProjectSlugRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/cli-auth': typeof CliAuthRoute
-  '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/sandbox': typeof SandboxRoute
+  '/accept-invitation/$invitationId': typeof AcceptInvitationInvitationIdRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/dashboard/$projectSlug': typeof DashboardProjectSlugRouteWithChildren
-  '/dashboard/': typeof DashboardIndexRoute
-  '/dashboard/$projectSlug/audit': typeof DashboardProjectSlugAuditRoute
-  '/dashboard/$projectSlug/members': typeof DashboardProjectSlugMembersRoute
-  '/dashboard/$projectSlug/secrets': typeof DashboardProjectSlugSecretsRoute
-  '/dashboard/$projectSlug/settings': typeof DashboardProjectSlugSettingsRoute
-  '/dashboard/$projectSlug/': typeof DashboardProjectSlugIndexRoute
+  '/org/$orgSlug': typeof OrgOrgSlugRouteWithChildren
+  '/org/$orgSlug/': typeof OrgOrgSlugIndexRoute
+  '/org/$orgSlug/projects/$projectSlug': typeof OrgOrgSlugProjectsProjectSlugRouteWithChildren
+  '/org/$orgSlug/settings/audit-log': typeof OrgOrgSlugSettingsAuditLogRoute
+  '/org/$orgSlug/settings/billing': typeof OrgOrgSlugSettingsBillingRoute
+  '/org/$orgSlug/settings/members': typeof OrgOrgSlugSettingsMembersRoute
+  '/org/$orgSlug/projects/$projectSlug/secrets': typeof OrgOrgSlugProjectsProjectSlugSecretsRoute
+  '/org/$orgSlug/projects/$projectSlug/': typeof OrgOrgSlugProjectsProjectSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -122,48 +131,51 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/sandbox': typeof SandboxRoute
+  '/accept-invitation/$invitationId': typeof AcceptInvitationInvitationIdRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/dashboard': typeof DashboardIndexRoute
-  '/dashboard/$projectSlug/audit': typeof DashboardProjectSlugAuditRoute
-  '/dashboard/$projectSlug/members': typeof DashboardProjectSlugMembersRoute
-  '/dashboard/$projectSlug/secrets': typeof DashboardProjectSlugSecretsRoute
-  '/dashboard/$projectSlug/settings': typeof DashboardProjectSlugSettingsRoute
-  '/dashboard/$projectSlug': typeof DashboardProjectSlugIndexRoute
+  '/org/$orgSlug': typeof OrgOrgSlugIndexRoute
+  '/org/$orgSlug/settings/audit-log': typeof OrgOrgSlugSettingsAuditLogRoute
+  '/org/$orgSlug/settings/billing': typeof OrgOrgSlugSettingsBillingRoute
+  '/org/$orgSlug/settings/members': typeof OrgOrgSlugSettingsMembersRoute
+  '/org/$orgSlug/projects/$projectSlug/secrets': typeof OrgOrgSlugProjectsProjectSlugSecretsRoute
+  '/org/$orgSlug/projects/$projectSlug': typeof OrgOrgSlugProjectsProjectSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/cli-auth': typeof CliAuthRoute
-  '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/sandbox': typeof SandboxRoute
+  '/accept-invitation/$invitationId': typeof AcceptInvitationInvitationIdRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/dashboard/$projectSlug': typeof DashboardProjectSlugRouteWithChildren
-  '/dashboard/': typeof DashboardIndexRoute
-  '/dashboard/$projectSlug/audit': typeof DashboardProjectSlugAuditRoute
-  '/dashboard/$projectSlug/members': typeof DashboardProjectSlugMembersRoute
-  '/dashboard/$projectSlug/secrets': typeof DashboardProjectSlugSecretsRoute
-  '/dashboard/$projectSlug/settings': typeof DashboardProjectSlugSettingsRoute
-  '/dashboard/$projectSlug/': typeof DashboardProjectSlugIndexRoute
+  '/org/$orgSlug': typeof OrgOrgSlugRouteWithChildren
+  '/org/$orgSlug/': typeof OrgOrgSlugIndexRoute
+  '/org/$orgSlug/projects/$projectSlug': typeof OrgOrgSlugProjectsProjectSlugRouteWithChildren
+  '/org/$orgSlug/settings/audit-log': typeof OrgOrgSlugSettingsAuditLogRoute
+  '/org/$orgSlug/settings/billing': typeof OrgOrgSlugSettingsBillingRoute
+  '/org/$orgSlug/settings/members': typeof OrgOrgSlugSettingsMembersRoute
+  '/org/$orgSlug/projects/$projectSlug/secrets': typeof OrgOrgSlugProjectsProjectSlugSecretsRoute
+  '/org/$orgSlug/projects/$projectSlug/': typeof OrgOrgSlugProjectsProjectSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/cli-auth'
-    | '/dashboard'
     | '/login'
     | '/onboarding'
     | '/sandbox'
+    | '/accept-invitation/$invitationId'
     | '/auth/callback'
-    | '/dashboard/$projectSlug'
-    | '/dashboard/'
-    | '/dashboard/$projectSlug/audit'
-    | '/dashboard/$projectSlug/members'
-    | '/dashboard/$projectSlug/secrets'
-    | '/dashboard/$projectSlug/settings'
-    | '/dashboard/$projectSlug/'
+    | '/org/$orgSlug'
+    | '/org/$orgSlug/'
+    | '/org/$orgSlug/projects/$projectSlug'
+    | '/org/$orgSlug/settings/audit-log'
+    | '/org/$orgSlug/settings/billing'
+    | '/org/$orgSlug/settings/members'
+    | '/org/$orgSlug/projects/$projectSlug/secrets'
+    | '/org/$orgSlug/projects/$projectSlug/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -171,39 +183,42 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/sandbox'
+    | '/accept-invitation/$invitationId'
     | '/auth/callback'
-    | '/dashboard'
-    | '/dashboard/$projectSlug/audit'
-    | '/dashboard/$projectSlug/members'
-    | '/dashboard/$projectSlug/secrets'
-    | '/dashboard/$projectSlug/settings'
-    | '/dashboard/$projectSlug'
+    | '/org/$orgSlug'
+    | '/org/$orgSlug/settings/audit-log'
+    | '/org/$orgSlug/settings/billing'
+    | '/org/$orgSlug/settings/members'
+    | '/org/$orgSlug/projects/$projectSlug/secrets'
+    | '/org/$orgSlug/projects/$projectSlug'
   id:
     | '__root__'
     | '/'
     | '/cli-auth'
-    | '/dashboard'
     | '/login'
     | '/onboarding'
     | '/sandbox'
+    | '/accept-invitation/$invitationId'
     | '/auth/callback'
-    | '/dashboard/$projectSlug'
-    | '/dashboard/'
-    | '/dashboard/$projectSlug/audit'
-    | '/dashboard/$projectSlug/members'
-    | '/dashboard/$projectSlug/secrets'
-    | '/dashboard/$projectSlug/settings'
-    | '/dashboard/$projectSlug/'
+    | '/org/$orgSlug'
+    | '/org/$orgSlug/'
+    | '/org/$orgSlug/projects/$projectSlug'
+    | '/org/$orgSlug/settings/audit-log'
+    | '/org/$orgSlug/settings/billing'
+    | '/org/$orgSlug/settings/members'
+    | '/org/$orgSlug/projects/$projectSlug/secrets'
+    | '/org/$orgSlug/projects/$projectSlug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CliAuthRoute: typeof CliAuthRoute
-  DashboardRoute: typeof DashboardRouteWithChildren
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   SandboxRoute: typeof SandboxRoute
+  AcceptInvitationInvitationIdRoute: typeof AcceptInvitationInvitationIdRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  OrgOrgSlugRoute: typeof OrgOrgSlugRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -229,13 +244,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/cli-auth': {
       id: '/cli-auth'
       path: '/cli-auth'
@@ -250,19 +258,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/': {
-      id: '/dashboard/'
-      path: '/'
-      fullPath: '/dashboard/'
-      preLoaderRoute: typeof DashboardIndexRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/$projectSlug': {
-      id: '/dashboard/$projectSlug'
-      path: '/$projectSlug'
-      fullPath: '/dashboard/$projectSlug'
-      preLoaderRoute: typeof DashboardProjectSlugRouteImport
-      parentRoute: typeof DashboardRoute
+    '/org/$orgSlug': {
+      id: '/org/$orgSlug'
+      path: '/org/$orgSlug'
+      fullPath: '/org/$orgSlug'
+      preLoaderRoute: typeof OrgOrgSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
       id: '/auth/callback'
@@ -271,85 +272,113 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/$projectSlug/': {
-      id: '/dashboard/$projectSlug/'
+    '/accept-invitation/$invitationId': {
+      id: '/accept-invitation/$invitationId'
+      path: '/accept-invitation/$invitationId'
+      fullPath: '/accept-invitation/$invitationId'
+      preLoaderRoute: typeof AcceptInvitationInvitationIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/org/$orgSlug/': {
+      id: '/org/$orgSlug/'
       path: '/'
-      fullPath: '/dashboard/$projectSlug/'
-      preLoaderRoute: typeof DashboardProjectSlugIndexRouteImport
-      parentRoute: typeof DashboardProjectSlugRoute
+      fullPath: '/org/$orgSlug/'
+      preLoaderRoute: typeof OrgOrgSlugIndexRouteImport
+      parentRoute: typeof OrgOrgSlugRoute
     }
-    '/dashboard/$projectSlug/settings': {
-      id: '/dashboard/$projectSlug/settings'
-      path: '/settings'
-      fullPath: '/dashboard/$projectSlug/settings'
-      preLoaderRoute: typeof DashboardProjectSlugSettingsRouteImport
-      parentRoute: typeof DashboardProjectSlugRoute
+    '/org/$orgSlug/settings/members': {
+      id: '/org/$orgSlug/settings/members'
+      path: '/settings/members'
+      fullPath: '/org/$orgSlug/settings/members'
+      preLoaderRoute: typeof OrgOrgSlugSettingsMembersRouteImport
+      parentRoute: typeof OrgOrgSlugRoute
     }
-    '/dashboard/$projectSlug/secrets': {
-      id: '/dashboard/$projectSlug/secrets'
+    '/org/$orgSlug/settings/billing': {
+      id: '/org/$orgSlug/settings/billing'
+      path: '/settings/billing'
+      fullPath: '/org/$orgSlug/settings/billing'
+      preLoaderRoute: typeof OrgOrgSlugSettingsBillingRouteImport
+      parentRoute: typeof OrgOrgSlugRoute
+    }
+    '/org/$orgSlug/settings/audit-log': {
+      id: '/org/$orgSlug/settings/audit-log'
+      path: '/settings/audit-log'
+      fullPath: '/org/$orgSlug/settings/audit-log'
+      preLoaderRoute: typeof OrgOrgSlugSettingsAuditLogRouteImport
+      parentRoute: typeof OrgOrgSlugRoute
+    }
+    '/org/$orgSlug/projects/$projectSlug': {
+      id: '/org/$orgSlug/projects/$projectSlug'
+      path: '/projects/$projectSlug'
+      fullPath: '/org/$orgSlug/projects/$projectSlug'
+      preLoaderRoute: typeof OrgOrgSlugProjectsProjectSlugRouteImport
+      parentRoute: typeof OrgOrgSlugRoute
+    }
+    '/org/$orgSlug/projects/$projectSlug/': {
+      id: '/org/$orgSlug/projects/$projectSlug/'
+      path: '/'
+      fullPath: '/org/$orgSlug/projects/$projectSlug/'
+      preLoaderRoute: typeof OrgOrgSlugProjectsProjectSlugIndexRouteImport
+      parentRoute: typeof OrgOrgSlugProjectsProjectSlugRoute
+    }
+    '/org/$orgSlug/projects/$projectSlug/secrets': {
+      id: '/org/$orgSlug/projects/$projectSlug/secrets'
       path: '/secrets'
-      fullPath: '/dashboard/$projectSlug/secrets'
-      preLoaderRoute: typeof DashboardProjectSlugSecretsRouteImport
-      parentRoute: typeof DashboardProjectSlugRoute
-    }
-    '/dashboard/$projectSlug/members': {
-      id: '/dashboard/$projectSlug/members'
-      path: '/members'
-      fullPath: '/dashboard/$projectSlug/members'
-      preLoaderRoute: typeof DashboardProjectSlugMembersRouteImport
-      parentRoute: typeof DashboardProjectSlugRoute
-    }
-    '/dashboard/$projectSlug/audit': {
-      id: '/dashboard/$projectSlug/audit'
-      path: '/audit'
-      fullPath: '/dashboard/$projectSlug/audit'
-      preLoaderRoute: typeof DashboardProjectSlugAuditRouteImport
-      parentRoute: typeof DashboardProjectSlugRoute
+      fullPath: '/org/$orgSlug/projects/$projectSlug/secrets'
+      preLoaderRoute: typeof OrgOrgSlugProjectsProjectSlugSecretsRouteImport
+      parentRoute: typeof OrgOrgSlugProjectsProjectSlugRoute
     }
   }
 }
 
-interface DashboardProjectSlugRouteChildren {
-  DashboardProjectSlugAuditRoute: typeof DashboardProjectSlugAuditRoute
-  DashboardProjectSlugMembersRoute: typeof DashboardProjectSlugMembersRoute
-  DashboardProjectSlugSecretsRoute: typeof DashboardProjectSlugSecretsRoute
-  DashboardProjectSlugSettingsRoute: typeof DashboardProjectSlugSettingsRoute
-  DashboardProjectSlugIndexRoute: typeof DashboardProjectSlugIndexRoute
+interface OrgOrgSlugProjectsProjectSlugRouteChildren {
+  OrgOrgSlugProjectsProjectSlugSecretsRoute: typeof OrgOrgSlugProjectsProjectSlugSecretsRoute
+  OrgOrgSlugProjectsProjectSlugIndexRoute: typeof OrgOrgSlugProjectsProjectSlugIndexRoute
 }
 
-const DashboardProjectSlugRouteChildren: DashboardProjectSlugRouteChildren = {
-  DashboardProjectSlugAuditRoute: DashboardProjectSlugAuditRoute,
-  DashboardProjectSlugMembersRoute: DashboardProjectSlugMembersRoute,
-  DashboardProjectSlugSecretsRoute: DashboardProjectSlugSecretsRoute,
-  DashboardProjectSlugSettingsRoute: DashboardProjectSlugSettingsRoute,
-  DashboardProjectSlugIndexRoute: DashboardProjectSlugIndexRoute,
+const OrgOrgSlugProjectsProjectSlugRouteChildren: OrgOrgSlugProjectsProjectSlugRouteChildren =
+  {
+    OrgOrgSlugProjectsProjectSlugSecretsRoute:
+      OrgOrgSlugProjectsProjectSlugSecretsRoute,
+    OrgOrgSlugProjectsProjectSlugIndexRoute:
+      OrgOrgSlugProjectsProjectSlugIndexRoute,
+  }
+
+const OrgOrgSlugProjectsProjectSlugRouteWithChildren =
+  OrgOrgSlugProjectsProjectSlugRoute._addFileChildren(
+    OrgOrgSlugProjectsProjectSlugRouteChildren,
+  )
+
+interface OrgOrgSlugRouteChildren {
+  OrgOrgSlugIndexRoute: typeof OrgOrgSlugIndexRoute
+  OrgOrgSlugProjectsProjectSlugRoute: typeof OrgOrgSlugProjectsProjectSlugRouteWithChildren
+  OrgOrgSlugSettingsAuditLogRoute: typeof OrgOrgSlugSettingsAuditLogRoute
+  OrgOrgSlugSettingsBillingRoute: typeof OrgOrgSlugSettingsBillingRoute
+  OrgOrgSlugSettingsMembersRoute: typeof OrgOrgSlugSettingsMembersRoute
 }
 
-const DashboardProjectSlugRouteWithChildren =
-  DashboardProjectSlugRoute._addFileChildren(DashboardProjectSlugRouteChildren)
-
-interface DashboardRouteChildren {
-  DashboardProjectSlugRoute: typeof DashboardProjectSlugRouteWithChildren
-  DashboardIndexRoute: typeof DashboardIndexRoute
+const OrgOrgSlugRouteChildren: OrgOrgSlugRouteChildren = {
+  OrgOrgSlugIndexRoute: OrgOrgSlugIndexRoute,
+  OrgOrgSlugProjectsProjectSlugRoute:
+    OrgOrgSlugProjectsProjectSlugRouteWithChildren,
+  OrgOrgSlugSettingsAuditLogRoute: OrgOrgSlugSettingsAuditLogRoute,
+  OrgOrgSlugSettingsBillingRoute: OrgOrgSlugSettingsBillingRoute,
+  OrgOrgSlugSettingsMembersRoute: OrgOrgSlugSettingsMembersRoute,
 }
 
-const DashboardRouteChildren: DashboardRouteChildren = {
-  DashboardProjectSlugRoute: DashboardProjectSlugRouteWithChildren,
-  DashboardIndexRoute: DashboardIndexRoute,
-}
-
-const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
-  DashboardRouteChildren,
+const OrgOrgSlugRouteWithChildren = OrgOrgSlugRoute._addFileChildren(
+  OrgOrgSlugRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CliAuthRoute: CliAuthRoute,
-  DashboardRoute: DashboardRouteWithChildren,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   SandboxRoute: SandboxRoute,
+  AcceptInvitationInvitationIdRoute: AcceptInvitationInvitationIdRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  OrgOrgSlugRoute: OrgOrgSlugRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

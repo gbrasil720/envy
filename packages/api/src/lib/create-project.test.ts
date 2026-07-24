@@ -32,7 +32,7 @@ describe('createOwnedProject', () => {
     await truncateAll()
   })
 
-  test('creates org, owner membership, free subscription, and project', async () => {
+  test('creates a Personal org, owner membership, and project without a Free row', async () => {
     const owner = await createTestUser()
     const created = await createOwnedProject(getTestDb(), owner.id, {
       name: 'Acme Vault'
@@ -49,8 +49,9 @@ describe('createOwnedProject', () => {
     const org = await db.query.organization.findFirst({
       where: eq(organization.id, created.organizationId)
     })
-    expect(org?.slug).toBe('acme-vault')
-    expect(org?.type).toBe('team')
+    expect(org?.name).toBe(owner.name)
+    expect(org?.slug).toBe(`personal-${owner.id}`)
+    expect(org?.type).toBe('personal')
     expect(org?.deletedAt).toBeNull()
 
     const membership = await db.query.member.findFirst({
@@ -62,8 +63,7 @@ describe('createOwnedProject', () => {
     const sub = await db.query.subscription.findFirst({
       where: eq(subscription.organizationId, created.organizationId)
     })
-    expect(sub?.plan).toBe('free')
-    expect(sub?.seatLimit).toBe(1)
+    expect(sub).toBeUndefined()
 
     const proj = await db.query.project.findFirst({
       where: eq(project.id, created.id)
@@ -79,6 +79,18 @@ describe('createOwnedProject', () => {
     const owner = await createTestUser()
     const created = await createTestProject(owner.id, '  My Cool Project!! ')
     expect(created.slug).toBe('my-cool-project')
+  })
+
+  test('creates a Team organization when selected', async () => {
+    const owner = await createTestUser()
+    const created = await createOwnedProject(getTestDb(), owner.id, {
+      name: 'Team Vault',
+      organizationType: 'team'
+    })
+    const org = await getTestDb().query.organization.findFirst({
+      where: eq(organization.id, created.organizationId)
+    })
+    expect(org?.type).toBe('team')
   })
 
   test('free plan allows only one project per owner', async () => {
@@ -102,7 +114,7 @@ describe('createOwnedProject', () => {
 
     const second = await createTestProject(owner.id, 'Second Pro')
     expect(second.slug).toBe('second-pro')
-    expect(second.organizationId).not.toBe(first.organizationId)
+    expect(second.organizationId).toBe(first.organizationId)
   })
 
   test('conflicts when slug already exists', async () => {

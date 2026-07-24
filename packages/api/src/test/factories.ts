@@ -59,13 +59,32 @@ export async function setOrgPlan(
   seatLimit?: number
 ) {
   const db = getTestDb()
-  const limits = { free: 1, pro: 1, team: 5 } as const
+  if (plan === 'free') {
+    await db
+      .delete(subscription)
+      .where(eq(subscription.organizationId, organizationId))
+    return
+  }
+  const limits = { pro: 1, team: 5 } as const
   await db
-    .update(subscription)
-    .set({
+    .insert(subscription)
+    .values({
+      id: crypto.randomUUID(),
+      organizationId,
       plan,
-      seatLimit: seatLimit ?? limits[plan],
-      updatedAt: new Date()
+      status: 'active',
+      dodoCustomerId: `cus_${organizationId}`,
+      dodoSubscriptionId: `sub_${organizationId}`,
+      dodoProductId: `pdt_${plan}`,
+      seatLimit: seatLimit ?? limits[plan]
     })
-    .where(eq(subscription.organizationId, organizationId))
+    .onConflictDoUpdate({
+      target: subscription.organizationId,
+      set: {
+        plan,
+        status: 'active',
+        seatLimit: seatLimit ?? limits[plan],
+        updatedAt: new Date()
+      }
+    })
 }

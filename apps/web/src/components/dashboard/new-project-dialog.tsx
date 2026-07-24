@@ -8,6 +8,7 @@ import { useTRPC } from '@/utils/trpc'
 type Props = {
   open: boolean
   onClose: () => void
+  organizationId: string
   onSuccess: (project: { id: string; name: string; slug: string }) => void
 }
 
@@ -19,15 +20,21 @@ function toSlug(val: string) {
     .replace(/^-+|-+$/g, '')
 }
 
-export function NewProjectDialog({ open, onClose, onSuccess }: Props) {
+export function NewProjectDialog({
+  open,
+  onClose,
+  organizationId,
+  onSuccess
+}: Props) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const [name, setName] = useState('')
-
   const createMutation = useMutation(
     trpc.projects.create.mutationOptions({
       onSuccess: (data) => {
-        queryClient.invalidateQueries(trpc.projects.list.queryOptions())
+        queryClient.invalidateQueries(
+          trpc.projects.list.queryOptions({ organizationId })
+        )
         queryClient.invalidateQueries(trpc.me.get.queryOptions())
         onSuccess(data)
         onClose()
@@ -40,7 +47,7 @@ export function NewProjectDialog({ open, onClose, onSuccess }: Props) {
     const trimmed = name.trim()
     if (!trimmed) return
     if (!toSlug(trimmed)) return
-    createMutation.mutate({ name: trimmed })
+    createMutation.mutate({ name: trimmed, organizationId })
   }
 
   const canCreate = !!toSlug(name) && !createMutation.isPending
@@ -92,7 +99,6 @@ export function NewProjectDialog({ open, onClose, onSuccess }: Props) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="my-saas"
-            // biome-ignore lint/a11y/noAutofocus: dialog primary field
             autoFocus
             disabled={createMutation.isPending}
             onKeyDown={(e) => {

@@ -1,17 +1,13 @@
 import { auth } from '@envy/auth'
-import { and, eq } from '@envy/db'
-import { subscription } from '@envy/db/schema/billing'
+import { and, count, eq } from '@envy/db'
+import { billingCustomer, subscription } from '@envy/db/schema/billing'
 import { project } from '@envy/db/schema/envy'
 import { member, organization } from '@envy/db/schema/organization'
-import {
-  assertOrganizationWritable,
-  effectiveRole,
-  hasRole,
-  OrganizationReadOnlyError
-} from '@envy/db/services'
+import { effectiveRole, hasRole } from '@envy/db/services'
 import { TRPCError } from '@trpc/server'
 import { APIError } from 'better-auth'
 import type { Context } from '../context'
+import { PLAN_LIMITS, type Plan } from './plan-limits'
 
 export type EffectiveRole = 'owner' | 'admin' | 'member'
 
@@ -24,10 +20,35 @@ export async function getOrgPlan(
   organizationId: string
 ): Promise<'free' | 'pro' | 'team'> {
   const [sub] = await db
-    .select({ plan: subscription.plan })
+    .select({
+      plan: subscription.plan,
+      status: subscription.status,
+      currentPeriodEnd: subscription.currentPeriodEnd
+    })
     .from(subscription)
     .where(eq(subscription.organizationId, organizationId))
-  return (sub?.plan ?? 'free') as 'free' | 'pro' | 'team'
+  return effectiveSubscriptionPlan(sub)
+}
+
+export function effectiveSubscriptionPlan(
+  sub:
+    | {
+        plan: 'free' | 'pro' | 'team'
+        status: 'active' | 'on_hold' | 'cancelled' | 'expired' | 'failed'
+        currentPeriodEnd: Date | null
+      }
+    | undefined
+): Plan {
+  if (!sub) return 'free'
+  if (sub.status === 'active') return sub.plan
+  if (
+    sub.status === 'cancelled' &&
+    sub.currentPeriodEnd != null &&
+    sub.currentPeriodEnd > new Date()
+  ) {
+    return sub.plan
+  }
+  return 'free'
 }
 
 /**
@@ -37,11 +58,43 @@ export async function getOrgSeatLimit(
   db: Context['db'],
   organizationId: string
 ): Promise<number> {
+  const plan = await getOrgPlan(db, organizationId)
+  return PLAN_LIMITS[plan].members
+}
+
+export async function getOrganizationBilling(
+  db: Context['db'],
+  organizationId: string
+) {
   const [sub] = await db
-    .select({ seatLimit: subscription.seatLimit })
+    .select({
+      plan: subscription.plan,
+      status: subscription.status,
+      dodoCustomerId: subscription.dodoCustomerId,
+      seatLimit: subscription.seatLimit,
+      currentPeriodEnd: subscription.currentPeriodEnd,
+      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd
+    })
     .from(subscription)
     .where(eq(subscription.organizationId, organizationId))
-  return sub?.seatLimit ?? 1
+  const customer = await db.query.billingCustomer.findFirst({
+    where: eq(billingCustomer.organizationId, organizationId),
+    columns: { dodoCustomerId: true }
+  })
+  const [memberRow] = await db
+    .select({ total: count() })
+    .from(member)
+    .where(eq(member.organizationId, organizationId))
+  const seatLimit = sub?.seatLimit ?? 1
+  const memberCount = memberRow?.total ?? 0
+  return {
+    plan: effectiveSubscriptionPlan(sub),
+    subscription: sub ?? null,
+    hasCustomer: !!customer,
+    memberCount,
+    seatLimit,
+    isReadOnly: memberCount > seatLimit
+  }
 }
 
 /**
@@ -141,20 +194,22 @@ export async function requireProjectAccess(
  * OrganizationReadOnlyError to TRPCError.
  */
 export async function assertOrgWritable(organizationId: string) {
-  try {
-    await assertOrganizationWritable(organizationId)
-  } catch (err) {
-    if (err instanceof OrganizationReadOnlyError) {
-      throw new TRPCError({
-        code: 'FORBIDDEN',
-        message: `Organization is read-only: ${err.memberCount} members exceeds plan limit (${err.seatLimit}). Remove members or upgrade.`
-      })
-    }
-    throw err
+  const { db } = await import('@envy/db')
+  const seatLimit = await getOrgSeatLimit(db, organizationId)
+  const [row] = await db
+    .select({ total: count() })
+    .from(member)
+    .where(eq(member.organizationId, organizationId))
+  const memberCount = row?.total ?? 0
+  if (memberCount > seatLimit) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: `Organization is read-only: ${memberCount} members exceeds plan limit (${seatLimit}). Remove members or upgrade.`
+    })
   }
 }
 
-function buildAuthHeaders(ctx: Context): Headers {
+export function buildAuthHeaders(ctx: Context): Headers {
   const headers = new Headers()
   if (ctx.cookieHeader) {
     headers.set('cookie', ctx.cookieHeader)
@@ -163,6 +218,83 @@ function buildAuthHeaders(ctx: Context): Headers {
     headers.set('authorization', ctx.authHeader)
   }
   return headers
+}
+
+export async function safeCreateInvitation(
+  ctx: Context,
+  input: {
+    organizationId: string
+    email: string
+    role: 'admin' | 'member'
+  }
+) {
+  try {
+    return await auth.api.createInvitation({
+      body: input,
+      headers: buildAuthHeaders(ctx)
+    })
+  } catch (err) {
+    if (
+      err instanceof APIError ||
+      (err instanceof Error && err.name === 'APIError')
+    ) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to create invitation'
+      throw new TRPCError({
+        code: message.toLowerCase().includes('already')
+          ? 'CONFLICT'
+          : 'FORBIDDEN',
+        message
+      })
+    }
+    throw err
+  }
+}
+
+export async function safeAcceptInvitation(ctx: Context, invitationId: string) {
+  try {
+    return await auth.api.acceptInvitation({
+      body: { invitationId },
+      headers: buildAuthHeaders(ctx)
+    })
+  } catch (err) {
+    if (
+      err instanceof APIError ||
+      (err instanceof Error && err.name === 'APIError')
+    ) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to accept invitation'
+      throw new TRPCError({
+        code: message.toLowerCase().includes('already')
+          ? 'CONFLICT'
+          : 'FORBIDDEN',
+        message
+      })
+    }
+    throw err
+  }
+}
+
+export async function safeCancelInvitation(ctx: Context, invitationId: string) {
+  try {
+    return await auth.api.cancelInvitation({
+      body: { invitationId },
+      headers: buildAuthHeaders(ctx)
+    })
+  } catch (err) {
+    if (
+      err instanceof APIError ||
+      (err instanceof Error && err.name === 'APIError')
+    ) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to cancel invitation'
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message
+      })
+    }
+    throw err
+  }
 }
 
 /**

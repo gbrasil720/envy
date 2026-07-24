@@ -6,6 +6,8 @@ import {
   inviteMember,
   listMembers,
   listPendingInvites,
+  listRecentInvitations,
+  reinviteMember,
   removeMember
 } from '../lib/members-service'
 
@@ -18,10 +20,14 @@ export const membersRouter = router({
     .input(z.object({ projectId: z.string() }))
     .query(async ({ ctx, input }) => listPendingInvites(ctx, input)),
 
+  invitations: protectedProcedure
+    .input(z.object({ organizationId: z.string() }))
+    .query(async ({ ctx, input }) => listRecentInvitations(ctx, input)),
+
   invite: protectedProcedure
     .input(
       z.object({
-        projectId: z.string(),
+        organizationId: z.string(),
         email: z.string().email(),
         role: z.enum(['admin', 'member'])
       })
@@ -32,11 +38,15 @@ export const membersRouter = router({
     .input(z.object({ invitationId: z.string() }))
     .mutation(async ({ ctx, input }) => acceptInvite(ctx, input)),
 
+  reinvite: protectedProcedure
+    .input(z.object({ invitationId: z.string() }))
+    .mutation(async ({ ctx, input }) => reinviteMember(ctx, input)),
+
   remove: protectedProcedure
     .input(
       z.object({
-        projectId: z.string(),
-        userId: z.string()
+        organizationId: z.string(),
+        memberId: z.string()
       })
     )
     .mutation(async ({ ctx, input }) => removeMember(ctx, input)),

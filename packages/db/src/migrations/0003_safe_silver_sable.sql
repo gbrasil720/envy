@@ -14,7 +14,7 @@ ALTER TABLE "api_key" DROP CONSTRAINT "api_key_project_id_project_id_fk";
 ALTER TABLE "cli_auth_session" DROP CONSTRAINT "cli_auth_session_project_id_project_id_fk";
 --> statement-breakpoint
 DROP INDEX "api_key_projectId_idx";--> statement-breakpoint
-ALTER TABLE "organization" ALTER COLUMN "metadata" SET DATA TYPE jsonb;--> statement-breakpoint
+ALTER TABLE "organization" ALTER COLUMN "metadata" SET DATA TYPE jsonb USING "metadata"::jsonb;--> statement-breakpoint
 ALTER TABLE "api_key" ALTER COLUMN "name" SET DEFAULT 'CLI';--> statement-breakpoint
 ALTER TABLE "cli_auth_session" ADD COLUMN "status" text DEFAULT 'pending' NOT NULL;--> statement-breakpoint
 ALTER TABLE "cli_auth_session" ADD COLUMN "raw_key" text;--> statement-breakpoint

@@ -3,7 +3,7 @@ import { user } from '@envy/db/schema/auth'
 import { auditLog } from '@envy/db/schema/envy'
 import { z } from 'zod'
 import { protectedProcedure, router } from '..'
-import { requireProjectAccess } from '../lib/org-utils'
+import { requireMembership, requireProjectAccess } from '../lib/org-utils'
 
 const ACTION_CATEGORIES = {
   secrets: new Set([
@@ -12,7 +12,14 @@ const ACTION_CATEGORIES = {
     'secrets_updated',
     'secrets_deleted'
   ]),
-  members: new Set(['member_invited', 'member_removed']),
+  members: new Set([
+    'member_invited',
+    'invitation_reinvited',
+    'invitation_accepted',
+    'invitation_cancelled',
+    'invitation_expired',
+    'member_removed'
+  ]),
   cli: new Set(['pushed', 'pulled', 'revealed'])
 } as const
 
@@ -91,6 +98,68 @@ export const auditLogRouter = router({
       return {
         logs: enriched,
         nextCursor
+      }
+    }),
+
+  listForOrganization: protectedProcedure
+    .input(
+      z.object({
+        organizationId: z.string(),
+        actionCategory: z.enum(['secrets', 'members', 'cli']).optional(),
+        limit: z.number().min(1).max(100).default(50),
+        cursor: z.string().optional()
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      await requireMembership(ctx.db, input.organizationId, ctx.session.user.id)
+
+      const conditions = [eq(auditLog.organizationId, input.organizationId)]
+      if (input.actionCategory) {
+        const actions = ACTION_CATEGORIES[input.actionCategory]
+        conditions.push(inArray(auditLog.action, [...actions] as string[]))
+      }
+      if (input.cursor) {
+        conditions.push(lt(auditLog.createdAt, new Date(input.cursor)))
+      }
+
+      const logs = await ctx.db
+        .select({
+          id: auditLog.id,
+          projectId: auditLog.projectId,
+          userId: auditLog.userId,
+          environment: auditLog.environment,
+          action: auditLog.action,
+          targetKey: auditLog.targetKey,
+          metadata: auditLog.metadata,
+          createdAt: auditLog.createdAt
+        })
+        .from(auditLog)
+        .where(and(...conditions))
+        .orderBy(desc(auditLog.createdAt))
+        .limit(input.limit + 1)
+
+      const hasMore = logs.length > input.limit
+      const items = hasMore ? logs.slice(0, -1) : logs
+      const userIds = [
+        ...new Set(items.map((log) => log.userId).filter(Boolean))
+      ]
+      const users =
+        userIds.length > 0
+          ? await ctx.db.query.user.findMany({
+              where: inArray(user.id, userIds as string[]),
+              columns: { id: true, name: true, image: true }
+            })
+          : []
+      const userMap = new Map(users.map((member) => [member.id, member]))
+
+      return {
+        logs: items.map((log) => ({
+          ...log,
+          user: log.userId ? (userMap.get(log.userId) ?? null) : null
+        })),
+        nextCursor: hasMore
+          ? items[items.length - 1]?.createdAt.toISOString()
+          : undefined
       }
     })
 })

@@ -9,6 +9,10 @@ export const AUDIT_ACTIONS = [
   'environment_renamed',
   'environment_deleted',
   'member_invited',
+  'invitation_reinvited',
+  'invitation_accepted',
+  'invitation_cancelled',
+  'invitation_expired',
   'member_removed'
 ] as const
 
@@ -23,6 +27,10 @@ export const SECRET_AUDIT_ACTIONS = new Set<string>([
 
 export const MEMBER_AUDIT_ACTIONS = new Set<string>([
   'member_invited',
+  'invitation_reinvited',
+  'invitation_accepted',
+  'invitation_cancelled',
+  'invitation_expired',
   'member_removed'
 ])
 
@@ -41,5 +49,9 @@ export const AUDIT_ACTION_LABELS: Record<
   environment_renamed: { verb: 'renamed env', tone: 'info' },
   environment_deleted: { verb: 'deleted env', tone: 'danger' },
   member_invited: { verb: 'invited', tone: 'info' },
+  invitation_reinvited: { verb: 're-invited', tone: 'info' },
+  invitation_accepted: { verb: 'accepted invite', tone: 'brand' },
+  invitation_cancelled: { verb: 'canceled invite', tone: 'danger' },
+  invitation_expired: { verb: 'expired invite', tone: 'muted' },
   member_removed: { verb: 'removed', tone: 'danger' }
 }

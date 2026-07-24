@@ -75,6 +75,7 @@ export const environmentsRouter = router({
         })
 
       await recordAudit(ctx.db, {
+        organizationId,
         projectId: input.projectId,
         userId,
         environment: input.name,
@@ -131,6 +132,7 @@ export const environmentsRouter = router({
         )
 
       await recordAudit(ctx.db, {
+        organizationId,
         projectId: input.projectId,
         userId,
         environment: input.name,
@@ -169,6 +171,7 @@ export const environmentsRouter = router({
         )
 
       await recordAudit(ctx.db, {
+        organizationId,
         projectId: input.projectId,
         userId,
         environment: env.name,

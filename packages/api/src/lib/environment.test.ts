@@ -7,7 +7,7 @@ import {
   test
 } from 'bun:test'
 import { eq } from '@envy/db'
-import { auditLog } from '@envy/db/schema/envy'
+import { auditLog, project } from '@envy/db/schema/envy'
 import type { TRPCError } from '@trpc/server'
 import { assertDbReady, getTestDb, truncateAll } from '../test/db'
 import { createTestProject, createTestUser } from '../test/factories'
@@ -56,7 +56,8 @@ describe('environment helpers', () => {
     const db = getTestDb()
 
     await findOrCreateEnvironment(db, proj.id, 'preview', {
-      auditUserId: owner.id
+      auditUserId: owner.id,
+      organizationId: proj.organizationId
     })
 
     const row = await db.query.auditLog.findFirst({
@@ -64,6 +65,24 @@ describe('environment helpers', () => {
     })
     expect(row?.action).toBe('environment_created')
     expect(row?.environment).toBe('preview')
+  })
+
+  test('organization audit history survives project deletion', async () => {
+    const owner = await createTestUser()
+    const proj = await createTestProject(owner.id, 'Deleted Audit Project')
+    const db = getTestDb()
+
+    await findOrCreateEnvironment(db, proj.id, 'preview', {
+      auditUserId: owner.id,
+      organizationId: proj.organizationId
+    })
+    await db.delete(project).where(eq(project.id, proj.id))
+
+    const row = await db.query.auditLog.findFirst({
+      where: eq(auditLog.organizationId, proj.organizationId)
+    })
+    expect(row?.action).toBe('environment_created')
+    expect(row?.projectId).toBeNull()
   })
 
   test('getEnvironmentInProject throws NOT_FOUND for strangers', async () => {

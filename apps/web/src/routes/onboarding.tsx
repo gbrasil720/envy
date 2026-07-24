@@ -5,6 +5,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { AuthShell } from '@/components/auth/auth-shell'
 import { requireWebAuth } from '@/functions/require-web-auth'
+import { authClient } from '@/lib/auth-client'
 import { useTRPC } from '@/utils/trpc'
 
 function toSlug(val: string) {
@@ -36,10 +37,12 @@ function OnboardingPage() {
   const [projectName, setProjectName] = useState('')
   const [nameError, setNameError] = useState('')
   const [createdSlug, setCreatedSlug] = useState('')
+  const [createdOrganizationSlug, setCreatedOrganizationSlug] = useState('')
   const [copied, setCopied] = useState(false)
 
   const meQueryOpts = trpc.me.get.queryOptions()
   const meQuery = useQuery(meQueryOpts)
+  const { data: activeOrganization } = authClient.useActiveOrganization()
 
   const onboardingCompleteMutation = useMutation(
     trpc.me.completeOnboardingWithProject.mutationOptions({
@@ -52,8 +55,13 @@ function OnboardingPage() {
               }
             : prev
         )
-        queryClient.invalidateQueries(trpc.projects.list.queryOptions())
+        queryClient.invalidateQueries(
+          trpc.projects.list.queryOptions({
+            organizationId: data.project.organizationId
+          })
+        )
         setCreatedSlug(data.project.slug)
+        setCreatedOrganizationSlug(data.project.organizationSlug)
         setStep(2)
       }
     })
@@ -71,10 +79,12 @@ function OnboardingPage() {
               }
             : prev
         )
-        navigate({
-          to: '/dashboard',
-          search: { project: '', section: 'secrets' as const }
-        })
+        if (activeOrganization) {
+          navigate({
+            to: '/org/$orgSlug',
+            params: { orgSlug: activeOrganization.slug }
+          })
+        }
       }
     })
   )
@@ -110,10 +120,18 @@ function OnboardingPage() {
   }
 
   function goToDashboard() {
-    navigate({
-      to: '/dashboard',
-      search: { project: '', section: 'secrets' as const }
-    })
+    if (!createdOrganizationSlug || !createdSlug) return
+    void authClient.organization
+      .setActive({ organizationSlug: createdOrganizationSlug })
+      .then(() =>
+        navigate({
+          to: '/org/$orgSlug/projects/$projectSlug/secrets',
+          params: {
+            orgSlug: createdOrganizationSlug,
+            projectSlug: createdSlug
+          }
+        })
+      )
   }
 
   async function copyCommands() {
