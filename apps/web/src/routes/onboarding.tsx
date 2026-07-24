@@ -1,20 +1,61 @@
 'use client'
 
+import { Alert, AlertDescription, AlertTitle } from '@envy/ui/components/alert'
+import { Badge } from '@envy/ui/components/badge'
+import { Button } from '@envy/ui/components/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from '@envy/ui/components/card'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel
+} from '@envy/ui/components/field'
+import { Input } from '@envy/ui/components/input'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from '@envy/ui/components/tabs'
+import { ToggleGroup, ToggleGroupItem } from '@envy/ui/components/toggle-group'
+import { cn } from '@envy/ui/lib/utils'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { AuthShell } from '@/components/auth/auth-shell'
 import { requireWebAuth } from '@/functions/require-web-auth'
 import { authClient } from '@/lib/auth-client'
+import {
+  canContinueWorkspace,
+  DEFAULT_ENVIRONMENTS,
+  type OnboardingStep,
+  type OrganizationType,
+  toSlug
+} from '@/utils/onboarding'
 import { useTRPC } from '@/utils/trpc'
 
-function toSlug(val: string) {
-  return val
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+type CreatedProject = {
+  id: string
+  slug: string
+  organizationId: string
+  organizationSlug: string
 }
+
+const STEP_META = [
+  { step: 1, label: 'WORKSPACE' },
+  { step: 2, label: 'PROJECT' },
+  { step: 3, label: 'CONNECT' },
+  { step: 4, label: 'FINISH' }
+] as const
 
 export const Route = createFileRoute('/onboarding')({
   beforeLoad: async () => {
@@ -29,302 +70,516 @@ export const Route = createFileRoute('/onboarding')({
   component: OnboardingPage
 })
 
+function CommandLine({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded border border-ghost-border bg-surface-2 px-4 py-3 font-mono text-[12px] text-text-primary">
+      <span className="text-text-muted">$ </span>
+      {children}
+    </div>
+  )
+}
+
 function OnboardingPage() {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const [step, setStep] = useState<1 | 2>(1)
+  const [step, setStep] = useState<OnboardingStep>(1)
+  const [organizationType, setOrganizationType] =
+    useState<OrganizationType>('personal')
+  const [organizationName, setOrganizationName] = useState('')
   const [projectName, setProjectName] = useState('')
-  const [nameError, setNameError] = useState('')
-  const [createdSlug, setCreatedSlug] = useState('')
-  const [createdOrganizationSlug, setCreatedOrganizationSlug] = useState('')
+  const [workspaceError, setWorkspaceError] = useState('')
+  const [projectError, setProjectError] = useState('')
+  const [createdProject, setCreatedProject] = useState<CreatedProject | null>(
+    null
+  )
+  const [inviteEmail, setInviteEmail] = useState('')
   const [copied, setCopied] = useState(false)
 
-  const meQueryOpts = trpc.me.get.queryOptions()
-  const meQuery = useQuery(meQueryOpts)
+  const meQueryOptions = trpc.me.get.queryOptions()
+  const meQuery = useQuery(meQueryOptions)
   const { data: activeOrganization } = authClient.useActiveOrganization()
+  const billingQuery = useQuery({
+    ...trpc.billing.status.queryOptions({
+      organizationId: createdProject?.organizationId ?? ''
+    }),
+    enabled: organizationType === 'team' && Boolean(createdProject)
+  })
 
-  const onboardingCompleteMutation = useMutation(
+  const onboardingMutation = useMutation(
     trpc.me.completeOnboardingWithProject.mutationOptions({
-      onSuccess: (data) => {
-        queryClient.setQueryData(meQueryOpts.queryKey, (prev) =>
-          prev
+      onSuccess: async (data) => {
+        queryClient.setQueryData(meQueryOptions.queryKey, (previous) =>
+          previous
             ? {
-                ...prev,
+                ...previous,
                 onboardingCompletedAt: data.onboardingCompletedAt
               }
-            : prev
+            : previous
         )
-        queryClient.invalidateQueries(
+        await queryClient.invalidateQueries(
           trpc.projects.list.queryOptions({
             organizationId: data.project.organizationId
           })
         )
-        setCreatedSlug(data.project.slug)
-        setCreatedOrganizationSlug(data.project.organizationSlug)
-        setStep(2)
-      }
+        setCreatedProject(data.project)
+        const activeResult = await authClient.organization.setActive({
+          organizationId: data.project.organizationId
+        })
+        if (activeResult.error) {
+          toast.error(
+            'Project created, but the workspace could not be activated yet.'
+          )
+        }
+        setStep(3)
+      },
+      onError: (error) => setProjectError(error.message)
     })
   )
 
   const skipMutation = useMutation(
     trpc.me.skipOnboarding.mutationOptions({
       onSuccess: (data) => {
-        queryClient.setQueryData(meQueryOpts.queryKey, (prev) =>
-          prev
+        queryClient.setQueryData(meQueryOptions.queryKey, (previous) =>
+          previous
             ? {
-                ...prev,
+                ...previous,
                 onboardingSkippedAt: data.onboardingSkippedAt,
                 onboardingCompletedAt: data.onboardingCompletedAt
               }
-            : prev
+            : previous
         )
         if (activeOrganization) {
-          navigate({
+          void navigate({
             to: '/org/$orgSlug',
             params: { orgSlug: activeOrganization.slug }
           })
+        } else {
+          void navigate({ to: '/auth/callback' })
         }
       }
     })
   )
 
-  const isPending =
-    onboardingCompleteMutation.isPending || skipMutation.isPending
-  const slug = toSlug(projectName)
-  const canCreate = !!slug && !isPending
+  const inviteMutation = useMutation(
+    trpc.members.invite.mutationOptions({
+      onSuccess: async () => {
+        setInviteEmail('')
+        await billingQuery.refetch()
+        toast.success('Invitation sent')
+      },
+      onError: (error) => toast.error(error.message)
+    })
+  )
 
+  const isPending = onboardingMutation.isPending || skipMutation.isPending
+  const projectSlug = toSlug(projectName)
+  const organizationSlug = toSlug(organizationName)
   const workspaceLabel =
     meQuery.data?.name?.trim() || meQuery.data?.email?.split('@')[0] || 'you'
+  const seatsAvailable = billingQuery.data
+    ? Math.max(0, billingQuery.data.seatLimit - billingQuery.data.memberCount)
+    : 0
 
-  function handleCreate() {
-    const trimmed = projectName.trim()
-    if (!trimmed) {
-      setNameError('Project name is required')
+  function continueWorkspace() {
+    if (!canContinueWorkspace(organizationType, organizationName)) {
+      setWorkspaceError('Team workspace name is required')
       return
     }
-    if (trimmed.length > 64) {
-      setNameError('Name must be 64 characters or less')
+    setWorkspaceError('')
+    setStep(2)
+  }
+
+  function createProject() {
+    const name = projectName.trim()
+    if (!name || !projectSlug) {
+      setProjectError('Project name must contain at least one letter or number')
       return
     }
-    if (!toSlug(trimmed)) {
-      setNameError('Name must contain at least one letter or number')
+    if (name.length > 64) {
+      setProjectError('Project name must be 64 characters or less')
       return
     }
-    setNameError('')
-    onboardingCompleteMutation.mutate({ name: trimmed })
+    setProjectError('')
+    onboardingMutation.mutate({
+      name,
+      organizationType,
+      ...(organizationType === 'team'
+        ? { organizationName: organizationName.trim() }
+        : {})
+    })
   }
 
-  function handleSkip() {
-    skipMutation.mutate()
+  function finishLater() {
+    if (!createdProject) return
+    void navigate({
+      to: '/org/$orgSlug',
+      params: { orgSlug: createdProject.organizationSlug }
+    })
   }
 
-  function goToDashboard() {
-    if (!createdOrganizationSlug || !createdSlug) return
-    void authClient.organization
-      .setActive({ organizationSlug: createdOrganizationSlug })
-      .then(() =>
-        navigate({
-          to: '/org/$orgSlug/projects/$projectSlug/secrets',
-          params: {
-            orgSlug: createdOrganizationSlug,
-            projectSlug: createdSlug
-          }
-        })
-      )
+  function goToProject(destination: 'settings' | 'secrets') {
+    if (!createdProject) return
+    void navigate({
+      to:
+        destination === 'settings'
+          ? '/org/$orgSlug/projects/$projectSlug'
+          : '/org/$orgSlug/projects/$projectSlug/secrets',
+      params: {
+        orgSlug: createdProject.organizationSlug,
+        projectSlug: createdProject.slug
+      }
+    })
   }
 
-  async function copyCommands() {
+  async function copySetup() {
     try {
-      await navigator.clipboard.writeText(
-        'npm i -g useenvy\nenvy login\nenvy push'
-      )
+      await navigator.clipboard.writeText('npm install -g useenvy\nenvy')
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1600)
     } catch {
-      // ignore
+      toast.error('Could not copy commands')
     }
-    setCopied(true)
-    window.setTimeout(() => setCopied(false), 1600)
   }
-
-  const stepMeta = [
-    { label: '01 PROJECT', active: step === 1, done: step > 1 },
-    { label: '02 SYNC', active: step === 2, done: false }
-  ]
 
   return (
     <AuthShell
       headerAction={
-        step === 1 ? (
+        createdProject ? (
           <button
             type="button"
-            onClick={handleSkip}
+            onClick={finishLater}
+            className="cursor-pointer font-mono text-[11px] text-text-muted transition-colors hover:text-text-primary"
+          >
+            finish later →
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => skipMutation.mutate()}
             disabled={isPending}
             className="cursor-pointer font-mono text-[11px] text-text-muted transition-colors hover:text-text-primary disabled:opacity-50"
           >
             {skipMutation.isPending ? 'skipping…' : 'skip onboarding →'}
           </button>
-        ) : (
-          <span className="font-mono text-[11px] text-text-muted">
-            {'// onboarding'}
-          </span>
         )
       }
     >
-      <div className="w-full max-w-[460px]">
-        <div className="mb-5 flex items-center gap-2 font-mono text-[10px] tracking-[0.08em]">
-          {stepMeta.map((s, i) => (
-            <div
-              key={s.label}
-              className="flex min-w-0 flex-1 items-center gap-2"
-            >
+      <div className="w-full max-w-[580px]">
+        <div className="mb-5 grid grid-cols-4 gap-2 font-mono text-[9px] tracking-[0.06em]">
+          {STEP_META.map((item) => (
+            <div key={item.step} className="flex min-w-0 flex-col gap-1.5">
               <span
-                className={
-                  s.active
+                className={cn(
+                  item.step === step
                     ? 'text-text-primary'
-                    : s.done
+                    : item.step < step
                       ? 'text-brand'
                       : 'text-text-muted'
-                }
+                )}
               >
-                {s.label}
+                0{item.step} {item.label}
               </span>
-              {i < stepMeta.length - 1 ? (
-                <span className="h-px flex-1 bg-ghost-border" />
-              ) : null}
+              <span
+                className={cn(
+                  'h-px',
+                  item.step <= step ? 'bg-brand' : 'bg-ghost-border'
+                )}
+              />
             </div>
           ))}
         </div>
 
         {step === 1 ? (
-          <div className="rounded-md border border-ghost-border bg-surface">
-            <div className="p-9">
-              <h1 className="mb-1.5 text-[22px] font-bold tracking-[-0.015em] text-text-primary">
-                Create your first project
-                <span className="text-brand">.</span>
-              </h1>
-              <p className="mb-5 text-[13px] leading-[1.6] text-text-secondary">
-                Your personal workspace was created with your account. Every
-                project gets three environments out of the box.
-              </p>
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                Choose your workspace<span className="text-brand">.</span>
+              </CardTitle>
+              <CardDescription>
+                Personal is private and ready immediately. Team creates a shared
+                workspace; additional seats require the Team plan.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FieldGroup>
+                <Field>
+                  <FieldLabel>Workspace type</FieldLabel>
+                  <ToggleGroup
+                    value={[organizationType]}
+                    onValueChange={(values) => {
+                      const next = values[0]
+                      if (next === 'personal' || next === 'team') {
+                        setOrganizationType(next)
+                        setWorkspaceError('')
+                      }
+                    }}
+                    multiple={false}
+                    variant="outline"
+                    spacing={2}
+                    className="grid w-full grid-cols-2"
+                  >
+                    <ToggleGroupItem value="personal">Personal</ToggleGroupItem>
+                    <ToggleGroupItem value="team">Team</ToggleGroupItem>
+                  </ToggleGroup>
+                  <FieldDescription>
+                    {organizationType === 'personal'
+                      ? `Uses ${workspaceLabel}'s personal workspace.`
+                      : 'Creates a separately named team workspace.'}
+                  </FieldDescription>
+                </Field>
+                {organizationType === 'team' ? (
+                  <Field data-invalid={workspaceError ? true : undefined}>
+                    <FieldLabel htmlFor="workspace-name">
+                      Team workspace name
+                    </FieldLabel>
+                    <Input
+                      id="workspace-name"
+                      value={organizationName}
+                      onChange={(event) => {
+                        setOrganizationName(event.target.value)
+                        setWorkspaceError('')
+                      }}
+                      placeholder="Acme Platform"
+                      maxLength={64}
+                      aria-invalid={Boolean(workspaceError)}
+                      autoFocus
+                    />
+                    <FieldDescription>
+                      Workspace slug preview:{' '}
+                      {organizationSlug || 'acme-platform'}
+                    </FieldDescription>
+                    {workspaceError ? (
+                      <FieldError>{workspaceError}</FieldError>
+                    ) : null}
+                  </Field>
+                ) : null}
+              </FieldGroup>
+            </CardContent>
+            <CardFooter className="justify-end">
+              <Button onClick={continueWorkspace}>Continue →</Button>
+            </CardFooter>
+          </Card>
+        ) : null}
 
-              <div className="mb-5 rounded border border-ghost-border bg-surface-2 px-[18px] py-4 font-mono text-[12px] leading-[2] text-text-primary">
+        {step === 2 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                Create your first project<span className="text-brand">.</span>
+              </CardTitle>
+              <CardDescription>
+                Review the permanent slug and the environments created with the
+                project.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-5">
+              <div className="rounded border border-ghost-border bg-surface-2 px-4 py-3 font-mono text-[11px] leading-6 text-text-primary">
                 <div>
-                  <span className="text-text-muted">workspace&nbsp;&nbsp;</span>
-                  {workspaceLabel}{' '}
-                  <span className="text-text-muted">
-                    (personal) · created automatically
-                  </span>
+                  <span className="text-text-muted">workspace&nbsp; </span>
+                  {organizationType === 'team'
+                    ? organizationName
+                    : `${workspaceLabel} · personal`}
                 </div>
                 <div>
                   <span className="text-text-muted">
-                    envs&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    envs&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{' '}
                   </span>
-                  development · staging · production
+                  {DEFAULT_ENVIRONMENTS.join(' · ')}
                 </div>
               </div>
-
-              <label
-                htmlFor="project-name"
-                className="mb-1.5 block font-mono text-[10px] tracking-[0.08em] text-text-muted uppercase"
+              <FieldGroup>
+                <Field data-invalid={projectError ? true : undefined}>
+                  <FieldLabel htmlFor="project-name">Project name</FieldLabel>
+                  <Input
+                    id="project-name"
+                    value={projectName}
+                    onChange={(event) => {
+                      setProjectName(event.target.value)
+                      setProjectError('')
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') createProject()
+                    }}
+                    placeholder="my-saas"
+                    maxLength={64}
+                    aria-invalid={Boolean(projectError)}
+                    autoFocus
+                  />
+                  <FieldDescription>
+                    Project slug preview: {projectSlug || 'my-saas'}
+                  </FieldDescription>
+                  {projectError ? (
+                    <FieldError>{projectError}</FieldError>
+                  ) : null}
+                </Field>
+              </FieldGroup>
+            </CardContent>
+            <CardFooter className="justify-between">
+              <Button variant="ghost" onClick={() => setStep(1)}>
+                ← Back
+              </Button>
+              <Button
+                onClick={createProject}
+                disabled={!projectSlug || onboardingMutation.isPending}
               >
-                PROJECT NAME
-              </label>
-              <input
-                id="project-name"
-                value={projectName}
-                onChange={(e) => {
-                  setProjectName(e.target.value)
-                  if (nameError) setNameError('')
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleCreate()
-                }}
-                placeholder="my-saas"
-                // biome-ignore lint/a11y/noAutofocus: first field of a single-step form
-                autoFocus
-                disabled={isPending}
-                aria-invalid={!!nameError}
-                className="w-full rounded border border-input bg-surface-2 px-3 py-3 font-mono text-[14px] text-text-primary outline-none transition-colors placeholder:text-text-muted focus:border-border-focus disabled:opacity-60"
-              />
-              {slug ? (
-                <p className="mt-2 font-mono text-[11px] text-text-muted">
-                  slug: <span className="text-text-secondary">{slug}</span>
-                </p>
-              ) : null}
-              {nameError ? (
-                <p className="mt-2 text-[12px] text-danger">{nameError}</p>
-              ) : null}
-              {onboardingCompleteMutation.isError ? (
-                <p className="mt-2 text-[12px] text-danger">
-                  {onboardingCompleteMutation.error.message}
-                </p>
-              ) : null}
-
-              <button
-                type="button"
-                onClick={handleCreate}
-                disabled={!canCreate}
-                className={`mt-5 w-full rounded py-3.5 text-[14px] font-semibold transition-colors ${
-                  canCreate
-                    ? 'cursor-pointer bg-primary text-primary-foreground hover:bg-white'
-                    : 'cursor-not-allowed bg-primary/15 text-text-muted'
-                }`}
-              >
-                {onboardingCompleteMutation.isPending
+                {onboardingMutation.isPending
                   ? 'Creating…'
-                  : 'Create project'}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="rounded-md border border-brand/30 bg-surface">
-            <div className="p-9">
-              <div className="mb-3.5 font-mono text-[12px] text-brand">
-                ✓ {createdSlug || slug} created
-              </div>
-              <h1 className="mb-1.5 text-[22px] font-bold tracking-[-0.015em] text-text-primary">
-                Now sync your first secret
-                <span className="text-brand">.</span>
-              </h1>
-              <p className="mb-5 text-[13px] leading-[1.6] text-text-secondary">
-                From the repo that owns your .env — three commands and your team
-                is synced.
-              </p>
+                  : 'Create workspace & project'}
+              </Button>
+            </CardFooter>
+          </Card>
+        ) : null}
 
-              <div className="mb-6 rounded border border-ghost-border bg-surface-2 px-5 py-[18px] font-mono text-[13px] leading-[2.3] text-text-primary">
-                <div>
-                  <span className="text-text-muted">$ </span>npm i -g useenvy
+        {step === 3 ? (
+          <Card>
+            <CardHeader>
+              <Badge variant="outline" className="mb-1">
+                {createdProject?.slug} created
+              </Badge>
+              <CardTitle>
+                Connect your terminal<span className="text-brand">.</span>
+              </CardTitle>
+              <CardDescription>
+                Install the CLI, then run envy. The v2.1 TUI guides Login → Init
+                → Push without memorizing commands.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-5">
+              <Tabs defaultValue="npm">
+                <TabsList>
+                  <TabsTrigger value="npm">npm</TabsTrigger>
+                  <TabsTrigger value="bun">bun</TabsTrigger>
+                </TabsList>
+                <TabsContent value="npm" className="flex flex-col gap-2 pt-2">
+                  <CommandLine>npm install -g useenvy</CommandLine>
+                  <CommandLine>envy</CommandLine>
+                </TabsContent>
+                <TabsContent value="bun" className="flex flex-col gap-2 pt-2">
+                  <CommandLine>bun add -g useenvy</CommandLine>
+                  <CommandLine>envy</CommandLine>
+                </TabsContent>
+              </Tabs>
+              <div>
+                <div className="mb-2 font-mono text-[10px] tracking-[0.08em] text-text-muted uppercase">
+                  Headless / automation
                 </div>
-                <div>
-                  <span className="text-text-muted">$ </span>envy login
-                </div>
-                <div>
-                  <span className="text-text-muted">$ </span>envy push{' '}
-                  <span className="text-text-muted">
-                    ← uploads your .env, encrypted
-                  </span>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <CommandLine>envy login</CommandLine>
+                  <CommandLine>envy init</CommandLine>
+                  <CommandLine>envy push</CommandLine>
                 </div>
               </div>
+            </CardContent>
+            <CardFooter className="justify-between">
+              <Button variant="outline" onClick={copySetup}>
+                {copied ? 'Copied ✓' : 'Copy setup'}
+              </Button>
+              <Button onClick={() => setStep(4)}>Continue →</Button>
+            </CardFooter>
+          </Card>
+        ) : null}
 
-              <div className="flex flex-col gap-2.5 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={copyCommands}
-                  className="cursor-pointer rounded border border-ghost-border px-4 py-3 font-mono text-[12px] text-text-secondary transition-colors hover:border-border-focus hover:text-text-primary"
+        {step === 4 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                You&apos;re ready to ship<span className="text-brand">.</span>
+              </CardTitle>
+              <CardDescription>
+                {organizationType === 'personal'
+                  ? 'Open the project or add your first secret from the dashboard.'
+                  : 'Finish the team setup with the next available action.'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              {organizationType === 'personal' ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => goToProject('settings')}
+                  >
+                    Open project
+                  </Button>
+                  <Button onClick={() => goToProject('secrets')}>
+                    Add first secret →
+                  </Button>
+                </div>
+              ) : billingQuery.isPending ? (
+                <div className="font-mono text-[11px] text-text-muted">
+                  Checking available seats…
+                </div>
+              ) : seatsAvailable > 0 && createdProject ? (
+                <FieldGroup>
+                  <Field>
+                    <FieldLabel htmlFor="first-invite-email">
+                      Invite your first teammate
+                    </FieldLabel>
+                    <Input
+                      id="first-invite-email"
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(event) => setInviteEmail(event.target.value)}
+                      placeholder="teammate@company.com"
+                    />
+                    <FieldDescription>
+                      {seatsAvailable} seat
+                      {seatsAvailable === 1 ? '' : 's'} available.
+                    </FieldDescription>
+                    <Button
+                      className="self-start"
+                      disabled={
+                        inviteMutation.isPending || !inviteEmail.includes('@')
+                      }
+                      onClick={() =>
+                        inviteMutation.mutate({
+                          organizationId: createdProject.organizationId,
+                          email: inviteEmail.trim(),
+                          role: 'member'
+                        })
+                      }
+                    >
+                      {inviteMutation.isPending
+                        ? 'Sending…'
+                        : 'Send invitation'}
+                    </Button>
+                  </Field>
+                </FieldGroup>
+              ) : (
+                <Alert>
+                  <AlertTitle>No additional seats available yet</AlertTitle>
+                  <AlertDescription>
+                    The workspace is ready, but inviting teammates requires the
+                    Team plan. Open Billing to add capacity before sending an
+                    invitation.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+            <CardFooter className="justify-between">
+              <Button variant="ghost" onClick={finishLater}>
+                Finish later
+              </Button>
+              {organizationType === 'team' && seatsAvailable === 0 ? (
+                <Button
+                  onClick={() => {
+                    if (!createdProject) return
+                    void navigate({
+                      to: '/org/$orgSlug/settings/billing',
+                      params: { orgSlug: createdProject.organizationSlug }
+                    })
+                  }}
                 >
-                  {copied ? 'copied ✓' : 'copy commands ⧉'}
-                </button>
-                <button
-                  type="button"
-                  onClick={goToDashboard}
-                  className="flex-1 cursor-pointer rounded bg-primary py-3 text-[14px] font-semibold text-primary-foreground transition-colors hover:bg-white"
-                >
-                  Go to dashboard →
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+                  Open Billing →
+                </Button>
+              ) : (
+                <Button onClick={() => goToProject('secrets')}>
+                  Open dashboard →
+                </Button>
+              )}
+            </CardFooter>
+          </Card>
+        ) : null}
       </div>
     </AuthShell>
   )

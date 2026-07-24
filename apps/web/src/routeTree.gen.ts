@@ -18,6 +18,7 @@ import { Route as OrgOrgSlugRouteImport } from './routes/org/$orgSlug'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AcceptInvitationInvitationIdRouteImport } from './routes/accept-invitation.$invitationId'
 import { Route as OrgOrgSlugIndexRouteImport } from './routes/org/$orgSlug/index'
+import { Route as OrgOrgSlugSettingsIndexRouteImport } from './routes/org/$orgSlug/settings/index'
 import { Route as OrgOrgSlugSettingsMembersRouteImport } from './routes/org/$orgSlug/settings/members'
 import { Route as OrgOrgSlugSettingsBillingRouteImport } from './routes/org/$orgSlug/settings/billing'
 import { Route as OrgOrgSlugSettingsAuditLogRouteImport } from './routes/org/$orgSlug/settings/audit-log'
@@ -71,6 +72,11 @@ const OrgOrgSlugIndexRoute = OrgOrgSlugIndexRouteImport.update({
   path: '/',
   getParentRoute: () => OrgOrgSlugRoute,
 } as any)
+const OrgOrgSlugSettingsIndexRoute = OrgOrgSlugSettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => OrgOrgSlugRoute,
+} as any)
 const OrgOrgSlugSettingsMembersRoute =
   OrgOrgSlugSettingsMembersRouteImport.update({
     id: '/settings/members',
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/org/$orgSlug/settings/audit-log': typeof OrgOrgSlugSettingsAuditLogRoute
   '/org/$orgSlug/settings/billing': typeof OrgOrgSlugSettingsBillingRoute
   '/org/$orgSlug/settings/members': typeof OrgOrgSlugSettingsMembersRoute
+  '/org/$orgSlug/settings/': typeof OrgOrgSlugSettingsIndexRoute
   '/org/$orgSlug/projects/$projectSlug/secrets': typeof OrgOrgSlugProjectsProjectSlugSecretsRoute
   '/org/$orgSlug/projects/$projectSlug/': typeof OrgOrgSlugProjectsProjectSlugIndexRoute
 }
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   '/org/$orgSlug/settings/audit-log': typeof OrgOrgSlugSettingsAuditLogRoute
   '/org/$orgSlug/settings/billing': typeof OrgOrgSlugSettingsBillingRoute
   '/org/$orgSlug/settings/members': typeof OrgOrgSlugSettingsMembersRoute
+  '/org/$orgSlug/settings': typeof OrgOrgSlugSettingsIndexRoute
   '/org/$orgSlug/projects/$projectSlug/secrets': typeof OrgOrgSlugProjectsProjectSlugSecretsRoute
   '/org/$orgSlug/projects/$projectSlug': typeof OrgOrgSlugProjectsProjectSlugIndexRoute
 }
@@ -155,6 +163,7 @@ export interface FileRoutesById {
   '/org/$orgSlug/settings/audit-log': typeof OrgOrgSlugSettingsAuditLogRoute
   '/org/$orgSlug/settings/billing': typeof OrgOrgSlugSettingsBillingRoute
   '/org/$orgSlug/settings/members': typeof OrgOrgSlugSettingsMembersRoute
+  '/org/$orgSlug/settings/': typeof OrgOrgSlugSettingsIndexRoute
   '/org/$orgSlug/projects/$projectSlug/secrets': typeof OrgOrgSlugProjectsProjectSlugSecretsRoute
   '/org/$orgSlug/projects/$projectSlug/': typeof OrgOrgSlugProjectsProjectSlugIndexRoute
 }
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/org/$orgSlug/settings/audit-log'
     | '/org/$orgSlug/settings/billing'
     | '/org/$orgSlug/settings/members'
+    | '/org/$orgSlug/settings/'
     | '/org/$orgSlug/projects/$projectSlug/secrets'
     | '/org/$orgSlug/projects/$projectSlug/'
   fileRoutesByTo: FileRoutesByTo
@@ -189,6 +199,7 @@ export interface FileRouteTypes {
     | '/org/$orgSlug/settings/audit-log'
     | '/org/$orgSlug/settings/billing'
     | '/org/$orgSlug/settings/members'
+    | '/org/$orgSlug/settings'
     | '/org/$orgSlug/projects/$projectSlug/secrets'
     | '/org/$orgSlug/projects/$projectSlug'
   id:
@@ -206,6 +217,7 @@ export interface FileRouteTypes {
     | '/org/$orgSlug/settings/audit-log'
     | '/org/$orgSlug/settings/billing'
     | '/org/$orgSlug/settings/members'
+    | '/org/$orgSlug/settings/'
     | '/org/$orgSlug/projects/$projectSlug/secrets'
     | '/org/$orgSlug/projects/$projectSlug/'
   fileRoutesById: FileRoutesById
@@ -286,6 +298,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgOrgSlugIndexRouteImport
       parentRoute: typeof OrgOrgSlugRoute
     }
+    '/org/$orgSlug/settings/': {
+      id: '/org/$orgSlug/settings/'
+      path: '/settings'
+      fullPath: '/org/$orgSlug/settings/'
+      preLoaderRoute: typeof OrgOrgSlugSettingsIndexRouteImport
+      parentRoute: typeof OrgOrgSlugRoute
+    }
     '/org/$orgSlug/settings/members': {
       id: '/org/$orgSlug/settings/members'
       path: '/settings/members'
@@ -355,6 +374,7 @@ interface OrgOrgSlugRouteChildren {
   OrgOrgSlugSettingsAuditLogRoute: typeof OrgOrgSlugSettingsAuditLogRoute
   OrgOrgSlugSettingsBillingRoute: typeof OrgOrgSlugSettingsBillingRoute
   OrgOrgSlugSettingsMembersRoute: typeof OrgOrgSlugSettingsMembersRoute
+  OrgOrgSlugSettingsIndexRoute: typeof OrgOrgSlugSettingsIndexRoute
 }
 
 const OrgOrgSlugRouteChildren: OrgOrgSlugRouteChildren = {
@@ -364,6 +384,7 @@ const OrgOrgSlugRouteChildren: OrgOrgSlugRouteChildren = {
   OrgOrgSlugSettingsAuditLogRoute: OrgOrgSlugSettingsAuditLogRoute,
   OrgOrgSlugSettingsBillingRoute: OrgOrgSlugSettingsBillingRoute,
   OrgOrgSlugSettingsMembersRoute: OrgOrgSlugSettingsMembersRoute,
+  OrgOrgSlugSettingsIndexRoute: OrgOrgSlugSettingsIndexRoute,
 }
 
 const OrgOrgSlugRouteWithChildren = OrgOrgSlugRoute._addFileChildren(

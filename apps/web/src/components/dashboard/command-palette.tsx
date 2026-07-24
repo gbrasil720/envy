@@ -52,6 +52,8 @@ type Props = {
 
 const SECTION_ICON: Record<DashboardSection, typeof LockIcon> = {
   secrets: LockIcon,
+  projectSettings: Settings01Icon,
+  organization: Settings01Icon,
   members: UserGroupIcon,
   audit: WorkHistoryIcon,
   billing: Settings01Icon
@@ -59,6 +61,8 @@ const SECTION_ICON: Record<DashboardSection, typeof LockIcon> = {
 
 const SECTION_LABEL: Record<DashboardSection, string> = {
   secrets: 'Secrets',
+  projectSettings: 'Project settings',
+  organization: 'Organization settings',
   members: 'Members',
   audit: 'Audit log',
   billing: 'Billing'
@@ -79,7 +83,14 @@ function loadRecent(): RecentEntry[] {
         if (
           o.type === 'section' &&
           typeof o.section === 'string' &&
-          ['secrets', 'members', 'audit', 'billing'].includes(o.section)
+          [
+            'secrets',
+            'projectSettings',
+            'organization',
+            'members',
+            'audit',
+            'billing'
+          ].includes(o.section)
         ) {
           return true
         }
@@ -171,7 +182,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
   }
 
   function goTo(s: DashboardSection) {
-    if (s === 'secrets' && !currentProject) {
+    if ((s === 'secrets' || s === 'projectSettings') && !currentProject) {
       toast.message('Select a project first')
       return
     }
@@ -285,7 +296,11 @@ export function CommandPalette({ open, onOpenChange }: Props) {
                       key={`recent-section-${entry.section}`}
                       value={`recent ${SECTION_LABEL[entry.section]} ${entry.section}`}
                       className={itemClass}
-                      disabled={!currentProject}
+                      disabled={
+                        (entry.section === 'secrets' ||
+                          entry.section === 'projectSettings') &&
+                        !currentProject
+                      }
                       onSelect={() => goTo(entry.section)}
                     >
                       <DashboardIcon icon={Icon} size="md" />
@@ -294,9 +309,12 @@ export function CommandPalette({ open, onOpenChange }: Props) {
                           {SECTION_LABEL[entry.section]}
                         </div>
                         <div className="truncate text-[11px] text-muted-foreground">
-                          {currentProject
-                            ? `In ${currentProject.name}`
-                            : 'Select a project first'}
+                          {entry.section === 'secrets' ||
+                          entry.section === 'projectSettings'
+                            ? currentProject
+                              ? `In ${currentProject.name}`
+                              : 'Select a project first'
+                            : 'Organization-wide'}
                         </div>
                       </div>
                     </CommandItem>
@@ -407,6 +425,43 @@ export function CommandPalette({ open, onOpenChange }: Props) {
               <DashboardIcon icon={LockIcon} size="md" />
               <span className="min-w-0 flex-1 font-medium">Secrets</span>
               {section === 'secrets' && currentProject ? (
+                <Badge
+                  variant="outline"
+                  className="ml-auto shrink-0 text-[10px]"
+                >
+                  Current
+                </Badge>
+              ) : null}
+            </CommandItem>
+            <CommandItem
+              value="project settings section navigation"
+              className={itemClass}
+              onSelect={() => goTo('projectSettings')}
+              disabled={!currentProject}
+            >
+              <DashboardIcon icon={Settings01Icon} size="md" />
+              <span className="min-w-0 flex-1 font-medium">
+                Project settings
+              </span>
+              {section === 'projectSettings' ? (
+                <Badge
+                  variant="outline"
+                  className="ml-auto shrink-0 text-[10px]"
+                >
+                  Current
+                </Badge>
+              ) : null}
+            </CommandItem>
+            <CommandItem
+              value="organization workspace settings section navigation"
+              className={itemClass}
+              onSelect={() => goTo('organization')}
+            >
+              <DashboardIcon icon={Settings01Icon} size="md" />
+              <span className="min-w-0 flex-1 font-medium">
+                Organization settings
+              </span>
+              {section === 'organization' ? (
                 <Badge
                   variant="outline"
                   className="ml-auto shrink-0 text-[10px]"

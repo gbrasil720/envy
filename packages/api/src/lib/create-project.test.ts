@@ -8,7 +8,7 @@ import {
 } from 'bun:test'
 import { eq } from '@envy/db'
 import { subscription } from '@envy/db/schema/billing'
-import { project } from '@envy/db/schema/envy'
+import { environment, project } from '@envy/db/schema/envy'
 import { member, organization } from '@envy/db/schema/organization'
 import { TRPCError } from '@trpc/server'
 import { assertDbReady, getTestDb, truncateAll } from '../test/db'
@@ -73,6 +73,15 @@ describe('createOwnedProject', () => {
     expect(proj?.mkIv).toBeTruthy()
     expect(proj?.mkTag).toBeTruthy()
     expect(proj?.createdBy).toBe(owner.id)
+
+    const environments = await db.query.environment.findMany({
+      where: eq(environment.projectId, created.id)
+    })
+    expect(environments.map((item) => item.name).sort()).toEqual([
+      'development',
+      'production',
+      'staging'
+    ])
   })
 
   test('slugifies project names', async () => {
@@ -85,12 +94,15 @@ describe('createOwnedProject', () => {
     const owner = await createTestUser()
     const created = await createOwnedProject(getTestDb(), owner.id, {
       name: 'Team Vault',
-      organizationType: 'team'
+      organizationType: 'team',
+      organizationName: 'Platform Team'
     })
     const org = await getTestDb().query.organization.findFirst({
       where: eq(organization.id, created.organizationId)
     })
     expect(org?.type).toBe('team')
+    expect(org?.name).toBe('Platform Team')
+    expect(org?.slug).toBe('platform-team')
   })
 
   test('free plan allows only one project per owner', async () => {

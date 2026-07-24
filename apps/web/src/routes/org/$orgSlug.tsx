@@ -25,9 +25,11 @@ import { authClient } from '@/lib/auth-client'
 import { useTRPC } from '@/utils/trpc'
 
 function sectionFromPath(pathname: string): DashboardSection {
+  if (/\/projects\/[^/]+\/?$/.test(pathname)) return 'projectSettings'
   if (pathname.endsWith('/settings/members')) return 'members'
   if (pathname.endsWith('/settings/billing')) return 'billing'
   if (pathname.endsWith('/settings/audit-log')) return 'audit'
+  if (/\/settings\/?$/.test(pathname)) return 'organization'
   return 'secrets'
 }
 
@@ -169,7 +171,11 @@ function OrganizationLayout() {
   }
 
   function selectSection(nextSection: DashboardSection) {
-    const destinations: Record<Exclude<DashboardSection, 'secrets'>, string> = {
+    const destinations: Record<
+      Exclude<DashboardSection, 'secrets' | 'projectSettings'>,
+      string
+    > = {
+      organization: '/org/$orgSlug/settings',
       members: '/org/$orgSlug/settings/members',
       billing: '/org/$orgSlug/settings/billing',
       audit: '/org/$orgSlug/settings/audit-log'
@@ -177,6 +183,14 @@ function OrganizationLayout() {
     if (nextSection === 'secrets') {
       if (currentProject) selectProject(currentProject)
       else void navigate({ to: '/org/$orgSlug', params: { orgSlug } })
+      return
+    }
+    if (nextSection === 'projectSettings') {
+      if (!currentProject) return
+      void navigate({
+        to: '/org/$orgSlug/projects/$projectSlug',
+        params: { orgSlug, projectSlug: currentProject.slug }
+      })
       return
     }
     void navigate({

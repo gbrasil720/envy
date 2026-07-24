@@ -12,10 +12,12 @@ import { ProjectSwitcher } from './project-switcher'
 import { UserCard } from './user-card'
 
 const PROJECT_NAV: { id: DashboardSection; label: string }[] = [
-  { id: 'secrets', label: 'secrets' }
+  { id: 'secrets', label: 'secrets' },
+  { id: 'projectSettings', label: 'settings' }
 ]
 
 const ORGANIZATION_NAV: { id: DashboardSection; label: string }[] = [
+  { id: 'organization', label: 'settings' },
   { id: 'members', label: 'members' },
   { id: 'billing', label: 'billing' },
   { id: 'audit', label: 'audit log' }

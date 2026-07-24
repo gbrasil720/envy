@@ -1,5 +1,5 @@
-import { count, eq, inArray } from '@envy/db'
-import { user } from '@envy/db/schema/auth'
+import { and, count, eq, inArray, isNull } from '@envy/db'
+import { session, user } from '@envy/db/schema/auth'
 import { project, secret } from '@envy/db/schema/envy'
 import { member } from '@envy/db/schema/organization'
 import { hasRole } from '@envy/db/services'
@@ -99,27 +99,81 @@ export const meRouter = router({
 
   completeOnboardingWithProject: protectedProcedure
     .input(
-      z.object({
-        name: z.string().min(1).max(64)
-      })
+      z
+        .object({
+          name: z
+            .string()
+            .trim()
+            .min(1)
+            .max(64)
+            .refine((name) => /[a-z0-9]/i.test(name), {
+              message: 'Project name must contain at least one letter or number'
+            }),
+          organizationType: z.enum(['personal', 'team']).default('personal'),
+          organizationName: z
+            .string()
+            .trim()
+            .min(1)
+            .max(64)
+            .refine((name) => /[a-z0-9]/i.test(name), {
+              message:
+                'Workspace name must contain at least one letter or number'
+            })
+            .optional()
+        })
+        .superRefine((input, ctx) => {
+          if (input.organizationType === 'team' && !input.organizationName) {
+            ctx.addIssue({
+              code: 'custom',
+              path: ['organizationName'],
+              message: 'Team workspace name is required'
+            })
+          }
+        })
     )
     .mutation(async ({ ctx, input }) => {
       const completedAt = new Date()
       return await ctx.db.transaction(async (tx) => {
-        const proj = await createOwnedProject(tx, ctx.session.user.id, {
-          name: input.name,
-          organizationType: 'personal'
-        })
         const [updated] = await tx
           .update(user)
           .set({ onboardingCompletedAt: completedAt })
-          .where(eq(user.id, ctx.session.user.id))
+          .where(
+            and(
+              eq(user.id, ctx.session.user.id),
+              isNull(user.onboardingCompletedAt)
+            )
+          )
           .returning({
             onboardingCompletedAt: user.onboardingCompletedAt
           })
 
         if (!updated) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' })
+          const existingUser = await tx.query.user.findFirst({
+            where: eq(user.id, ctx.session.user.id),
+            columns: { id: true }
+          })
+          if (!existingUser) {
+            throw new TRPCError({
+              code: 'NOT_FOUND',
+              message: 'User not found'
+            })
+          }
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Onboarding has already been completed'
+          })
+        }
+
+        const proj = await createOwnedProject(tx, ctx.session.user.id, {
+          name: input.name,
+          organizationType: input.organizationType,
+          organizationName: input.organizationName
+        })
+        if (ctx.session.session?.id) {
+          await tx
+            .update(session)
+            .set({ activeOrganizationId: proj.organizationId })
+            .where(eq(session.id, ctx.session.session.id))
         }
 
         return {

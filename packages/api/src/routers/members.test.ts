@@ -44,6 +44,78 @@ describe('members router', () => {
     expect(listed[0]?.userId).toBe(owner.id)
   })
 
+  test('organization member list returns approved profile fields to members and rejects outsiders', async () => {
+    const owner = await createTestUser()
+    const regular = await createTestUser({ email: 'reader@test.local' })
+    const outsider = await createTestUser({ email: 'outsider@test.local' })
+    const proj = await createTestProject(owner.id, 'Organization Members')
+    await setOrgPlan(proj.organizationId, 'team', 5)
+    await getTestDb().insert(member).values({
+      id: crypto.randomUUID(),
+      organizationId: proj.organizationId,
+      userId: regular.id,
+      role: 'member',
+      createdAt: new Date()
+    })
+
+    const listed = await (
+      await createAuthenticatedCaller(regular.id)
+    ).members.listForOrganization({
+      organizationId: proj.organizationId
+    })
+    expect(listed).toHaveLength(2)
+    expect(listed.find((item) => item.userId === regular.id)).toMatchObject({
+      role: 'member',
+      isCurrentUser: true,
+      user: {
+        id: regular.id,
+        name: regular.name,
+        email: regular.email
+      }
+    })
+
+    await expect(
+      (
+        await createAuthenticatedCaller(outsider.id)
+      ).members.listForOrganization({
+        organizationId: proj.organizationId
+      })
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+  })
+
+  test('remove rejects owners and self-removal', async () => {
+    const owner = await createTestUser()
+    const admin = await createTestUser({ email: 'self-admin@test.local' })
+    const proj = await createTestProject(owner.id, 'Protected Members')
+    await setOrgPlan(proj.organizationId, 'team', 5)
+    const adminMemberId = crypto.randomUUID()
+    const ownerMember = await getTestDb().query.member.findFirst({
+      where: eq(member.organizationId, proj.organizationId),
+      columns: { id: true }
+    })
+    await getTestDb().insert(member).values({
+      id: adminMemberId,
+      organizationId: proj.organizationId,
+      userId: admin.id,
+      role: 'admin',
+      createdAt: new Date()
+    })
+
+    await expect(
+      (await createAuthenticatedCaller(admin.id)).members.remove({
+        organizationId: proj.organizationId,
+        memberId: adminMemberId
+      })
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+
+    await expect(
+      (await createAuthenticatedCaller(admin.id)).members.remove({
+        organizationId: proj.organizationId,
+        memberId: ownerMember?.id ?? ''
+      })
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+  })
+
   test('invite is blocked on free seat limit', async () => {
     const owner = await createTestUser()
     const proj = await createTestProject(owner.id, 'Free Seats')

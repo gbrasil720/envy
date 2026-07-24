@@ -1,4 +1,10 @@
-export type DashboardSection = 'secrets' | 'members' | 'billing' | 'audit'
+export type DashboardSection =
+  | 'secrets'
+  | 'projectSettings'
+  | 'organization'
+  | 'members'
+  | 'billing'
+  | 'audit'
 
 export type DashboardProject = {
   id: string

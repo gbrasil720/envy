@@ -5,6 +5,7 @@ import {
   cancelInvite,
   inviteMember,
   listMembers,
+  listMembersForOrganization,
   listPendingInvites,
   listRecentInvitations,
   reinviteMember,
@@ -15,6 +16,10 @@ export const membersRouter = router({
   list: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ ctx, input }) => listMembers(ctx, input)),
+
+  listForOrganization: protectedProcedure
+    .input(z.object({ organizationId: z.string().min(1) }))
+    .query(async ({ ctx, input }) => listMembersForOrganization(ctx, input)),
 
   pending: protectedProcedure
     .input(z.object({ projectId: z.string() }))
