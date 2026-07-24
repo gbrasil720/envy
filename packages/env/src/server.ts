@@ -20,6 +20,14 @@ export const env = createEnv({
     GITHUB_CLIENT_ID_DEV: z.string().transform((s) => s.trim()),
     GITHUB_CLIENT_SECRET_DEV: z.string().transform((s) => s.trim()),
     TRUSTED_ORIGINS: z.string().optional(),
+    DODO_PAYMENTS_API_KEY: z.string().min(1),
+    DODO_PAYMENTS_WEBHOOK_SECRET: z.string().min(1),
+    DODO_PAYMENTS_ENVIRONMENT: z.enum(['test_mode', 'live_mode']),
+    DODO_PRO_PRODUCT_ID: z.string().min(1),
+    DODO_TEAM_PRODUCT_ID: z.string().min(1),
+    RESEND_API_KEY: z.string().min(1),
+    EMAIL_FROM: z.string().min(1),
+    EMAIL_FROM_ALERTS: z.string().min(1),
     NODE_ENV: z
       .enum(['development', 'production', 'test'])
       .default('development')

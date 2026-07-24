@@ -9,14 +9,21 @@
       "default": "./src/*.ts"
     }
   },
-  "scripts": {},
+  "scripts": {
+    "test": "bun test"
+  },
   "dependencies": {
     "@better-auth/infra": "catalog:",
+    "@dodopayments/better-auth": "^1.6.4",
+    "@dodopayments/core": "^0.3.13",
     "@envy/db": "workspace:*",
     "@envy/env": "workspace:*",
     "better-auth": "catalog:",
+    "dodopayments": "^2.42.2",
     "dotenv": "catalog:",
     "nanoid": "^5.1.5",
+    "resend": "^6.18.0",
+    "standardwebhooks": "^1.0.0",
     "zod": "catalog:"
   },
   "devDependencies": {

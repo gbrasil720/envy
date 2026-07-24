@@ -1,4 +1,5 @@
 import { dash } from '@better-auth/infra'
+import { dodopayments } from '@dodopayments/better-auth'
 import { and, createDb, eq } from '@envy/db'
 import * as envySchema from '@envy/db/schema/envy'
 // Barrel em schema/index — export map `./*` resolve `schema/index` → src/schema/index.ts
@@ -13,6 +14,13 @@ import { nanoid } from 'nanoid' // ajuste pro gerador de ID que o resto do
 // projeto já usa — precisa ser o MESMO padrão usado nas outras tabelas,
 // senão os IDs de organization/member criados aqui ficam inconsistentes
 // com os criados pelas rotas normais do plugin.
+import {
+  dodoPayments,
+  processDodoWebhook,
+  reconcileOrganizationReadOnlyNotification
+} from './billing'
+import { webhooksWithEventId } from './dodo-webhooks'
+import { sendTransactionalEmail } from './email'
 
 export function createAuth() {
   const db = createDb()
@@ -59,7 +67,6 @@ export function createAuth() {
           after: async (user) => {
             const organizationId = nanoid()
             const memberId = nanoid()
-            const subscriptionId = nanoid()
             const now = new Date()
 
             await db.insert(schema.organization).values({
@@ -77,18 +84,6 @@ export function createAuth() {
               userId: user.id,
               role: 'owner', // string, não enum — ver organization.ts
               createdAt: now
-            })
-
-            // Fail-closed seatLimit for assertOrganizationWritable
-            await db.insert(schema.subscription).values({
-              id: subscriptionId,
-              organizationId,
-              plan: 'free',
-              status: 'active',
-              dodoCustomerId: 'free',
-              seatLimit: 1,
-              createdAt: now,
-              updatedAt: now
             })
 
             // Nota: NÃO seta session.activeOrganizationId aqui — a sessão
@@ -180,10 +175,89 @@ export function createAuth() {
       }
     },
     plugins: [
+      dodopayments({
+        client: dodoPayments,
+        createCustomerOnSignUp: false,
+        // The official webhooks sub-plugin is patched locally to pass its
+        // already-verified webhook-id into our idempotency boundary.
+        use: [
+          webhooksWithEventId({
+            webhookKey: env.DODO_PAYMENTS_WEBHOOK_SECRET,
+            onPayload: async (payload, eventId) => {
+              await processDodoWebhook({
+                eventId,
+                payload
+              })
+            }
+          })
+        ] as never
+      }),
       organization({
-        // Sem isso, allowUserToCreateOrganization default permite qualquer
-        // usuário criar múltiplas orgs de time à vontade — confirme se é
-        // isso que você quer, ou restrinja aqui (ex: exigir plano pago).
+        invitationExpiresIn: 60 * 60 * 48,
+        sendInvitationEmail: async (data) => {
+          await sendTransactionalEmail({
+            type: 'organization_invitation',
+            to: data.email,
+            data: {
+              organizationName: data.organization.name,
+              inviterName: data.inviter.user.name,
+              inviterEmail: data.inviter.user.email,
+              role: data.role,
+              acceptUrl: `${env.APP_URL.replace(/\/$/, '')}/accept-invitation/${data.id}`,
+              expiresAt: data.invitation.expiresAt
+            }
+          })
+        },
+        schema: {
+          organization: {
+            additionalFields: {
+              type: {
+                type: 'string',
+                required: true,
+                input: false
+              }
+            }
+          }
+        },
+        organizationHooks: {
+          // Personal organizations are provisioned by the user hook above.
+          // Any organization created through Better Auth's client API is a
+          // team workspace, so the UI can never manufacture a second personal
+          // organization.
+          beforeCreateOrganization: async ({ organization }) => ({
+            data: { ...organization, type: 'team' }
+          }),
+          afterAcceptInvitation: async (data) => {
+            const inviter = await db.query.user.findFirst({
+              where: (user, { eq }) => eq(user.id, data.invitation.inviterId),
+              columns: { email: true }
+            })
+            if (!inviter?.email) return
+
+            await sendTransactionalEmail({
+              type: 'invitation_accepted',
+              to: inviter.email,
+              data: {
+                organizationName: data.organization.name,
+                acceptedName: data.user.name || data.user.email,
+                membersUrl: `${env.APP_URL.replace(/\/$/, '')}/org/${data.organization.slug}/settings/members`
+              }
+            })
+          },
+          afterRemoveMember: async (data) => {
+            await Promise.all([
+              sendTransactionalEmail({
+                type: 'member_removed',
+                to: data.user.email,
+                data: {
+                  organizationName: data.organization.name,
+                  appUrl: env.APP_URL
+                }
+              }),
+              reconcileOrganizationReadOnlyNotification(data.organization.id)
+            ])
+          }
+        }
       }),
       dash(),
       openAPI()
