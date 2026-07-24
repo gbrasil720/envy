@@ -41,16 +41,24 @@ type Env = {
 type Props = {
   projectId: string
   projectSlug: string
+  organizationSlug?: string
   role: string
 }
 
 function validateEnvName(name: string): string | null {
   const result = envNameSchema.safeParse(name)
-  if (!result.success) return result.error.errors[0].message
+  if (!result.success) {
+    return result.error.issues[0]?.message ?? 'Invalid environment name'
+  }
   return null
 }
 
-export function EnvironmentsManager({ projectId, projectSlug, role }: Props) {
+export function EnvironmentsManager({
+  projectId,
+  projectSlug,
+  organizationSlug,
+  role
+}: Props) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const canEdit = role === 'owner' || role === 'admin'
@@ -166,17 +174,26 @@ export function EnvironmentsManager({ projectId, projectSlug, role }: Props) {
                 key={env.id}
                 className="group flex items-center gap-1.5 rounded border border-ghost-border px-3 py-1.5 font-mono text-[11.5px] text-text-primary"
               >
-                <Link
-                  to="/dashboard/$projectSlug/secrets"
-                  params={{ projectSlug }}
-                  className="hover:text-brand"
-                  title={`${env.secretsCount} secrets`}
-                >
-                  {env.name}
-                  <span className="ml-1.5 text-text-muted">
-                    {env.secretsCount}
+                {organizationSlug ? (
+                  <Link
+                    to="/org/$orgSlug/projects/$projectSlug/secrets"
+                    params={{ orgSlug: organizationSlug, projectSlug }}
+                    className="hover:text-brand"
+                    title={`${env.secretsCount} secrets`}
+                  >
+                    {env.name}
+                    <span className="ml-1.5 text-text-muted">
+                      {env.secretsCount}
+                    </span>
+                  </Link>
+                ) : (
+                  <span title={`${env.secretsCount} secrets`}>
+                    {env.name}
+                    <span className="ml-1.5 text-text-muted">
+                      {env.secretsCount}
+                    </span>
                   </span>
-                </Link>
+                )}
                 {canEdit ? (
                   <>
                     <button

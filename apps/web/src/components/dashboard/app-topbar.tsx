@@ -4,8 +4,8 @@ import type { DashboardSection } from './dashboard-types'
 const SECTION_LABEL: Record<DashboardSection, string> = {
   secrets: 'secrets',
   members: 'members',
-  audit: 'audit',
-  settings: 'settings'
+  billing: 'billing',
+  audit: 'audit'
 }
 
 type Props = {
@@ -15,20 +15,20 @@ type Props = {
 
 export function AppTopbar({ onOpenCommand, onOpenMobileSidebar }: Props) {
   const { openNewProject, openAddSecret } = useDashboardActions()
-  const { currentProject, section, isHome } = useDashboardShell()
+  const { currentProject, section, isHome, canManageProjects } =
+    useDashboardShell()
 
   const breadcrumb = isHome
     ? 'workspace / projects'
     : currentProject
       ? `${currentProject.slug} / ${SECTION_LABEL[section]}`
-      : 'workspace'
+      : `workspace / ${SECTION_LABEL[section]}`
 
-  const primaryLabel = isHome
-    ? '+ new project'
-    : section === 'secrets'
-      ? '+ add secret'
-      : section === 'members'
-        ? '+ invite'
+  const primaryLabel =
+    isHome && canManageProjects
+      ? '+ new project'
+      : section === 'secrets'
+        ? '+ add secret'
         : null
 
   function handlePrimary() {
@@ -41,7 +41,8 @@ export function AppTopbar({ onOpenCommand, onOpenMobileSidebar }: Props) {
     }
   }
 
-  const primaryEnabled = isHome || (section === 'secrets' && !!openAddSecret)
+  const primaryEnabled =
+    (isHome && canManageProjects) || (section === 'secrets' && !!openAddSecret)
 
   return (
     <header className="flex h-[52px] shrink-0 items-center justify-between gap-3 border-b border-border px-4 sm:px-7">

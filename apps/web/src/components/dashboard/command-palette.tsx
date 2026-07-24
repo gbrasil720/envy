@@ -54,14 +54,14 @@ const SECTION_ICON: Record<DashboardSection, typeof LockIcon> = {
   secrets: LockIcon,
   members: UserGroupIcon,
   audit: WorkHistoryIcon,
-  settings: Settings01Icon
+  billing: Settings01Icon
 }
 
 const SECTION_LABEL: Record<DashboardSection, string> = {
   secrets: 'Secrets',
   members: 'Members',
   audit: 'Audit log',
-  settings: 'Settings'
+  billing: 'Billing'
 }
 
 function loadRecent(): RecentEntry[] {
@@ -79,7 +79,7 @@ function loadRecent(): RecentEntry[] {
         if (
           o.type === 'section' &&
           typeof o.section === 'string' &&
-          ['secrets', 'members', 'audit', 'settings'].includes(o.section)
+          ['secrets', 'members', 'audit', 'billing'].includes(o.section)
         ) {
           return true
         }
@@ -130,9 +130,13 @@ export function CommandPalette({ open, onOpenChange }: Props) {
     section,
     onSectionChange,
     onSelectProject,
-    onNewProject
+    onNewProject,
+    organizationId,
+    canManageProjects
   } = useDashboardShell()
-  const projectsQuery = useQuery(trpc.projects.list.queryOptions())
+  const projectsQuery = useQuery(
+    trpc.projects.list.queryOptions({ organizationId })
+  )
   const projects = projectsQuery.data ?? []
 
   const [search, setSearch] = useState('')
@@ -167,7 +171,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
   }
 
   function goTo(s: DashboardSection) {
-    if (!currentProject) {
+    if (s === 'secrets' && !currentProject) {
       toast.message('Select a project first')
       return
     }
@@ -309,17 +313,19 @@ export function CommandPalette({ open, onOpenChange }: Props) {
                 heading="Quick actions"
                 className={groupHeadingClass}
               >
-                <CommandItem
-                  value="quick new project create"
-                  className={itemClass}
-                  onSelect={() => {
-                    onNewProject()
-                    close()
-                  }}
-                >
-                  <DashboardIcon icon={PlusSignIcon} size="md" />
-                  <span className="font-medium">New project</span>
-                </CommandItem>
+                {canManageProjects ? (
+                  <CommandItem
+                    value="quick new project create"
+                    className={itemClass}
+                    onSelect={() => {
+                      onNewProject()
+                      close()
+                    }}
+                  >
+                    <DashboardIcon icon={PlusSignIcon} size="md" />
+                    <span className="font-medium">New project</span>
+                  </CommandItem>
+                ) : null}
                 <CommandItem
                   value="quick copy envy push"
                   className={itemClass}
@@ -391,12 +397,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
             </>
           ) : null}
 
-          <CommandGroup
-            heading={
-              currentProject ? 'Navigate' : 'Navigate (select a project first)'
-            }
-            className={groupHeadingClass}
-          >
+          <CommandGroup heading="Navigate" className={groupHeadingClass}>
             <CommandItem
               value="secrets section navigation"
               className={itemClass}
@@ -418,11 +419,10 @@ export function CommandPalette({ open, onOpenChange }: Props) {
               value="members section navigation"
               className={itemClass}
               onSelect={() => goTo('members')}
-              disabled={!currentProject}
             >
               <DashboardIcon icon={UserGroupIcon} size="md" />
               <span className="min-w-0 flex-1 font-medium">Members</span>
-              {section === 'members' && currentProject ? (
+              {section === 'members' ? (
                 <Badge
                   variant="outline"
                   className="ml-auto shrink-0 text-[10px]"
@@ -435,11 +435,10 @@ export function CommandPalette({ open, onOpenChange }: Props) {
               value="audit audit log section navigation"
               className={itemClass}
               onSelect={() => goTo('audit')}
-              disabled={!currentProject}
             >
               <DashboardIcon icon={WorkHistoryIcon} size="md" />
               <span className="min-w-0 flex-1 font-medium">Audit log</span>
-              {section === 'audit' && currentProject ? (
+              {section === 'audit' ? (
                 <Badge
                   variant="outline"
                   className="ml-auto shrink-0 text-[10px]"
@@ -449,14 +448,13 @@ export function CommandPalette({ open, onOpenChange }: Props) {
               ) : null}
             </CommandItem>
             <CommandItem
-              value="settings section navigation"
+              value="billing section navigation"
               className={itemClass}
-              onSelect={() => goTo('settings')}
-              disabled={!currentProject}
+              onSelect={() => goTo('billing')}
             >
               <DashboardIcon icon={Settings01Icon} size="md" />
-              <span className="min-w-0 flex-1 font-medium">Settings</span>
-              {section === 'settings' && currentProject ? (
+              <span className="min-w-0 flex-1 font-medium">Billing</span>
+              {section === 'billing' ? (
                 <Badge
                   variant="outline"
                   className="ml-auto shrink-0 text-[10px]"
@@ -597,7 +595,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
             </CommandItem>
           </CommandGroup>
 
-          {!showPinned ? (
+          {!showPinned && canManageProjects ? (
             <>
               <CommandSeparator />
               <CommandGroup heading="Create" className={groupHeadingClass}>

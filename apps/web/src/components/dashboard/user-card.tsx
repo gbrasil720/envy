@@ -1,3 +1,4 @@
+import type { Plan } from '@envy/api/lib/plan-limits'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +15,10 @@ import { useTRPC } from '@/utils/trpc'
 import { PreferencesSheet } from './preferences-sheet'
 
 type Props = {
-  planLabel: string
+  plan: Plan | null
+  workspaceName?: string
+  organizationId?: string
+  organizationSlug?: string
   compact?: boolean
 }
 
@@ -30,7 +34,13 @@ function initials(name: string | null | undefined, email: string | null) {
   return '??'
 }
 
-export function UserCard({ planLabel, compact = false }: Props) {
+export function UserCard({
+  plan,
+  workspaceName,
+  organizationId,
+  organizationSlug,
+  compact = false
+}: Props) {
   const trpc = useTRPC()
   const navigate = useNavigate()
   const meQuery = useQuery(trpc.me.get.queryOptions())
@@ -78,7 +88,7 @@ export function UserCard({ planLabel, compact = false }: Props) {
                 {user.name ?? 'Account'}
               </div>
               <div className="truncate font-mono text-[9.5px] text-text-muted">
-                {planLabel}
+                {plan ? `${plan} workspace plan` : 'select a workspace'}
               </div>
             </div>
           ) : null}
@@ -130,6 +140,17 @@ export function UserCard({ planLabel, compact = false }: Props) {
       <PreferencesSheet
         open={preferencesOpen}
         onOpenChange={setPreferencesOpen}
+        plan={plan}
+        workspaceName={workspaceName}
+        organizationId={organizationId}
+        onManageBilling={() => {
+          if (!organizationSlug) return
+          setPreferencesOpen(false)
+          navigate({
+            to: '/org/$orgSlug/settings/billing',
+            params: { orgSlug: organizationSlug }
+          })
+        }}
       />
     </>
   )

@@ -6,6 +6,7 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTRPC } from '@/utils/trpc'
+import { useDashboardShell } from './dashboard-context'
 import type { DashboardProject } from './dashboard-types'
 
 type Props = {
@@ -22,8 +23,11 @@ export function ProjectSwitcher({
   onAllProjects
 }: Props) {
   const trpc = useTRPC()
+  const { organizationId, canManageProjects } = useDashboardShell()
   const [open, setOpen] = useState(false)
-  const projectsQuery = useQuery(trpc.projects.list.queryOptions())
+  const projectsQuery = useQuery(
+    trpc.projects.list.queryOptions({ organizationId })
+  )
   const projects = projectsQuery.data ?? []
 
   return (
@@ -83,16 +87,18 @@ export function ProjectSwitcher({
             ← all projects
           </button>
         ) : null}
-        <button
-          type="button"
-          onClick={() => {
-            onNewProject()
-            setOpen(false)
-          }}
-          className="flex w-full cursor-pointer items-center gap-2 rounded px-2.5 py-2 text-left font-mono text-[11.5px] text-text-secondary transition-colors hover:bg-ghost-bg hover:text-text-primary"
-        >
-          + new project
-        </button>
+        {canManageProjects ? (
+          <button
+            type="button"
+            onClick={() => {
+              onNewProject()
+              setOpen(false)
+            }}
+            className="flex w-full cursor-pointer items-center gap-2 rounded px-2.5 py-2 text-left font-mono text-[11.5px] text-text-secondary transition-colors hover:bg-ghost-bg hover:text-text-primary"
+          >
+            + new project
+          </button>
+        ) : null}
       </PopoverContent>
     </Popover>
   )
