@@ -18,7 +18,11 @@ export const user = pgTable('user', {
     .$onUpdate(() => new Date())
     .notNull(),
   onboardingCompletedAt: timestamp('onboarding_completed_at'),
-  onboardingSkippedAt: timestamp('onboarding_skipped_at')
+  onboardingSkippedAt: timestamp('onboarding_skipped_at'),
+  // Required by the official Dodo Better Auth plugin. Organization billing
+  // uses subscription.dodoCustomerId; this remains nullable because customers
+  // are created lazily at checkout.
+  dodoCustomerId: text('dodo_customer_id')
 })
 
 export const session = pgTable(

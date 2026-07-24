@@ -129,9 +129,12 @@ export const auditLog = pgTable(
   'audit_log',
   {
     id: text('id').primaryKey(),
-    projectId: text('project_id')
+    organizationId: text('organization_id')
       .notNull()
-      .references(() => project.id, { onDelete: 'cascade' }),
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    projectId: text('project_id').references(() => project.id, {
+      onDelete: 'set null'
+    }),
     userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
     environment: text('environment'),
     action: text('action').notNull(),
@@ -140,6 +143,7 @@ export const auditLog = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull()
   },
   (table) => [
+    index('audit_log_organizationId_idx').on(table.organizationId),
     index('audit_log_projectId_idx').on(table.projectId),
     index('audit_log_userId_idx').on(table.userId),
     index('audit_log_createdAt_idx').on(table.createdAt)
@@ -220,6 +224,10 @@ export const apiKeyRelations = relations(apiKey, ({ one }) => ({
 }))
 
 export const auditLogRelations = relations(auditLog, ({ one }) => ({
+  organization: one(organization, {
+    fields: [auditLog.organizationId],
+    references: [organization.id]
+  }),
   project: one(project, {
     fields: [auditLog.projectId],
     references: [project.id]
