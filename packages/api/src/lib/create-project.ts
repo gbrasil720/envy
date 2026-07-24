@@ -3,7 +3,7 @@ import type { db } from '@envy/db'
 import { count, eq, inArray } from '@envy/db'
 import { user } from '@envy/db/schema/auth'
 import { subscription } from '@envy/db/schema/billing'
-import { project } from '@envy/db/schema/envy'
+import { environment, project } from '@envy/db/schema/envy'
 import { member, organization } from '@envy/db/schema/organization'
 import { hasRole } from '@envy/db/services'
 import { env } from '@envy/env/server'
@@ -31,6 +31,7 @@ export async function createOwnedProject(
   input: {
     name: string
     organizationType?: 'personal' | 'team'
+    organizationName?: string
     organizationId?: string
   }
 ): Promise<{
@@ -50,8 +51,27 @@ export async function createOwnedProject(
     .filter((m) => hasRole(m.role, 'owner'))
     .map((m) => m.organizationId)
 
-  const slug = generateSlug(input.name)
+  const name = input.name.trim()
+  const slug = generateSlug(name)
   const organizationType = input.organizationType ?? 'personal'
+  const organizationName = input.organizationName?.trim()
+
+  if (!slug) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Project name must contain at least one letter or number'
+    })
+  }
+  if (
+    organizationType === 'team' &&
+    !input.organizationId &&
+    !organizationName
+  ) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Team workspace name is required'
+    })
+  }
 
   const existing = await dbClient.query.project.findFirst({
     where: eq(project.slug, slug),
@@ -77,10 +97,10 @@ export async function createOwnedProject(
       ? []
       : await dbClient.query.organization.findMany({
           where: inArray(organization.id, ownedOrgIds),
-          columns: { id: true, slug: true, type: true }
+          columns: { id: true, slug: true, type: true, deletedAt: true }
         })
   const personalOrganization = ownedOrganizations.find(
-    (org) => org.type === 'personal'
+    (org) => org.type === 'personal' && org.deletedAt === null
   )
   const organizationId =
     input.organizationId ??
@@ -99,13 +119,37 @@ export async function createOwnedProject(
           })
         : undefined
 
+    const newOrganizationName =
+      organizationType === 'personal'
+        ? (personalOrganizationOwner?.name ?? 'Personal')
+        : (organizationName ?? name)
+    const newOrganizationSlug =
+      organizationType === 'personal'
+        ? `personal-${userId}`
+        : generateSlug(newOrganizationName)
+
+    if (!newOrganizationSlug) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Workspace name must contain at least one letter or number'
+      })
+    }
+
+    const existingOrganization = await dbClient.query.organization.findFirst({
+      where: eq(organization.slug, newOrganizationSlug),
+      columns: { id: true }
+    })
+    if (existingOrganization) {
+      throw new TRPCError({
+        code: 'CONFLICT',
+        message: `A workspace with slug "${newOrganizationSlug}" already exists`
+      })
+    }
+
     await dbClient.insert(organization).values({
       id: organizationId,
-      name:
-        organizationType === 'personal'
-          ? (personalOrganizationOwner?.name ?? 'Personal')
-          : input.name,
-      slug: organizationType === 'personal' ? `personal-${userId}` : slug,
+      name: newOrganizationName,
+      slug: newOrganizationSlug,
       type: organizationType,
       createdAt: now
     })
@@ -159,17 +203,25 @@ export async function createOwnedProject(
   await dbClient.insert(project).values({
     id: projectId,
     organizationId,
-    name: input.name,
+    name,
     slug,
     encryptedMk: ciphertext,
     mkIv: iv,
     mkTag: tag,
     createdBy: userId
   })
+  await dbClient.insert(environment).values(
+    ['development', 'staging', 'production'].map((environmentName) => ({
+      id: crypto.randomUUID(),
+      projectId,
+      name: environmentName,
+      createdAt: now
+    }))
+  )
 
   return {
     id: projectId,
-    name: input.name,
+    name,
     slug,
     organizationId,
     organizationSlug: targetOrganization.slug

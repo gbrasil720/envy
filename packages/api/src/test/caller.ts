@@ -29,11 +29,12 @@ export function createCallerWithContext(ctx: Context) {
  */
 export async function createAuthenticatedCaller(userId: string) {
   const token = crypto.randomUUID()
+  const sessionId = crypto.randomUUID()
   const now = new Date()
   await getTestDb()
     .insert(session)
     .values({
-      id: crypto.randomUUID(),
+      id: sessionId,
       token,
       userId,
       expiresAt: new Date(now.getTime() + 60 * 60 * 1000),
@@ -50,7 +51,7 @@ export async function createAuthenticatedCaller(userId: string) {
     db: getTestDb(),
     authHeader: null,
     cookieHeader,
-    session: { user: { id: userId } },
+    session: { user: { id: userId }, session: { id: sessionId } },
     apiKeyId: null
   }
   return appRouter.createCaller(ctx)

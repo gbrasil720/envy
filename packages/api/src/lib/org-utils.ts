@@ -58,8 +58,17 @@ export async function getOrgSeatLimit(
   db: Context['db'],
   organizationId: string
 ): Promise<number> {
-  const plan = await getOrgPlan(db, organizationId)
-  return PLAN_LIMITS[plan].members
+  const [sub] = await db
+    .select({
+      plan: subscription.plan,
+      status: subscription.status,
+      seatLimit: subscription.seatLimit,
+      currentPeriodEnd: subscription.currentPeriodEnd
+    })
+    .from(subscription)
+    .where(eq(subscription.organizationId, organizationId))
+  const plan = effectiveSubscriptionPlan(sub)
+  return plan === 'free' ? PLAN_LIMITS.free.members : (sub?.seatLimit ?? 1)
 }
 
 export async function getOrganizationBilling(

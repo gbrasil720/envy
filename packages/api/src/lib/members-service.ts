@@ -85,6 +85,35 @@ export async function listMembers(ctx: AuthCtx, input: { projectId: string }) {
   }))
 }
 
+export async function listMembersForOrganization(
+  ctx: AuthCtx,
+  input: { organizationId: string }
+) {
+  await requireMembership(ctx.db, input.organizationId, ctx.session.user.id)
+
+  const members = await ctx.db.query.member.findMany({
+    where: eq(member.organizationId, input.organizationId),
+    columns: { id: true, userId: true, role: true, createdAt: true },
+    with: {
+      user: {
+        columns: {
+          id: true,
+          name: true,
+          email: true,
+          image: true
+        }
+      }
+    },
+    orderBy: (member, { asc }) => [asc(member.createdAt)]
+  })
+
+  return members.map((organizationMember) => ({
+    ...organizationMember,
+    role: effectiveRole(organizationMember.role),
+    isCurrentUser: organizationMember.userId === ctx.session.user.id
+  }))
+}
+
 export async function listPendingInvites(
   ctx: AuthCtx,
   input: { projectId: string }
@@ -417,6 +446,19 @@ export async function removeMember(
     throw new TRPCError({
       code: 'NOT_FOUND',
       message: 'Member not found'
+    })
+  }
+
+  if (target.userId === requesterId) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'You cannot remove yourself from an organization'
+    })
+  }
+  if (effectiveRole(target.role) === 'owner') {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Organization owners cannot be removed'
     })
   }
 

@@ -3,6 +3,8 @@ import type { DashboardSection } from './dashboard-types'
 
 const SECTION_LABEL: Record<DashboardSection, string> = {
   secrets: 'secrets',
+  projectSettings: 'settings',
+  organization: 'settings',
   members: 'members',
   billing: 'billing',
   audit: 'audit'

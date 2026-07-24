@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, lt } from '@envy/db'
 import { user } from '@envy/db/schema/auth'
-import { auditLog } from '@envy/db/schema/envy'
+import { auditLog, project } from '@envy/db/schema/envy'
 import { z } from 'zod'
 import { protectedProcedure, router } from '..'
 import { requireMembership, requireProjectAccess } from '../lib/org-utils'
@@ -131,9 +131,15 @@ export const auditLogRouter = router({
           action: auditLog.action,
           targetKey: auditLog.targetKey,
           metadata: auditLog.metadata,
-          createdAt: auditLog.createdAt
+          createdAt: auditLog.createdAt,
+          project: {
+            id: project.id,
+            name: project.name,
+            slug: project.slug
+          }
         })
         .from(auditLog)
+        .leftJoin(project, eq(auditLog.projectId, project.id))
         .where(and(...conditions))
         .orderBy(desc(auditLog.createdAt))
         .limit(input.limit + 1)
@@ -155,6 +161,7 @@ export const auditLogRouter = router({
       return {
         logs: items.map((log) => ({
           ...log,
+          project: log.project?.id ? log.project : null,
           user: log.userId ? (userMap.get(log.userId) ?? null) : null
         })),
         nextCursor: hasMore

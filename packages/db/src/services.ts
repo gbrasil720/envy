@@ -86,8 +86,11 @@ export class OrganizationReadOnlyError extends Error {
  * Isso também é Envy-specific — o Better Auth não tem soft-delete nativo
  * de organização, então essa camada precisa ficar por fora do plugin.
  */
-export async function archiveOrganization(organizationId: string) {
-  await db
+export async function archiveOrganization(
+  organizationId: string,
+  dbClient: Pick<typeof db, 'update'> = db
+) {
+  await dbClient
     .update(organization)
     .set({ deletedAt: new Date() })
     .where(eq(organization.id, organizationId))

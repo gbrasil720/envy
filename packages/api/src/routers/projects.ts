@@ -1,4 +1,4 @@
-import { and, count, eq, inArray, isNull, sql } from '@envy/db'
+import { and, count, eq, inArray, isNull, ne, sql } from '@envy/db'
 import { user } from '@envy/db/schema/auth'
 import { auditLog, environment, project, secret } from '@envy/db/schema/envy'
 import { member, organization } from '@envy/db/schema/organization'
@@ -6,12 +6,23 @@ import { effectiveRole } from '@envy/db/services'
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { protectedProcedure, router } from '..'
+import { recordAudit } from '../lib/audit'
 import { createOwnedProject } from '../lib/create-project'
 import {
   assertOrgWritable,
   getOrgPlan,
-  requireMembership
+  requireMembership,
+  requireProjectAccess
 } from '../lib/org-utils'
+
+const projectNameSchema = z
+  .string()
+  .trim()
+  .min(1, 'Project name is required')
+  .max(64)
+  .refine((name) => /[a-z0-9]/i.test(name), {
+    message: 'Project name must contain at least one letter or number'
+  })
 
 export const projectsRouter = router({
   list: protectedProcedure
@@ -95,7 +106,7 @@ export const projectsRouter = router({
   create: protectedProcedure
     .input(
       z.object({
-        name: z.string().min(1).max(64),
+        name: projectNameSchema,
         organizationId: z.string().min(1).optional()
       })
     )
@@ -116,6 +127,69 @@ export const projectsRouter = router({
         .where(and(eq(user.id, userId), isNull(user.onboardingCompletedAt)))
 
       return created
+    }),
+  update: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().min(1),
+        name: projectNameSchema
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const access = await requireProjectAccess(
+        ctx.db,
+        input.projectId,
+        ctx.session.user.id,
+        'admin'
+      )
+      await assertOrgWritable(access.organizationId)
+
+      const name = input.name.trim()
+      if (name === access.project.name) {
+        return access.project
+      }
+
+      const sibling = await ctx.db.query.project.findFirst({
+        where: and(
+          eq(project.organizationId, access.organizationId),
+          ne(project.id, input.projectId),
+          sql`lower(${project.name}) = lower(${name})`
+        ),
+        columns: { id: true }
+      })
+      if (sibling) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'A project with this name already exists in the workspace'
+        })
+      }
+
+      const [updated] = await ctx.db
+        .update(project)
+        .set({ name, updatedAt: new Date() })
+        .where(eq(project.id, input.projectId))
+        .returning({
+          id: project.id,
+          name: project.name,
+          slug: project.slug,
+          organizationId: project.organizationId,
+          createdAt: project.createdAt
+        })
+
+      if (!updated) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' })
+      }
+
+      await recordAudit(ctx.db, {
+        organizationId: access.organizationId,
+        projectId: input.projectId,
+        userId: ctx.session.user.id,
+        action: 'project_renamed',
+        targetKey: name,
+        metadata: { oldName: access.project.name, newName: name }
+      })
+
+      return updated
     }),
   get: protectedProcedure
     .input(
@@ -174,12 +248,26 @@ export const projectsRouter = router({
         where: eq(environment.projectId, proj.id),
         columns: { id: true, name: true, createdAt: true }
       })
+      const [secretCountRow, lastActivity] = await Promise.all([
+        ctx.db
+          .select({ total: count() })
+          .from(secret)
+          .where(eq(secret.projectId, proj.id))
+          .then((rows) => rows[0]?.total ?? 0),
+        ctx.db.query.auditLog.findFirst({
+          where: eq(auditLog.projectId, proj.id),
+          columns: { createdAt: true },
+          orderBy: [sql`${auditLog.createdAt} desc`]
+        })
+      ])
 
       return {
         ...proj,
         plan,
         organizationType: org.type,
         role: membership.role,
+        secretsCount: secretCountRow,
+        lastActivityAt: lastActivity?.createdAt ?? null,
         members: members.map((m) => ({
           ...m,
           role: effectiveRole(m.role)

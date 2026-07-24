@@ -39,16 +39,16 @@ describe('environments router', () => {
 
     const created = await caller.environments.create({
       projectId: proj.id,
-      name: 'staging'
+      name: 'qa'
     })
-    expect(created?.name).toBe('staging')
+    expect(created?.name).toBe('qa')
     expect(created?.id).toBeTruthy()
     const envId = created?.id ?? ''
 
     const listed = await caller.environments.list({ projectId: proj.id })
-    expect(listed).toHaveLength(1)
-    expect(listed[0]?.name).toBe('staging')
-    expect(listed[0]?.secretsCount).toBe(0)
+    expect(listed).toHaveLength(4)
+    expect(listed.find((item) => item.id === envId)?.name).toBe('qa')
+    expect(listed.find((item) => item.id === envId)?.secretsCount).toBe(0)
 
     await caller.environments.rename({
       projectId: proj.id,
@@ -57,7 +57,7 @@ describe('environments router', () => {
     })
 
     const afterRename = await caller.environments.list({ projectId: proj.id })
-    expect(afterRename[0]?.name).toBe('stage')
+    expect(afterRename.find((item) => item.id === envId)?.name).toBe('stage')
 
     await caller.environments.delete({
       projectId: proj.id,
@@ -65,7 +65,8 @@ describe('environments router', () => {
     })
 
     const afterDelete = await caller.environments.list({ projectId: proj.id })
-    expect(afterDelete).toEqual([])
+    expect(afterDelete).toHaveLength(3)
+    expect(afterDelete.some((item) => item.id === envId)).toBe(false)
 
     const audits = await getTestDb().query.auditLog.findMany({
       where: eq(auditLog.projectId, proj.id)
@@ -90,20 +91,16 @@ describe('environments router', () => {
     const listed = await createCaller(owner.id).environments.list({
       projectId: proj.id
     })
-    expect(listed).toHaveLength(1)
-    expect(listed[0]?.name).toBe('development')
-    expect(listed[0]?.secretsCount).toBe(2)
+    expect(listed).toHaveLength(3)
+    expect(
+      listed.find((item) => item.name === 'development')?.secretsCount
+    ).toBe(2)
   })
 
   test('create conflicts on duplicate name', async () => {
     const owner = await createTestUser()
     const proj = await createTestProject(owner.id, 'Env Conflict')
     const caller = createCaller(owner.id)
-
-    await caller.environments.create({
-      projectId: proj.id,
-      name: 'production'
-    })
 
     try {
       await caller.environments.create({
@@ -197,6 +194,6 @@ describe('environments router', () => {
     const rows = await getTestDb().query.environment.findMany({
       where: eq(environment.projectId, proj.id)
     })
-    expect(rows).toHaveLength(0)
+    expect(rows).toHaveLength(3)
   })
 })

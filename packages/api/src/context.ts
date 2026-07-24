@@ -13,7 +13,7 @@ export type Context = {
   db: typeof DbInstance
   authHeader: string | null
   cookieHeader: string | null
-  session: { user: { id: string } } | null
+  session: { user: { id: string }; session?: { id: string } } | null
   apiKeyId?: string | null
 }
 
@@ -22,7 +22,7 @@ export type CreateTRPCContextInput = {
   db: typeof DbInstance
   resolveCookieSession: (
     headers: Headers
-  ) => Promise<{ user: { id: string } } | null>
+  ) => Promise<{ user: { id: string }; session?: { id: string } } | null>
 }
 
 const API_KEY_EXPIRY_DAYS = 90
@@ -94,7 +94,10 @@ export async function createTRPCContext(
         authHeader,
         cookieHeader,
         apiKeyId: null,
-        session: { user: { id: session.user.id } }
+        session: {
+          user: { id: session.user.id },
+          ...(session.session ? { session: session.session } : {})
+        }
       }
     }
   }

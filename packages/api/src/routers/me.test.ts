@@ -107,4 +107,63 @@ describe('me onboarding', () => {
     expect(personalOrganization?.name).toBe(legacy.name)
     expect(personalOrganization?.slug).toBe(`personal-${legacy.id}`)
   })
+
+  test('creates an independently named team workspace and project', async () => {
+    const owner = await createTestUser({
+      email: 'team-owner@test.local',
+      name: 'Team Owner'
+    })
+
+    const result = await createCaller(
+      owner.id
+    ).me.completeOnboardingWithProject({
+      name: 'Payments API',
+      organizationType: 'team',
+      organizationName: 'Acme Platform'
+    })
+
+    const team = await getTestDb().query.organization.findFirst({
+      where: eq(organization.id, result.project.organizationId)
+    })
+    expect(team).toMatchObject({
+      name: 'Acme Platform',
+      slug: 'acme-platform',
+      type: 'team'
+    })
+    expect(result.project).toMatchObject({
+      name: 'Payments API',
+      slug: 'payments-api',
+      organizationSlug: 'acme-platform'
+    })
+  })
+
+  test('repeated and invalid onboarding submissions fail without duplicates', async () => {
+    const owner = await createTestUser({ email: 'once@test.local' })
+    const caller = createCaller(owner.id)
+
+    await expect(
+      caller.me.completeOnboardingWithProject({
+        name: 'Invalid Team',
+        organizationType: 'team'
+      })
+    ).rejects.toBeDefined()
+
+    await caller.me.completeOnboardingWithProject({
+      name: 'Only Project',
+      organizationType: 'personal'
+    })
+
+    await expect(
+      caller.me.completeOnboardingWithProject({
+        name: 'Duplicate Project',
+        organizationType: 'personal'
+      })
+    ).rejects.toMatchObject({ code: 'CONFLICT' })
+
+    const projects = await getTestDb().query.project.findMany({
+      where: eq(project.createdBy, owner.id)
+    })
+    expect(projects).toHaveLength(1)
+    expect(projects[0]?.name).toBe('Only Project')
+  })
 })

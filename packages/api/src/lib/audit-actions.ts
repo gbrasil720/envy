@@ -13,7 +13,10 @@ export const AUDIT_ACTIONS = [
   'invitation_accepted',
   'invitation_cancelled',
   'invitation_expired',
-  'member_removed'
+  'member_removed',
+  'project_renamed',
+  'organization_renamed',
+  'organization_archived'
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]
@@ -53,5 +56,8 @@ export const AUDIT_ACTION_LABELS: Record<
   invitation_accepted: { verb: 'accepted invite', tone: 'brand' },
   invitation_cancelled: { verb: 'canceled invite', tone: 'danger' },
   invitation_expired: { verb: 'expired invite', tone: 'muted' },
-  member_removed: { verb: 'removed', tone: 'danger' }
+  member_removed: { verb: 'removed', tone: 'danger' },
+  project_renamed: { verb: 'renamed project', tone: 'info' },
+  organization_renamed: { verb: 'renamed workspace', tone: 'info' },
+  organization_archived: { verb: 'archived workspace', tone: 'danger' }
 }

@@ -7,10 +7,12 @@ import {
   test
 } from 'bun:test'
 import { eq } from '@envy/db'
+import { auditLog, project } from '@envy/db/schema/envy'
 import { member, organization } from '@envy/db/schema/organization'
 import { createCaller } from '../test/caller'
 import { assertDbReady, getTestDb, truncateAll } from '../test/db'
 import {
+  addMember,
   createTestProject,
   createTestUser,
   setOrgPlan
@@ -117,5 +119,122 @@ describe('projects router organization scope', () => {
         name: 'Member Project'
       })
     ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+  })
+
+  test('allows owner and admin project renames and rejects members', async () => {
+    const owner = await createTestUser()
+    const admin = await createTestUser({ email: 'rename-admin@test.local' })
+    const regular = await createTestUser({ email: 'rename-member@test.local' })
+    const proj = await createTestProject(owner.id, 'Original Project')
+    await setOrgPlan(proj.organizationId, 'team', 5)
+    await addMember({
+      organizationId: proj.organizationId,
+      userId: admin.id,
+      role: 'admin'
+    })
+    await addMember({
+      organizationId: proj.organizationId,
+      userId: regular.id,
+      role: 'member'
+    })
+
+    const ownerUpdate = await createCaller(owner.id).projects.update({
+      projectId: proj.id,
+      name: 'Owner Rename'
+    })
+    expect(ownerUpdate.name).toBe('Owner Rename')
+
+    const adminUpdate = await createCaller(admin.id).projects.update({
+      projectId: proj.id,
+      name: 'Admin Rename'
+    })
+    expect(adminUpdate.name).toBe('Admin Rename')
+    expect(adminUpdate.slug).toBe(proj.slug)
+
+    await expect(
+      createCaller(regular.id).projects.update({
+        projectId: proj.id,
+        name: 'Member Rename'
+      })
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+
+    const audit = await getTestDb().query.auditLog.findFirst({
+      where: eq(auditLog.projectId, proj.id),
+      orderBy: (auditLog, { desc }) => [desc(auditLog.createdAt)]
+    })
+    expect(audit?.action).toBe('project_renamed')
+    expect(audit?.metadata).toMatchObject({
+      oldName: 'Owner Rename',
+      newName: 'Admin Rename'
+    })
+
+    const organizationAudit = await createCaller(
+      owner.id
+    ).auditLog.listForOrganization({
+      organizationId: proj.organizationId,
+      limit: 20
+    })
+    const renameEvent = organizationAudit.logs.find(
+      (item) => item.action === 'project_renamed'
+    )
+    expect(renameEvent?.project).toEqual({
+      id: proj.id,
+      name: 'Admin Rename',
+      slug: proj.slug
+    })
+    expect(renameEvent?.user).not.toHaveProperty('email')
+  })
+
+  test('rejects duplicate names, invalid names, and unknown projects', async () => {
+    const owner = await createTestUser()
+    const first = await createTestProject(owner.id, 'First Project')
+    await setOrgPlan(first.organizationId, 'pro')
+    const second = await createTestProject(owner.id, 'Second Project')
+
+    await expect(
+      createCaller(owner.id).projects.update({
+        projectId: second.id,
+        name: 'First Project'
+      })
+    ).rejects.toMatchObject({ code: 'CONFLICT' })
+
+    await expect(
+      createCaller(owner.id).projects.update({
+        projectId: second.id,
+        name: '!!!'
+      })
+    ).rejects.toBeDefined()
+
+    await expect(
+      createCaller(owner.id).projects.update({
+        projectId: crypto.randomUUID(),
+        name: 'Missing'
+      })
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' })
+  })
+
+  test('blocks project rename when the organization is over its seat limit', async () => {
+    const owner = await createTestUser()
+    const admin = await createTestUser({ email: 'readonly-admin@test.local' })
+    const proj = await createTestProject(owner.id, 'Read Only Project')
+    await setOrgPlan(proj.organizationId, 'team', 1)
+    await addMember({
+      organizationId: proj.organizationId,
+      userId: admin.id,
+      role: 'admin'
+    })
+
+    await expect(
+      createCaller(admin.id).projects.update({
+        projectId: proj.id,
+        name: 'Blocked'
+      })
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+
+    const unchanged = await getTestDb().query.project.findFirst({
+      where: eq(project.id, proj.id),
+      columns: { name: true }
+    })
+    expect(unchanged?.name).toBe('Read Only Project')
   })
 })

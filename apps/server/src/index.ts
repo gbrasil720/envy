@@ -183,7 +183,10 @@ const app = new Elysia()
           resolveCookieSession: async (headers) => {
             const session = await auth.api.getSession({ headers })
             if (!session?.user) return null
-            return { user: { id: session.user.id } }
+            return {
+              user: { id: session.user.id },
+              session: { id: session.session.id }
+            }
           }
         })
     })
