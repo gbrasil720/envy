@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#0b0c0b;color:#eeefee;font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}a{color:#eeefee;text-decoration:none}a:hover{color:#3dd68c}</style>
+</helmet>
+<div style="min-height:100vh;background:#0b0c0b">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:0 36px;height:56px;border-bottom:1px solid rgba(238,239,238,.1)">
+    <span style="display:flex;align-items:center;gap:9px;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px"><svg width="20" height="20" viewBox="0 0 64 64"><rect width="64" height="64" rx="32" fill="#eeefee"></rect><circle cx="32" cy="26" r="10" fill="#0b0c0b"></circle><rect x="26" y="30" width="12" height="18" rx="3" fill="#0b0c0b"></rect></svg>envy<span style="color:#3dd68c;font-family:'Instrument Sans',sans-serif;font-weight:700">*</span></span>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(238,239,238,.4)">// email templates</span>
+  </div>
+  <div style="padding:40px 36px 8px">
+    <h1 style="font-size:26px;font-weight:700;letter-spacing:-.02em;margin:0 0 8px">Templates de e-mail<span style="color:#3dd68c">.</span></h1>
+    <p style="font-size:13.5px;color:rgba(238,239,238,.55);margin:0;max-width:640px">HTML pronto para envio: tabelas, estilos inline, fontes email-safe (Courier New + Helvetica), botão bulletproof, preheader e footer transacional. Clique no nome para abrir o arquivo.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(560px,1fr));gap:32px;padding:32px 36px 56px">
+    <sc-for list="{{ emails }}" as="e" hint-placeholder-count="6">
+      <div style="display:flex;flex-direction:column;gap:0;border:1px solid rgba(238,239,238,.12);border-radius:6px;overflow:hidden;background:#0d0e0d">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid rgba(238,239,238,.1)">
+          <a href="{{ e.file }}" target="_blank" style="font-size:13.5px;font-weight:600;color:#eeefee;text-decoration:underline">{{ e.name }}</a>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:rgba(238,239,238,.4)">{{ e.hint }}</span>
+        </div>
+        <iframe src="{{ e.file }}" title="{{ e.name }}" style="width:100%;height:640px;border:none;background:#0b0c0b"></iframe>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return { emails: [
+      { name: 'Verificação de e-mail', hint: '// verify', file: 'emails/01-verificacao-email.html' },
+      { name: 'Magic link', hint: '// magic link', file: 'emails/02-magic-link.html' },
+      { name: 'Recuperação de senha', hint: '// reset', file: 'emails/03-recuperacao-senha.html' },
+      { name: 'Novo dispositivo', hint: '// security', file: 'emails/04-novo-dispositivo.html' },
+      { name: 'Convite para o time', hint: '// invite', file: 'emails/05-convite-time.html' },
+      { name: 'API key expirando', hint: '// rotate', file: 'emails/06-chave-expirando.html' }
+    ] };
+  }
+}
+</script>
+</body>
+</html>
