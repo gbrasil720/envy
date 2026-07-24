@@ -61,17 +61,19 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
       },
       {
         rel: 'icon',
-        href: '/envy-favicon.svg',
+        href: '/favicon.svg?v=2',
         type: 'image/svg+xml'
       },
       {
         rel: 'icon',
-        href: '/favicon.ico',
+        href: '/favicon.ico?v=2',
+        type: 'image/x-icon',
         sizes: 'any'
       },
       {
         rel: 'apple-touch-icon',
-        href: '/apple-touch-image.png'
+        href: '/apple-touch-icon.png',
+        sizes: '180x180'
       }
     ],
     scripts: [
