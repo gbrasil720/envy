@@ -22,7 +22,7 @@ export async function listProjects(ui: ProjectsUI = {}): Promise<ProjectRow[]> {
   requireAuth()
   ui.onFetching?.()
   try {
-    const projects = await api.projects.list.query()
+    const projects = await api.projects.list.query({})
     ui.onDone?.()
     return projects as ProjectRow[]
   } catch (err) {

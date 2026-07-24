@@ -1,4 +1,4 @@
-import { and, eq } from '@envy/db'
+import { and, eq, lte } from '@envy/db'
 import { user } from '@envy/db/schema/auth'
 import { invitation, member } from '@envy/db/schema/organization'
 import { effectiveRole } from '@envy/db/services'
@@ -10,6 +10,9 @@ import {
   getOrgSeatLimit,
   requireMembership,
   requireProjectAccess,
+  safeAcceptInvitation,
+  safeCancelInvitation,
+  safeCreateInvitation,
   safeRemoveMember
 } from './org-utils'
 
@@ -17,6 +20,45 @@ import {
 // ctx: remove() needs the full ctx for Better Auth's safeRemoveMember.
 
 type AuthCtx = Context & { session: { user: { id: string } } }
+
+async function expirePendingInvitations(
+  ctx: AuthCtx,
+  organizationId: string,
+  now = new Date()
+) {
+  return ctx.db.transaction(async (tx) => {
+    const expired = await tx
+      .update(invitation)
+      .set({ status: 'expired' })
+      .where(
+        and(
+          eq(invitation.organizationId, organizationId),
+          eq(invitation.status, 'pending'),
+          lte(invitation.expiresAt, now)
+        )
+      )
+      .returning({
+        id: invitation.id,
+        email: invitation.email,
+        role: invitation.role
+      })
+
+    for (const expiredInvitation of expired) {
+      await recordAudit(tx, {
+        organizationId,
+        userId: null,
+        action: 'invitation_expired',
+        targetKey: expiredInvitation.email,
+        metadata: {
+          invitationId: expiredInvitation.id,
+          role: expiredInvitation.role
+        }
+      })
+    }
+
+    return expired
+  })
+}
 
 export async function listMembers(ctx: AuthCtx, input: { projectId: string }) {
   const userId = ctx.session.user.id
@@ -56,6 +98,8 @@ export async function listPendingInvites(
     'admin'
   )
 
+  await expirePendingInvitations(ctx, organizationId)
+
   return ctx.db.query.invitation.findMany({
     where: and(
       eq(invitation.organizationId, organizationId),
@@ -71,19 +115,56 @@ export async function listPendingInvites(
   })
 }
 
-export async function inviteMember(
+export async function listRecentInvitations(
   ctx: AuthCtx,
-  input: { projectId: string; email: string; role: 'admin' | 'member' }
+  input: { organizationId: string }
 ) {
   const userId = ctx.session.user.id
 
-  const { organizationId } = await requireProjectAccess(
-    ctx.db,
-    input.projectId,
-    userId,
-    'admin'
-  )
+  await requireMembership(ctx.db, input.organizationId, userId, 'admin')
+  await expirePendingInvitations(ctx, input.organizationId)
+
+  const invitations = await ctx.db.query.invitation.findMany({
+    where: eq(invitation.organizationId, input.organizationId),
+    columns: {
+      id: true,
+      email: true,
+      role: true,
+      status: true,
+      expiresAt: true,
+      createdAt: true
+    },
+    with: {
+      user: {
+        columns: { id: true, name: true, email: true }
+      }
+    },
+    orderBy: (invitation, { desc }) => [desc(invitation.createdAt)],
+    limit: 25
+  })
+
+  return invitations.map(({ user: inviter, ...recentInvitation }) => ({
+    ...recentInvitation,
+    inviter
+  }))
+}
+
+export async function inviteMember(
+  ctx: AuthCtx,
+  input: {
+    organizationId: string
+    email: string
+    role: 'admin' | 'member'
+    auditAction?: 'member_invited' | 'invitation_reinvited'
+    previousInvitationId?: string
+  }
+) {
+  const userId = ctx.session.user.id
+
+  await requireMembership(ctx.db, input.organizationId, userId, 'admin')
+  const organizationId = input.organizationId
   await assertOrgWritable(organizationId)
+  await expirePendingInvitations(ctx, organizationId)
 
   const seatLimit = await getOrgSeatLimit(ctx.db, organizationId)
 
@@ -123,33 +204,88 @@ export async function inviteMember(
     })
   }
 
-  const expiresAt = new Date()
-  expiresAt.setHours(expiresAt.getHours() + 48)
-
-  const inviteId = crypto.randomUUID()
-
-  await ctx.db.insert(invitation).values({
-    id: inviteId,
+  const created = await safeCreateInvitation(ctx, {
     organizationId,
     email: input.email,
-    role: input.role,
-    status: 'pending',
-    expiresAt,
-    inviterId: userId
+    role: input.role
   })
-
-  // TODO: send invitation email via Resend
-  // await resend.emails.send({ from: 'noreply@useenvy.dev', to: input.email, ... })
 
   await recordAudit(ctx.db, {
-    projectId: input.projectId,
+    organizationId,
     userId,
-    action: 'member_invited',
+    action: input.auditAction ?? 'member_invited',
     targetKey: input.email,
-    metadata: { role: input.role }
+    metadata: {
+      invitationId: created.id,
+      role: input.role,
+      ...(input.previousInvitationId
+        ? { previousInvitationId: input.previousInvitationId }
+        : {})
+    }
   })
 
-  return { id: inviteId, email: input.email }
+  return { id: created.id, email: created.email }
+}
+
+export async function reinviteMember(
+  ctx: AuthCtx,
+  input: { invitationId: string }
+) {
+  const userId = ctx.session.user.id
+  const invitationToRetry = await ctx.db.query.invitation.findFirst({
+    where: eq(invitation.id, input.invitationId),
+    columns: {
+      id: true,
+      organizationId: true,
+      email: true,
+      role: true
+    }
+  })
+
+  if (!invitationToRetry) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: 'Invitation not found.'
+    })
+  }
+
+  await requireMembership(
+    ctx.db,
+    invitationToRetry.organizationId,
+    userId,
+    'admin'
+  )
+  await expirePendingInvitations(ctx, invitationToRetry.organizationId)
+
+  const currentInvitation = await ctx.db.query.invitation.findFirst({
+    where: eq(invitation.id, input.invitationId),
+    columns: { status: true }
+  })
+
+  if (currentInvitation?.status !== 'expired') {
+    throw new TRPCError({
+      code: 'CONFLICT',
+      message: 'Only expired invitations can be sent again.'
+    })
+  }
+
+  if (
+    invitationToRetry.role !== 'admin' &&
+    invitationToRetry.role !== 'member'
+  ) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'This invitation has an unsupported role.'
+    })
+  }
+
+  return inviteMember(ctx, {
+    organizationId: invitationToRetry.organizationId,
+    email: invitationToRetry.email,
+    role: invitationToRetry.role,
+    auditAction: 'invitation_reinvited',
+    previousInvitationId: invitationToRetry.id
+  })
 }
 
 export async function acceptInvite(
@@ -179,11 +315,8 @@ export async function acceptInvite(
     })
   }
 
-  if (new Date() > invite.expiresAt) {
-    await ctx.db
-      .update(invitation)
-      .set({ status: 'expired' })
-      .where(eq(invitation.id, input.invitationId))
+  if (invite.expiresAt <= new Date()) {
+    await expirePendingInvitations(ctx, invite.organizationId)
 
     throw new TRPCError({
       code: 'FORBIDDEN',
@@ -236,23 +369,18 @@ export async function acceptInvite(
     })
   }
 
-  // Custom invite accept — insert allowed only for admin|member.
-  // Ownership must never be granted via invite; use Better Auth for that.
-  const role =
-    invite.role === 'admin' || invite.role === 'member' ? invite.role : 'member'
+  await safeAcceptInvitation(ctx, input.invitationId)
 
-  await ctx.db.insert(member).values({
-    id: crypto.randomUUID(),
+  await recordAudit(ctx.db, {
     organizationId: invite.organizationId,
     userId,
-    role,
-    createdAt: new Date()
+    action: 'invitation_accepted',
+    targetKey: invite.email,
+    metadata: {
+      invitationId: invite.id,
+      role: invite.role
+    }
   })
-
-  await ctx.db
-    .update(invitation)
-    .set({ status: 'accepted' })
-    .where(eq(invitation.id, input.invitationId))
 
   // Return a project in this org for client navigation (first by createdAt)
   const proj = await ctx.db.query.project.findFirst({
@@ -266,24 +394,23 @@ export async function acceptInvite(
 
 export async function removeMember(
   ctx: AuthCtx,
-  input: { projectId: string; userId: string }
+  input: { organizationId: string; memberId: string }
 ) {
   const requesterId = ctx.session.user.id
 
-  const { organizationId } = await requireProjectAccess(
-    ctx.db,
-    input.projectId,
-    requesterId,
-    'admin'
-  )
+  await requireMembership(ctx.db, input.organizationId, requesterId, 'admin')
 
-  // Resolve member row so Better Auth gets memberId (not userId)
   const target = await ctx.db.query.member.findFirst({
     where: and(
-      eq(member.organizationId, organizationId),
-      eq(member.userId, input.userId)
+      eq(member.id, input.memberId),
+      eq(member.organizationId, input.organizationId)
     ),
-    columns: { id: true }
+    columns: { id: true, userId: true, role: true },
+    with: {
+      user: {
+        columns: { email: true, name: true }
+      }
+    }
   })
 
   if (!target) {
@@ -293,13 +420,19 @@ export async function removeMember(
     })
   }
 
-  await safeRemoveMember(ctx, organizationId, target.id)
+  await safeRemoveMember(ctx, input.organizationId, target.id)
 
   await recordAudit(ctx.db, {
-    projectId: input.projectId,
+    organizationId: input.organizationId,
     userId: requesterId,
     action: 'member_removed',
-    metadata: { removedUserId: input.userId }
+    targetKey: target.user.email,
+    metadata: {
+      removedMemberId: target.id,
+      removedUserId: target.userId,
+      removedName: target.user.name,
+      role: target.role
+    }
   })
 
   return { success: true }
@@ -313,7 +446,12 @@ export async function cancelInvite(
 
   const invite = await ctx.db.query.invitation.findFirst({
     where: eq(invitation.id, input.invitationId),
-    columns: { id: true, organizationId: true }
+    columns: {
+      id: true,
+      organizationId: true,
+      email: true,
+      role: true
+    }
   })
 
   if (!invite) {
@@ -325,11 +463,32 @@ export async function cancelInvite(
 
   // Cancel is a recovery path when over seat limit — no assertOrgWritable
   await requireMembership(ctx.db, invite.organizationId, userId, 'admin')
+  await expirePendingInvitations(ctx, invite.organizationId)
 
-  await ctx.db
-    .update(invitation)
-    .set({ status: 'cancelled' })
-    .where(eq(invitation.id, input.invitationId))
+  const currentInvitation = await ctx.db.query.invitation.findFirst({
+    where: eq(invitation.id, input.invitationId),
+    columns: { status: true }
+  })
+
+  if (currentInvitation?.status !== 'pending') {
+    throw new TRPCError({
+      code: 'CONFLICT',
+      message: 'Only pending invitations can be canceled.'
+    })
+  }
+
+  await safeCancelInvitation(ctx, input.invitationId)
+
+  await recordAudit(ctx.db, {
+    organizationId: invite.organizationId,
+    userId,
+    action: 'invitation_cancelled',
+    targetKey: invite.email,
+    metadata: {
+      invitationId: invite.id,
+      role: invite.role
+    }
+  })
 
   return { success: true }
 }

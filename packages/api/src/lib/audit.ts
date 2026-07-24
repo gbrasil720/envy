@@ -10,8 +10,9 @@ type DbLike = {
 }
 
 export type RecordAuditInput = {
-  projectId: string
-  userId: string
+  organizationId: string
+  projectId?: string | null
+  userId?: string | null
   action: AuditAction
   environment?: string | null
   targetKey?: string | null
@@ -24,8 +25,9 @@ export async function recordAudit(
 ): Promise<void> {
   await db.insert(auditLog).values({
     id: crypto.randomUUID(),
-    projectId: input.projectId,
-    userId: input.userId,
+    organizationId: input.organizationId,
+    projectId: input.projectId ?? null,
+    userId: input.userId ?? null,
     environment: input.environment ?? null,
     action: input.action,
     targetKey: input.targetKey ?? null,

@@ -98,11 +98,18 @@ export const meRouter = router({
   }),
 
   completeOnboardingWithProject: protectedProcedure
-    .input(z.object({ name: z.string().min(1).max(64) }))
+    .input(
+      z.object({
+        name: z.string().min(1).max(64)
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const completedAt = new Date()
       return await ctx.db.transaction(async (tx) => {
-        const proj = await createOwnedProject(tx, ctx.session.user.id, input)
+        const proj = await createOwnedProject(tx, ctx.session.user.id, {
+          name: input.name,
+          organizationType: 'personal'
+        })
         const [updated] = await tx
           .update(user)
           .set({ onboardingCompletedAt: completedAt })

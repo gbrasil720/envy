@@ -40,7 +40,7 @@ export async function findOrCreateEnvironment(
   db: Db,
   projectId: string,
   name: string,
-  opts?: { auditUserId?: string }
+  opts?: { auditUserId?: string; organizationId?: string }
 ): Promise<string> {
   const existingId = await findEnvironmentId(db, projectId, name)
   if (existingId) return existingId
@@ -55,8 +55,9 @@ export async function findOrCreateEnvironment(
     .returning({ id: environment.id })
 
   const id = created?.id ?? ''
-  if (id && opts?.auditUserId) {
+  if (id && opts?.auditUserId && opts.organizationId) {
     await recordAudit(db, {
+      organizationId: opts.organizationId,
       projectId,
       userId: opts.auditUserId,
       action: 'environment_created',

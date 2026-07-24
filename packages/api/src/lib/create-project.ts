@@ -1,12 +1,14 @@
 import { encrypt, exportKey, generateKey } from '@envy/crypto'
 import type { db } from '@envy/db'
 import { count, eq, inArray } from '@envy/db'
+import { user } from '@envy/db/schema/auth'
 import { subscription } from '@envy/db/schema/billing'
 import { project } from '@envy/db/schema/envy'
 import { member, organization } from '@envy/db/schema/organization'
 import { hasRole } from '@envy/db/services'
 import { env } from '@envy/env/server'
 import { TRPCError } from '@trpc/server'
+import { PLAN_LIMITS, type Plan } from './plan-limits'
 
 function generateSlug(name: string): string {
   return name
@@ -20,17 +22,24 @@ function generateSlug(name: string): string {
 export type DbExecutor = Pick<typeof db, 'insert' | 'query' | 'select'>
 
 /**
- * Create a project under a new organization (N:1: project has its own id,
- * organizationId points at the org). Creator is always member.role = 'owner'.
- *
- * One org per project for now so invite/membership stays project-scoped;
- * schema already allows multiple projects per org later.
+ * Personal projects reuse the account's personal organization. Team projects
+ * create a separate team organization. A missing subscription means Free.
  */
 export async function createOwnedProject(
   dbClient: DbExecutor,
   userId: string,
-  input: { name: string }
-): Promise<{ id: string; name: string; slug: string; organizationId: string }> {
+  input: {
+    name: string
+    organizationType?: 'personal' | 'team'
+    organizationId?: string
+  }
+): Promise<{
+  id: string
+  name: string
+  slug: string
+  organizationId: string
+  organizationSlug: string
+}> {
   // Orgs where this user is owner (role CSV may be "owner" or "admin,owner")
   const ownerships = await dbClient.query.member.findMany({
     where: eq(member.userId, userId),
@@ -41,32 +50,8 @@ export async function createOwnedProject(
     .filter((m) => hasRole(m.role, 'owner'))
     .map((m) => m.organizationId)
 
-  // Free-plan limit: 1 project across all owned orgs
-  if (ownedOrgIds.length > 0) {
-    const subs = await dbClient
-      .select({ plan: subscription.plan })
-      .from(subscription)
-      .where(inArray(subscription.organizationId, ownedOrgIds))
-
-    const isOnFree = subs.length === 0 || subs.every((s) => s.plan === 'free')
-
-    if (isOnFree) {
-      const [row] = await dbClient
-        .select({ total: count() })
-        .from(project)
-        .where(inArray(project.organizationId, ownedOrgIds))
-
-      if ((row?.total ?? 0) >= 1) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message:
-            'Free plan allows only 1 project. Upgrade to Pro or Team to create more.'
-        })
-      }
-    }
-  }
-
   const slug = generateSlug(input.name)
+  const organizationType = input.organizationType ?? 'personal'
 
   const existing = await dbClient.query.project.findFirst({
     where: eq(project.slug, slug),
@@ -87,36 +72,89 @@ export async function createOwnedProject(
     env.SERVER_ENCRYPTION_KEY
   )
 
-  const organizationId = crypto.randomUUID()
+  const ownedOrganizations =
+    ownedOrgIds.length === 0
+      ? []
+      : await dbClient.query.organization.findMany({
+          where: inArray(organization.id, ownedOrgIds),
+          columns: { id: true, slug: true, type: true }
+        })
+  const personalOrganization = ownedOrganizations.find(
+    (org) => org.type === 'personal'
+  )
+  const organizationId =
+    input.organizationId ??
+    (organizationType === 'personal' && personalOrganization
+      ? personalOrganization.id
+      : crypto.randomUUID())
   const projectId = crypto.randomUUID()
   const now = new Date()
 
-  await dbClient.insert(organization).values({
-    id: organizationId,
-    name: input.name,
-    slug,
-    type: 'team',
-    createdAt: now
-  })
+  if (!input.organizationId && organizationId !== personalOrganization?.id) {
+    const personalOrganizationOwner =
+      organizationType === 'personal'
+        ? await dbClient.query.user.findFirst({
+            where: eq(user.id, userId),
+            columns: { name: true }
+          })
+        : undefined
 
-  await dbClient.insert(member).values({
-    id: crypto.randomUUID(),
-    organizationId,
-    userId,
-    role: 'owner',
-    createdAt: now
-  })
+    await dbClient.insert(organization).values({
+      id: organizationId,
+      name:
+        organizationType === 'personal'
+          ? (personalOrganizationOwner?.name ?? 'Personal')
+          : input.name,
+      slug: organizationType === 'personal' ? `personal-${userId}` : slug,
+      type: organizationType,
+      createdAt: now
+    })
+    await dbClient.insert(member).values({
+      id: crypto.randomUUID(),
+      organizationId,
+      userId,
+      role: 'owner',
+      createdAt: now
+    })
+  }
 
-  await dbClient.insert(subscription).values({
-    id: crypto.randomUUID(),
-    organizationId,
-    plan: 'free',
-    status: 'active',
-    dodoCustomerId: 'free',
-    seatLimit: 1,
-    createdAt: now,
-    updatedAt: now
+  const targetOrganization = await dbClient.query.organization.findFirst({
+    where: eq(organization.id, organizationId),
+    columns: { slug: true }
   })
+  if (!targetOrganization) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: 'Organization not found'
+    })
+  }
+
+  const [currentSubscription] = await dbClient
+    .select({
+      plan: subscription.plan,
+      status: subscription.status,
+      currentPeriodEnd: subscription.currentPeriodEnd
+    })
+    .from(subscription)
+    .where(eq(subscription.organizationId, organizationId))
+  const currentPlan: Plan =
+    currentSubscription?.status === 'active' ||
+    (currentSubscription?.status === 'cancelled' &&
+      currentSubscription.currentPeriodEnd != null &&
+      currentSubscription.currentPeriodEnd > now)
+      ? currentSubscription.plan
+      : 'free'
+  const [projectCount] = await dbClient
+    .select({ total: count() })
+    .from(project)
+    .where(eq(project.organizationId, organizationId))
+  if ((projectCount?.total ?? 0) >= PLAN_LIMITS[currentPlan].projects) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message:
+        'Free plan allows only 1 project. Upgrade to Pro or Team to create more.'
+    })
+  }
 
   await dbClient.insert(project).values({
     id: projectId,
@@ -129,5 +167,11 @@ export async function createOwnedProject(
     createdBy: userId
   })
 
-  return { id: projectId, name: input.name, slug, organizationId }
+  return {
+    id: projectId,
+    name: input.name,
+    slug,
+    organizationId,
+    organizationSlug: targetOrganization.slug
+  }
 }

@@ -36,6 +36,10 @@ describe('SECRET_AUDIT_ACTIONS', () => {
 describe('MEMBER_AUDIT_ACTIONS', () => {
   test('contains expected member actions', () => {
     expect(MEMBER_AUDIT_ACTIONS.has('member_invited')).toBe(true)
+    expect(MEMBER_AUDIT_ACTIONS.has('invitation_reinvited')).toBe(true)
+    expect(MEMBER_AUDIT_ACTIONS.has('invitation_accepted')).toBe(true)
+    expect(MEMBER_AUDIT_ACTIONS.has('invitation_cancelled')).toBe(true)
+    expect(MEMBER_AUDIT_ACTIONS.has('invitation_expired')).toBe(true)
     expect(MEMBER_AUDIT_ACTIONS.has('member_removed')).toBe(true)
   })
 })

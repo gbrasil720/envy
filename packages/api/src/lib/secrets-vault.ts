@@ -1,12 +1,17 @@
 import { decrypt, encrypt, hmacValue } from '@envy/crypto'
-import { and, eq, sql } from '@envy/db'
+import { and, count, eq, inArray, sql } from '@envy/db'
 import { project, secret } from '@envy/db/schema/envy'
 import { env } from '@envy/env/server'
 import { TRPCError } from '@trpc/server'
 import type { Context } from '../context'
 import { recordAudit } from './audit'
 import { findEnvironmentId, findOrCreateEnvironment } from './environment'
-import { assertOrgWritable, requireProjectAccess } from './org-utils'
+import {
+  assertOrgWritable,
+  getOrgPlan,
+  requireProjectAccess
+} from './org-utils'
+import { PLAN_LIMITS } from './plan-limits'
 
 type Db = Context['db']
 
@@ -77,6 +82,35 @@ export async function pushSecrets(
     return { upserted: 0 }
   }
 
+  const plan = await getOrgPlan(db, organizationId)
+  const limit = PLAN_LIMITS[plan].secrets
+  if (Number.isFinite(limit)) {
+    const [total] = await db
+      .select({ value: count() })
+      .from(secret)
+      .innerJoin(project, eq(secret.projectId, project.id))
+      .where(eq(project.organizationId, organizationId))
+    const existing = await db.query.secret.findMany({
+      where: and(
+        eq(secret.projectId, input.projectId),
+        eq(secret.environmentId, environmentId),
+        inArray(
+          secret.key,
+          entries.map(([key]) => key)
+        )
+      ),
+      columns: { key: true }
+    })
+    const existingKeys = new Set(existing.map((row) => row.key))
+    const additions = entries.filter(([key]) => !existingKeys.has(key)).length
+    if ((total?.value ?? 0) + additions > limit) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: `Secret limit (${limit}) reached. Upgrade to continue.`
+      })
+    }
+  }
+
   const values = await Promise.all(
     entries.map(async ([key, value]) => {
       const { ciphertext, iv, tag } = await encrypt(value, masterKeyBase64)
@@ -114,6 +148,7 @@ export async function pushSecrets(
       })
 
     await recordAudit(tx, {
+      organizationId,
       projectId: input.projectId,
       userId,
       environment: input.environment,
@@ -130,7 +165,7 @@ export async function revealSecrets(
   userId: string,
   input: { projectId: string; environment: string }
 ): Promise<{ secrets: Record<string, string> }> {
-  const { masterKeyBase64 } = await getProjectMasterKey(
+  const { masterKeyBase64, organizationId } = await getProjectMasterKey(
     db,
     input.projectId,
     userId
@@ -159,6 +194,7 @@ export async function revealSecrets(
   })
 
   await recordAudit(db, {
+    organizationId,
     projectId: input.projectId,
     userId,
     environment: input.environment,
@@ -310,6 +346,7 @@ export async function updateSecret(
     )
 
   await recordAudit(db, {
+    organizationId,
     projectId: input.projectId,
     userId,
     environment: input.environment,
@@ -368,6 +405,7 @@ export async function deleteSecret(
     )
 
   await recordAudit(db, {
+    organizationId,
     projectId: input.projectId,
     userId,
     environment: input.environment,

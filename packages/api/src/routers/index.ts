@@ -1,6 +1,7 @@
 import { publicProcedure, router } from '../index'
 import { auditLogRouter } from './auditLog'
 import { authRouter } from './auth'
+import { billingRouter } from './billing'
 import { cliAuthRouter } from './cli-auth'
 import { environmentsRouter } from './environments'
 import { meRouter } from './me'
@@ -21,6 +22,7 @@ export const appRouter = router({
   members: membersRouter,
   auditLog: auditLogRouter,
   environments: environmentsRouter,
-  organization: organizationRouter
+  organization: organizationRouter,
+  billing: billingRouter
 })
 export type AppRouter = typeof appRouter

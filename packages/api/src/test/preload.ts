@@ -24,7 +24,15 @@ const defaults: Record<string, string> = {
   GITHUB_CLIENT_ID: 'test-github-client-id',
   GITHUB_CLIENT_SECRET: 'test-github-client-secret',
   GITHUB_CLIENT_ID_DEV: 'test-github-client-id-dev',
-  GITHUB_CLIENT_SECRET_DEV: 'test-github-client-secret-dev'
+  GITHUB_CLIENT_SECRET_DEV: 'test-github-client-secret-dev',
+  DODO_PAYMENTS_API_KEY: 'test-dodo-api-key',
+  DODO_PAYMENTS_WEBHOOK_SECRET: 'test-dodo-webhook-secret',
+  DODO_PAYMENTS_ENVIRONMENT: 'test_mode',
+  DODO_PRO_PRODUCT_ID: 'pdt_pro',
+  DODO_TEAM_PRODUCT_ID: 'pdt_team',
+  RESEND_API_KEY: 're_test',
+  EMAIL_FROM: 'Envy <noreply@test.local>',
+  EMAIL_FROM_ALERTS: 'Envy <alerts@test.local>'
 }
 
 for (const [key, value] of Object.entries(defaults)) {

@@ -2,104 +2,109 @@ import { and, count, eq, inArray, isNull, sql } from '@envy/db'
 import { user } from '@envy/db/schema/auth'
 import { auditLog, environment, project, secret } from '@envy/db/schema/envy'
 import { member, organization } from '@envy/db/schema/organization'
-import { effectiveRole, hasRole } from '@envy/db/services'
+import { effectiveRole } from '@envy/db/services'
 import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { protectedProcedure, router } from '..'
 import { createOwnedProject } from '../lib/create-project'
-import { getOrgPlan, requireMembership } from '../lib/org-utils'
+import {
+  assertOrgWritable,
+  getOrgPlan,
+  requireMembership
+} from '../lib/org-utils'
 
 export const projectsRouter = router({
-  list: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.session.user.id
+  list: protectedProcedure
+    .input(z.object({ organizationId: z.string().min(1).optional() }))
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id
+      const fallbackMembership = input.organizationId
+        ? null
+        : await ctx.db
+            .select({ organizationId: member.organizationId })
+            .from(member)
+            .innerJoin(organization, eq(member.organizationId, organization.id))
+            .where(
+              and(
+                eq(member.userId, userId),
+                eq(organization.type, 'personal'),
+                isNull(organization.deletedAt)
+              )
+            )
+            .limit(1)
+            .then((rows) => rows[0] ?? null)
+      const organizationId =
+        input.organizationId ?? fallbackMembership?.organizationId
+      if (!organizationId) return []
+      await requireMembership(ctx.db, organizationId, userId)
+      const organizationPlan = await getOrgPlan(ctx.db, organizationId)
 
-    const memberships = await ctx.db.query.member.findMany({
-      where: eq(member.userId, userId),
-      columns: { organizationId: true, role: true }
-    })
-
-    if (memberships.length === 0) return []
-
-    const orgIds = memberships.map((m) => m.organizationId)
-
-    // Filter out soft-deleted organizations
-    const orgs = await ctx.db.query.organization.findMany({
-      where: and(
-        inArray(organization.id, orgIds),
-        isNull(organization.deletedAt)
-      ),
-      columns: { id: true }
-    })
-    const activeOrgIds = orgs.map((o) => o.id)
-
-    if (activeOrgIds.length === 0) return []
-
-    // Plan from first owned org (role contains owner)
-    const ownedOrgId = memberships.find(
-      (m) => activeOrgIds.includes(m.organizationId) && hasRole(m.role, 'owner')
-    )?.organizationId
-
-    const accountPlan = ownedOrgId
-      ? await getOrgPlan(ctx.db, ownedOrgId)
-      : 'free'
-
-    // N:1 — projects belong to orgs via organizationId, not project.id === org.id
-    const projects = await ctx.db.query.project.findMany({
-      where: (p, { inArray: inArr }) => inArr(p.organizationId, activeOrgIds),
-      columns: {
-        id: true,
-        name: true,
-        slug: true,
-        createdAt: true,
-        organizationId: true
-      },
-      with: {
-        environments: {
-          columns: { name: true },
-          orderBy: (e, { asc }) => [asc(e.createdAt)]
+      // N:1 — projects belong to orgs via organizationId, not project.id === org.id
+      const projects = await ctx.db.query.project.findMany({
+        where: eq(project.organizationId, organizationId),
+        columns: {
+          id: true,
+          name: true,
+          slug: true,
+          createdAt: true,
+          organizationId: true
+        },
+        with: {
+          environments: {
+            columns: { name: true },
+            orderBy: (e, { asc }) => [asc(e.createdAt)]
+          }
         }
-      }
-    })
-
-    if (projects.length === 0) return []
-
-    const projectIds = projects.map((p) => p.id)
-
-    const secretCounts = await ctx.db
-      .select({ projectId: secret.projectId, total: count() })
-      .from(secret)
-      .where(inArray(secret.projectId, projectIds))
-      .groupBy(secret.projectId)
-
-    const secretCountMap = new Map(
-      secretCounts.map((s) => [s.projectId, s.total])
-    )
-
-    const lastActivityRows = await ctx.db
-      .select({
-        projectId: auditLog.projectId,
-        lastAt: sql<string>`max(${auditLog.createdAt})`
       })
-      .from(auditLog)
-      .where(inArray(auditLog.projectId, projectIds))
-      .groupBy(auditLog.projectId)
 
-    const lastActivityMap = new Map(
-      lastActivityRows.map((r) => [r.projectId, r.lastAt ?? null])
-    )
+      if (projects.length === 0) return []
 
-    return projects.map((p) => ({
-      ...p,
-      plan: accountPlan,
-      secretsCount: secretCountMap.get(p.id) ?? 0,
-      lastSyncedAt: lastActivityMap.get(p.id) ?? null
-    }))
-  }),
+      const projectIds = projects.map((p) => p.id)
+
+      const secretCounts = await ctx.db
+        .select({ projectId: secret.projectId, total: count() })
+        .from(secret)
+        .where(inArray(secret.projectId, projectIds))
+        .groupBy(secret.projectId)
+
+      const secretCountMap = new Map(
+        secretCounts.map((s) => [s.projectId, s.total])
+      )
+
+      const lastActivityRows = await ctx.db
+        .select({
+          projectId: auditLog.projectId,
+          lastAt: sql<string>`max(${auditLog.createdAt})`
+        })
+        .from(auditLog)
+        .where(inArray(auditLog.projectId, projectIds))
+        .groupBy(auditLog.projectId)
+
+      const lastActivityMap = new Map(
+        lastActivityRows.map((r) => [r.projectId, r.lastAt ?? null])
+      )
+
+      return projects.map((p) => ({
+        ...p,
+        plan: organizationPlan,
+        secretsCount: secretCountMap.get(p.id) ?? 0,
+        lastSyncedAt: lastActivityMap.get(p.id) ?? null
+      }))
+    }),
 
   create: protectedProcedure
-    .input(z.object({ name: z.string().min(1).max(64) }))
+    .input(
+      z.object({
+        name: z.string().min(1).max(64),
+        organizationId: z.string().min(1).optional()
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
+      if (input.organizationId) {
+        await requireMembership(ctx.db, input.organizationId, userId, 'admin')
+        await assertOrgWritable(input.organizationId)
+      }
 
       const created = await ctx.db.transaction(async (tx) =>
         createOwnedProject(tx as unknown as typeof ctx.db, userId, input)
@@ -113,12 +118,35 @@ export const projectsRouter = router({
       return created
     }),
   get: protectedProcedure
-    .input(z.object({ slug: z.string() }))
+    .input(
+      z.object({
+        organizationSlug: z.string().min(1),
+        projectSlug: z.string().min(1)
+      })
+    )
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
 
+      const org = await ctx.db.query.organization.findFirst({
+        where: eq(organization.slug, input.organizationSlug),
+        columns: { id: true, type: true }
+      })
+
+      if (!org) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Organization not found'
+        })
+      }
+
+      const membership = await requireMembership(ctx.db, org.id, userId)
+
       const proj = await ctx.db.query.project.findFirst({
-        where: eq(project.slug, input.slug),
+        where: (projects, { and: andCondition, eq: eqColumn }) =>
+          andCondition(
+            eqColumn(projects.slug, input.projectSlug),
+            eqColumn(projects.organizationId, org.id)
+          ),
         columns: {
           id: true,
           name: true,
@@ -129,14 +157,11 @@ export const projectsRouter = router({
       })
 
       if (!proj) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' })
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Project not found'
+        })
       }
-
-      const membership = await requireMembership(
-        ctx.db,
-        proj.organizationId,
-        userId
-      )
 
       const plan = await getOrgPlan(ctx.db, proj.organizationId)
 
@@ -153,6 +178,7 @@ export const projectsRouter = router({
       return {
         ...proj,
         plan,
+        organizationType: org.type,
         role: membership.role,
         members: members.map((m) => ({
           ...m,
